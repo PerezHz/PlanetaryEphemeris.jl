@@ -13,9 +13,8 @@ const dense = true#false
 propagate(2, t0, nyears, output=false, dense=dense)
 println("*** Finished warmup")
 
-propagate(5, t0, nyears, dense=dense)
-println("*** Finished 2nd warmup")
+# propagate(5, t0, nyears, dense=dense)
+# println("*** Finished 2nd warmup")
 
-#Full jet transport integration until ~2038: about 8,000 steps
-# main(t0, nyears, dense=dense)
-# println("*** Finished full jet transport integration")
+propagate(maxsteps, t0, nyears, dense=dense)
+println("*** Finished full integration")
