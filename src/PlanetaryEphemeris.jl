@@ -413,7 +413,7 @@ const J2000 = 2.451545e6
 
 const R_sun = 696000.0/au # Solar radius in au, value taken from DE430 docs
 
-const α_p_sun = 268.13 # Sun's rotation pole right ascension (degrees)
+const α_p_sun = 286.13 # Sun's rotation pole right ascension (degrees)
 const δ_p_sun = 63.87 # Sun's rotation pole declination (degrees)
 
 function __init__()
