@@ -3,12 +3,11 @@ module PlanetaryEphemeris
 __precompile__(false)
 
 export propagate, au, yr, sundofs, earthdofs,
-    ssdofs, c_au_per_day, μ, NBP_pN_A_J23E_J23M_J2S!,
+    c_au_per_day, μ, NBP_pN_A_J23E_J23M_J2S!,
     semimajoraxis, eccentricity, inclination
 
-using Reexport
-@reexport using TaylorIntegration, LinearAlgebra # so that JLD may interpret previously saved Taylor1 objects saved in .jld files
-@reexport using Printf
+using TaylorIntegration, LinearAlgebra
+using Printf
 using Dates: DateTime, julian2datetime, datetime2julian
 using DelimitedFiles
 using Test
@@ -393,9 +392,9 @@ const Λ3 = zeros(N)
 
 # Matrix of J2 interactions included in DE430 ephemeris, according to Folkner et al., 2014
 const UJ_interaction = fill(false, N, N)
-UJ_interaction[2:end, su] .= true
-UJ_interaction[union(1:ea-1,ea+1:7,N), ea] .= true
-UJ_interaction[union(1:mo-1,mo+1:7), mo] .= true
+UJ_interaction[2:end, su] .= true # Sun's J2 interacts with everyone else
+UJ_interaction[union(1:ea-1,ea+1:7), ea] .= true # Earth's grav potential interacts with Sun, Mercury, Venus, Moon, Mars and Jupiter
+UJ_interaction[union(1:mo-1,mo+1:7), mo] .= true # Moon's grav potential interacts with Sun, Mercury, Venus, Earth, Mars and Jupiter
 
 const au = 1.495978707E8 # astronomical unit value in km
 const yr = 365.25 # days in a Julian year
@@ -404,10 +403,8 @@ const c_au_per_day = daysec*(299_792.458/au) # speed of light in au per day
 const c_au_per_sec = 299_792.458/au # speed of light in au per sec
 const c_cm_per_sec = 100_000*299_792.458 # speed of light in cm per sec
 
-const apophisdofs = union(3N-2:3N, 6N-2:6N) #union(34:36, 70:72)
 const sundofs = union(1:3, 3(N+su)-2:3(N+su))
 const earthdofs = union(3ea-2:3ea, 3(N+ea)-2:3(N+ea))
-const ssdofs = setdiff(1:6N, apophisdofs)
 
 const J2000 = 2.451545e6
 

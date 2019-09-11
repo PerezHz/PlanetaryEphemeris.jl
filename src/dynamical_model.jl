@@ -8,7 +8,7 @@
 # - J2 and J3 effect of the Moon
 # - Kinematic model for the precession and nutation of the Earth's orientation (IAU 1976/1980 Earth orientation model)
 # - Kinematic model for the Moons's orientation (Seidelmann et al., 2006)
-@taylorize function NBP_pN_A_J23E_J23M_J2S!(t, q, dq)
+@taylorize function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     local S = eltype(q[1])
     local N = Int((length(q))/6) # number of bodies, including NEA
     local _1_to_N = Base.OneTo(N) # iterator over all bodies

@@ -9,7 +9,7 @@ function propagate(maxsteps::Int, t0::T, tspan::T;
     # do integration
     if dense
         @time interp = taylorinteg(NBP_pN_A_J23E_J23M_J2S!, q0, t0, tmax, order, abstol, maxsteps=maxsteps, dense=dense)
-        sol = (t=interp.t, x=interp.x)
+        sol = (t=interp.t[:], x=interp.x[:,:])
     else
         @time t, x = taylorinteg(NBP_pN_A_J23E_J23M_J2S!, q0, t0, tmax, order, abstol, maxsteps=maxsteps, dense=dense)
         sol = (t=t, x=x)
