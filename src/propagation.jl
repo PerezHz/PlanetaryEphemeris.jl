@@ -12,7 +12,7 @@ function propagate(maxsteps::Int, t0::T, tspan::T;
         sol = (t=interp.t[:], x=interp.x[:,:])
     else
         @time t, x = taylorinteg(NBP_pN_A_J23E_J23M_J2S!, q0, t0, tmax, order, abstol, maxsteps=maxsteps, dense=dense)
-        sol = (t=t, x=x)
+        sol = (t=t[:], x=x[:,:])
     end
 
     #write solution to .jld files
@@ -21,7 +21,6 @@ function propagate(maxsteps::Int, t0::T, tspan::T;
         println("Saving solution to file: $filename")
         jldopen(filename, "w") do file
             addrequire(file, TaylorSeries)
-            addrequire(file, TaylorIntegration)
             # write variables to jld file
             for ind in eachindex(sol)
                 varname = string(ind)

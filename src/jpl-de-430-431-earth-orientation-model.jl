@@ -7,6 +7,9 @@
 # an estimated linear correction and on a modified IAU 1980 nutation model \* including
 # only terms with a period of 18.6 years.
 
+export moon_pole_ra, moon_pole_dec, t2c_jpl_de430, c2t_jpl_de430,
+    pole_rotation
+
 # The mean longitude of the ascending node of the lunar orbit measured on the ecliptic
 # plane from the mean equinox of date is calculated by
 

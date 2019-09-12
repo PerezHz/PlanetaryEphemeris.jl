@@ -2,9 +2,12 @@ module PlanetaryEphemeris
 
 __precompile__(false)
 
-export propagate, au, yr, sundofs, earthdofs,
+export au, yr, sundofs, earthdofs,
     c_au_per_day, μ, NBP_pN_A_J23E_J23M_J2S!,
-    semimajoraxis, eccentricity, inclination
+    semimajoraxis, eccentricity, inclination,
+    su, ea, mo, Λ2, Λ3, au, yr, daysec,
+    c_au_per_day, c_au_per_sec, c_cm_per_sec,
+    J2000, R_sun, α_p_sun, δ_p_sun
 
 using TaylorIntegration, LinearAlgebra
 using Printf
@@ -388,6 +391,9 @@ const Λ2 = zeros(N)
 const Λ3 = zeros(N)
 Λ3[ea] = -1.962633335678878e-19
 Λ3[mo] = 1.3265639193531515e-20
+
+#TODO: Add Earth's Λ4 (and Λ5?) Correct report values according to Folkner
+#TODO: Add Moon's tesseral coefficients
 
 # Matrix of J2 interactions included in DE430 ephemeris, according to Folkner et al., 2014
 const UJ_interaction = fill(false, N, N)
