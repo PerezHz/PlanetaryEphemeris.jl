@@ -12,7 +12,6 @@ using Dates: DateTime, julian2datetime, datetime2julian
 using DelimitedFiles
 using Test
 using JLD
-using SPICE
 
 # integration parameters
 const varorder = 10
