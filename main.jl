@@ -10,11 +10,11 @@ const t0 = datetime2julian(DateTime(2008,9,24,0,0,0)) #starting time of integrat
 const dense = true#false
 
 #integrator warmup
-PlanetaryEphemeris.propagate(2, t0, nyears, output=false, dense=dense)
+PlanetaryEphemeris.propagate(1, t0, nyears, output=false, dense=dense)
 println("*** Finished warmup")
 
-# PlanetaryEphemeris.propagate(5, t0, nyears, dense=dense)
-# println("*** Finished 2nd warmup")
+PlanetaryEphemeris.propagate(2, t0, nyears, dense=dense)
+println("*** Finished 2nd warmup")
 
-PlanetaryEphemeris.propagate(maxsteps, t0, nyears, dense=dense)
-println("*** Finished full integration")
+#PlanetaryEphemeris.propagate(maxsteps, t0, nyears, dense=dense)
+#println("*** Finished full integration")
