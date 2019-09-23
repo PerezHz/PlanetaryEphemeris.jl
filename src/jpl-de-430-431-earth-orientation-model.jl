@@ -33,7 +33,7 @@ function pole_date(t)
     # pdy = cos(Δψ)*sin(ϵ)*cos(ϵ0) - cos(ϵ)*sin(ϵ0)
     # pdz = cos(Δψ)*sin(ϵ)*sin(ϵ0) + cos(ϵ)*cos(ϵ0)
     Nut_mat = nutation_iau80(t)
-    # inv(Nut_mat)*[0,0,1] = Nut_mat[3,:]
+    # inv(Nut_mat)*[0,0,1] == Nut_mat[3,:]
     return Nut_mat[3,:]
 end
 
@@ -200,7 +200,8 @@ end
 function t2c_jpl_de430(t)
     inv_P_iau7680 = Rz(Zeta(t))*Ry(-Theta(t))*Rz(zeta(t))
     corrections = Rx(-phi_x(t))*Ry(-phi_y(t))
-    inv_N_iau80 = inv(nutation_iau80(t))
+    # inv_N_iau80 = inv(nutation_iau80(t))
+    inv_N_iau80 = transpose(nutation_iau80(t))
     return inv_P_iau7680*corrections*inv_N_iau80
 end
 
