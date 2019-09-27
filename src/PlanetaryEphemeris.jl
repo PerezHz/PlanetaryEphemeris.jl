@@ -7,7 +7,8 @@ export au, yr, sundofs, earthdofs,
     semimajoraxis, eccentricity, inclination,
     su, ea, mo, Λ2, Λ3, au, yr, daysec,
     c_au_per_day, c_au_per_sec, c_cm_per_sec,
-    J2000, R_sun, α_p_sun, δ_p_sun, au
+    J2000, R_sun, α_p_sun, δ_p_sun, au,
+    UJ_interaction
 
 using TaylorIntegration, LinearAlgebra
 using Printf
@@ -17,7 +18,6 @@ using Test
 using JLD
 
 # integration parameters
-const varorder = 10
 const order = 30
 const abstol = 1.0E-30
 
