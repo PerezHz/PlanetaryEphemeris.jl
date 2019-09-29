@@ -291,7 +291,9 @@ version = "0.6.0"
 
 [[TaylorSeries]]
 deps = ["InteractiveUtils", "LinearAlgebra", "Markdown", "Requires", "SparseArrays"]
-git-tree-sha1 = "09426cb060ae6e615b4140d94e165f32d0b5ffca"
+git-tree-sha1 = "1412d4b53164e7a48d6e42ebee6a7e1500faa72a"
+repo-rev = "jp/mul"
+repo-url = "https://github.com/PerezHz/TaylorSeries.jl"
 uuid = "6aa5eb33-94cf-58f4-a9d0-e4b2c4fc25ea"
 version = "0.10.0"
 
