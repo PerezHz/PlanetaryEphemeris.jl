@@ -1,5 +1,6 @@
 function propagate(maxsteps::Int, t0::T, tspan::T;
-        output::Bool=true, dense::Bool=false) where {T<:Real}
+        output::Bool=true, dense::Bool=false,
+        dynamics::Function=NBP_pN_A_J23E_J23M_J2S!) where {T<:Real}
 
     # get initial conditions
     q0 = initialcond(length(μ))
@@ -8,10 +9,10 @@ function propagate(maxsteps::Int, t0::T, tspan::T;
 
     # do integration
     if dense
-        @time interp = taylorinteg(NBP_pN_A_J23E_J23M_J2S!, q0, t0, tmax, order, abstol, maxsteps=maxsteps, dense=dense)
+        @time interp = taylorinteg(dynamics, q0, t0, tmax, order, abstol, maxsteps=maxsteps, dense=dense)
         sol = (t=interp.t[:], x=interp.x[:,:])
     else
-        @time t, x = taylorinteg(NBP_pN_A_J23E_J23M_J2S!, q0, t0, tmax, order, abstol, maxsteps=maxsteps, dense=dense)
+        @time t, x = taylorinteg(dynamics, q0, t0, tmax, order, abstol, maxsteps=maxsteps, dense=dense)
         sol = (t=t[:], x=x[:,:])
     end
 
