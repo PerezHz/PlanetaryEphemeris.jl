@@ -22,5 +22,5 @@ println("*** Finished warmup")
 PlanetaryEphemeris.propagate(3, t0, nyears, dense=dense, dynamics=dynamics)
 println("*** Finished 2nd warmup")
 
-#PlanetaryEphemeris.propagate(maxsteps, t0, nyears, dense=dense)
+#PlanetaryEphemeris.propagate(maxsteps, t0, nyears, dense=dense, dynamics=dynamics)
 #println("*** Finished full integration")
