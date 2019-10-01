@@ -4,6 +4,7 @@ __precompile__(false)
 
 export au, yr, sundofs, earthdofs,
     c_au_per_day, μ, NBP_pN_A_J23E_J23M_J2S!,
+    NBP_pN_A_J23E_J23M_J2S_threads!,
     semimajoraxis, eccentricity, inclination,
     su, ea, mo, Λ2, Λ3, au, yr, daysec,
     c_au_per_day, c_au_per_sec, c_cm_per_sec,
@@ -419,9 +420,10 @@ const α_p_sun = 286.13 # Sun's rotation pole right ascension (degrees)
 const δ_p_sun = 63.87 # Sun's rotation pole declination (degrees)
 
 function __init__()
-    @show length(methods(NBP_pN_A_J23E_J23M_J2S!))
     @show length(methods(TaylorIntegration.jetcoeffs!))
     @show methods(NBP_pN_A_J23E_J23M_J2S!)
+    @show methods(NBP_pN_A_J23E_J23M_J2S_threads!)
+    @show methods(TaylorIntegration.jetcoeffs!)
 end
 
 include("jpl-de-430-431-earth-orientation-model.jl")
