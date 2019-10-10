@@ -397,7 +397,7 @@
                     pNX_t_X[i,j,k] = postNewtonX[i,k]*X[i,j]
                     pNY_t_Y[i,j,k] = postNewtonY[i,k]*Y[i,j]
                     pNZ_t_Z[i,j,k] = postNewtonZ[i,k]*Z[i,j]
-                    pn1[i,j,k] = (  pn1t1_7[i,j]  +  ( (pNX_t_X[i,j,k]+pNY_t_Y[i,j,k]) + pNZ_t_Z[i,j,k] )  )
+                    pn1[i,j,k] = (  pn1t1_7[i,j]  +  0.5*( (pNX_t_X[i,j,k]+pNY_t_Y[i,j,k]) + pNZ_t_Z[i,j,k] )  )
 
                     X_t_pn1[i,j,k] = newton_acc_X[i,j]*pn1[i,j,k]
                     Y_t_pn1[i,j,k] = newton_acc_Y[i,j]*pn1[i,j,k]
@@ -830,7 +830,7 @@ end
                     pNX_t_X[i,j,k] = postNewtonX[i,k]*X[i,j]
                     pNY_t_Y[i,j,k] = postNewtonY[i,k]*Y[i,j]
                     pNZ_t_Z[i,j,k] = postNewtonZ[i,k]*Z[i,j]
-                    pn1[i,j,k] = (  pn1t1_7[i,j]  +  ( (pNX_t_X[i,j,k]+pNY_t_Y[i,j,k]) + pNZ_t_Z[i,j,k] )  )
+                    pn1[i,j,k] = (  pn1t1_7[i,j]  +  0.5*( (pNX_t_X[i,j,k]+pNY_t_Y[i,j,k]) + pNZ_t_Z[i,j,k] )  )
 
                     X_t_pn1[i,j,k] = newton_acc_X[i,j]*pn1[i,j,k]
                     Y_t_pn1[i,j,k] = newton_acc_Y[i,j]*pn1[i,j,k]
