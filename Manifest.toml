@@ -25,9 +25,9 @@ version = "0.2.0"
 
 [[BandedMatrices]]
 deps = ["FillArrays", "LazyArrays", "LinearAlgebra", "MatrixFactorizations", "Random", "SparseArrays"]
-git-tree-sha1 = "16ed431f921ff6f6d0db7b56b315c5b4c92e7ea7"
+git-tree-sha1 = "5a9e887a119842c033622d5fab67968516e2746f"
 uuid = "aae01518-5342-5314-be14-df237901396f"
-version = "0.12.2"
+version = "0.12.3"
 
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
@@ -100,9 +100,9 @@ version = "2.1.0"
 
 [[DataStructures]]
 deps = ["InteractiveUtils", "OrderedCollections"]
-git-tree-sha1 = "517ce30aa57cdfae1ab444a7c0aef8bb86345bc2"
+git-tree-sha1 = "f94423c68f2e47db0d6f626a26d4872266e0ec3d"
 uuid = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
-version = "0.17.1"
+version = "0.17.2"
 
 [[Dates]]
 deps = ["Printf"]
@@ -114,9 +114,9 @@ uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 
 [[DiffEqBase]]
 deps = ["ArrayInterface", "Compat", "DiffEqDiffTools", "Distributed", "DocStringExtensions", "FunctionWrappers", "IterativeSolvers", "IteratorInterfaceExtensions", "LinearAlgebra", "MuladdMacro", "Parameters", "Printf", "RecipesBase", "RecursiveArrayTools", "RecursiveFactorization", "Requires", "Roots", "SparseArrays", "StaticArrays", "Statistics", "SuiteSparse", "TableTraits", "TreeViews"]
-git-tree-sha1 = "5629889ad8aae3420cdd59c336ee776404b62c19"
+git-tree-sha1 = "72b6ffef7720c669606b282984b3efd9bd7973d9"
 uuid = "2b5f629d-d688-5b77-993f-72d75c75574e"
-version = "6.3.3"
+version = "6.3.4"
 
 [[DiffEqDiffTools]]
 deps = ["ArrayInterface", "LinearAlgebra", "Requires", "SparseArrays", "StaticArrays"]
@@ -148,9 +148,9 @@ uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[DocStringExtensions]]
 deps = ["LibGit2", "Markdown", "Pkg", "Test"]
-git-tree-sha1 = "0513f1a8991e9d83255e0140aace0d0fc4486600"
+git-tree-sha1 = "88bb0edb352b16608036faadcc071adda068582a"
 uuid = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
-version = "0.8.0"
+version = "0.8.1"
 
 [[Espresso]]
 deps = ["LinearAlgebra", "Statistics", "Test"]
@@ -196,9 +196,9 @@ version = "0.2.2"
 
 [[HDF5]]
 deps = ["BinaryProvider", "Blosc", "CMakeWrapper", "Libdl", "Mmap"]
-git-tree-sha1 = "9f7e7eebd3cd46e541928ef6f1d5b992abd8d384"
+git-tree-sha1 = "c14a84878428b66222fccea6ed89cdafa7c22ae4"
 uuid = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
-version = "0.12.3"
+version = "0.12.4"
 
 [[Inflate]]
 deps = ["Pkg", "Printf", "Random", "Test"]
@@ -231,9 +231,9 @@ version = "0.9.1+"
 
 [[LazyArrays]]
 deps = ["FillArrays", "LinearAlgebra", "MacroTools", "StaticArrays"]
-git-tree-sha1 = "0e8448cc1774a8d067ce6dc576fcfa61f44adb2f"
+git-tree-sha1 = "576081d32ef488a03a8cebcc63fdb23d52b466e5"
 uuid = "5078a376-72f3-5289-bfd5-ec5146d43c02"
-version = "0.12.1"
+version = "0.12.2"
 
 [[LegacyStrings]]
 deps = ["Compat"]
@@ -447,11 +447,9 @@ version = "0.6.0"
 
 [[TaylorSeries]]
 deps = ["InteractiveUtils", "LinearAlgebra", "Markdown", "Requires", "SparseArrays"]
-git-tree-sha1 = "da4cee23ac9399515bf0d4b53302a6ceefa8d356"
-repo-rev = "master"
-repo-url = "https://github.com/JuliaDiff/TaylorSeries.jl.git"
+git-tree-sha1 = "8262a96d7f520bace4543ec3ec8a0044d7cc8b3d"
 uuid = "6aa5eb33-94cf-58f4-a9d0-e4b2c4fc25ea"
-version = "0.10.0"
+version = "0.10.1"
 
 [[Test]]
 deps = ["Distributed", "InteractiveUtils", "Logging", "Random"]
