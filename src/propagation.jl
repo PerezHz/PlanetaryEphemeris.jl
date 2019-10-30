@@ -40,3 +40,18 @@ function propagate(maxsteps::Int, t0::T, tspan::T;
     end
     return nothing
 end
+
+# # auxiliary function; generates ephemeris file for bodies `i1` through `i2` out of `ephfile`, which stores ephemeris of a full Solar System integration
+# # by default, the selected bodies are the Sun, the eight planets, the Moon, and 16 most-massive main-belt asteroids
+function save_bodies_eph(ephfile::String, outfile::String, i1::Int=1, i2::Int=27)
+    @assert i2 ≥ i1
+    t = load(ephfile, "t")
+    x = load(ephfile, "x")
+    indvec = union(3i1-2:3i2, 3*(N+i1)-2:3*(N+i2))
+    # ny = Int(floor( (t[end]-t[1])/yr ))
+    jldopen(outfile, "w") do file
+        addrequire(file, TaylorSeries)
+        write(file, "t", t)
+        write(file, "x", x[:, indvec])
+    end
+end
