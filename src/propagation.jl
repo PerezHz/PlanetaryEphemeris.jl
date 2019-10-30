@@ -1,5 +1,5 @@
 function propagate(maxsteps::Int, t0::T, tspan::T;
-        output::Bool=true, dense::Bool=false,
+        output::Bool=true, dense::Bool=false, ephfile::String="sseph.jld",
         dynamics::Function=NBP_pN_A_J23E_J23M_J2S!) where {T<:Real}
 
     # get initial conditions
@@ -18,9 +18,8 @@ function propagate(maxsteps::Int, t0::T, tspan::T;
 
     #write solution to .jld files
     if output
-        filename = string("sseph.jld")
-        println("Saving solution to file: $filename")
-        jldopen(filename, "w") do file
+        println("Saving solution to file: $ephfile")
+        jldopen(ephfile, "w") do file
             addrequire(file, TaylorSeries)
             # write variables to jld file
             for ind in eachindex(sol)
@@ -33,7 +32,7 @@ function propagate(maxsteps::Int, t0::T, tspan::T;
         for ind in eachindex(sol)
             varname = string(ind)
             #read varname from jld file and assign recovered variable to recovered_sol_i
-            recovered_sol_i = load(filename, varname)
+            recovered_sol_i = load(ephfile, varname)
             #check that recovered variable is equal to original variable
             @show recovered_sol_i == sol[ind]
         end

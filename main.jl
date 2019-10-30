@@ -1,5 +1,5 @@
 #Multi-threaded:
-#JULIA_NUM_THREADS=8 julia --project=@. main.jl
+#JULIA_NUM_THREADS=<number-of-threads> julia --project=@. main.jl
 #Single-threaded:
 #julia --project=@. main.jl
 using PlanetaryEphemeris
@@ -20,10 +20,13 @@ PlanetaryEphemeris.propagate(1, t0, nyears, output=false, dense=dense, dynamics=
 println("*** Finished warmup")
 
 PlanetaryEphemeris.propagate(2, t0, nyears, output=false, dense=dense, dynamics=dynamics)
-println("*** Finished 2nd warmup")
+println("*** Finished 2 steps")
 
 PlanetaryEphemeris.propagate(3, t0, nyears, output=false, dense=dense, dynamics=dynamics)
-println("*** Finished 3rd warmup")
+println("*** Finished 3 steps")
+
+PlanetaryEphemeris.propagate(3, t0, nyears, dense=dense, dynamics=dynamics)
+println("*** Finished 3 steps with output file")
 
 #PlanetaryEphemeris.propagate(maxsteps, t0, nyears, dense=dense, dynamics=dynamics)
 #println("*** Finished full integration")
