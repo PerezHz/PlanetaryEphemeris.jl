@@ -154,7 +154,7 @@ const μ = [0.0002959122082855911, 4.91248045036476e-11, 7.24345233264412e-10, #
 3.3629754927610390E-16, # 909 Ulla
 3.3620465420887160E-16, # 134 Sophrosyne
 3.3407005297045190E-16, # 481 Emita
-3.27280000000000E-16, # 46 Hestia
+3.2728000000000000E-16, # 46 Hestia
 3.2624933794345620E-16, # 334 Chicago
 3.2284000000000000E-16, # 469 Argentina
 3.1316732532224060E-16, # 140 Siwa
@@ -377,7 +377,7 @@ const μ = [0.0002959122082855911, 4.91248045036476e-11, 7.24345233264412e-10, #
 1.4497976797693290E-17, # 623 Chimaera
 1.3196141221701560E-17, # 132 Aethra
 1.1716991540679400E-17, # 585 Bilkis
-9.9000011897959020E-19 # 433 Eros
+9.9000011897959020E-19  # 433 Eros
 ]
 
 ast343_ids =
@@ -436,7 +436,7 @@ const Λ3 = zeros(N)
 
 # Matrix of J2 interactions included in DE430 ephemeris, according to Folkner et al., 2014
 const UJ_interaction = fill(false, N, N)
-UJ_interaction[2:end, su] .= true # Sun's J2 interacts with everyone else
+UJ_interaction[2:10, su] .= true # per Folkner et al. (2014), Section III, 1st paragraph: Sun's J2 only interacts with the Moon and planets
 UJ_interaction[union(1:ea-1,ea+1:7), ea] .= true # Earth's grav potential interacts with Sun, Mercury, Venus, Moon, Mars and Jupiter
 UJ_interaction[union(1:mo-1,mo+1:7), mo] .= true # Moon's grav potential interacts with Sun, Mercury, Venus, Earth, Mars and Jupiter
 
