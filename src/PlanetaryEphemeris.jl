@@ -426,6 +426,8 @@ const Λ2 = zeros(N)
 Λ2[ea] = 1.9679542578489185e-12
 Λ2[mo] = 2.7428745500623694e-14
 
+const dJ2E_norm = (-2.60e-11)/0.00108262545 # (dJ2E/dt)/J2E [yr^-1], from Folkner et al. (2014), Table 10
+
 # vector of J3*R^3 values
 const Λ3 = zeros(N)
 Λ3[ea] = -1.962633335678878e-19

@@ -170,6 +170,7 @@
     local M_[:,:,ea] = t2c_jpl_de430(dsj2k)
     local M_[:,:,su] = pole_rotation( αs, δs )
     local M_[:,:,mo] = pole_rotation( αm, δm )
+    local dJ2E_temp = (one(t)+(dJ2E_norm*dsj2k))
 
     for j in _1_to_N
         newtonX[j] = zero_q_1
@@ -253,7 +254,11 @@
                     ∂P_2_sin_ϕ[i,j] = 3sin_ϕ[i,j]
                     P_3_sin_ϕ[i,j] = (-1.5sin_ϕ[i,j]) + (2.5sin3_ϕ[i,j])
                     ∂P_3_sin_ϕ[i,j] = -1.5 + 7.5sin2_ϕ[i,j]
-                    Λ2j_div_r4[i,j] = (-Λ2[j])/(r_p2[i,j]^2)
+                    if j == ea
+                        Λ2j_div_r4[i,j] = ((-Λ2[j])*dJ2E_temp)/(r_p2[i,j]^2)
+                    else
+                        Λ2j_div_r4[i,j] = (-Λ2[j])/(r_p2[i,j]^2)
+                    end
                     Λ3j_div_r5[i,j] = (-Λ3[j])/(r_p1d2[i,j]^5)
                     m_c_ϕ_∂P_2[i,j] = (-cos_ϕ[i,j])*∂P_2_sin_ϕ[i,j]
                     m_c_ϕ_∂P_3[i,j] = (-cos_ϕ[i,j])*∂P_3_sin_ϕ[i,j]
@@ -603,6 +608,7 @@ end
     local M_[:,:,ea] = t2c_jpl_de430(dsj2k)
     local M_[:,:,su] = pole_rotation( αs, δs )
     local M_[:,:,mo] = pole_rotation( αm, δm )
+    local dJ2E_temp = (one(t)+(dJ2E_norm*dsj2k))
 
     Threads.@threads for j in _1_to_N
         newtonX[j] = zero_q_1
@@ -686,7 +692,11 @@ end
                     ∂P_2_sin_ϕ[i,j] = 3sin_ϕ[i,j]
                     P_3_sin_ϕ[i,j] = (-1.5sin_ϕ[i,j]) + (2.5sin3_ϕ[i,j])
                     ∂P_3_sin_ϕ[i,j] = -1.5 + 7.5sin2_ϕ[i,j]
-                    Λ2j_div_r4[i,j] = (-Λ2[j])/(r_p2[i,j]^2)
+                    if j == ea
+                        Λ2j_div_r4[i,j] = ((-Λ2[j])*dJ2E_temp)/(r_p2[i,j]^2)
+                    else
+                        Λ2j_div_r4[i,j] = (-Λ2[j])/(r_p2[i,j]^2)
+                    end
                     Λ3j_div_r5[i,j] = (-Λ3[j])/(r_p1d2[i,j]^5)
                     m_c_ϕ_∂P_2[i,j] = (-cos_ϕ[i,j])*∂P_2_sin_ϕ[i,j]
                     m_c_ϕ_∂P_3[i,j] = (-cos_ϕ[i,j])*∂P_3_sin_ϕ[i,j]
