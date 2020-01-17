@@ -274,7 +274,6 @@ function WGCCRE2006_moon_E13(d)
 end
 
 function moon_pole_ra(d)
-
     ans = 269.9949+0.0031d/36525
     ans += -3.8787sin(WGCCRE2006_moon_E1(d))
     ans += -0.1204sin(WGCCRE2006_moon_E2(d))
@@ -287,7 +286,6 @@ function moon_pole_ra(d)
 end
 
 function moon_pole_dec(d)
-
     ans = 66.5392+0.013d/36525
     ans +=  1.5419cos(WGCCRE2006_moon_E1(d))
     ans +=  0.0239cos(WGCCRE2006_moon_E2(d))
@@ -297,12 +295,10 @@ function moon_pole_dec(d)
     ans +=  0.0009cos(WGCCRE2006_moon_E7(d))
     ans +=  0.0008cos(WGCCRE2006_moon_E10(d))
     ans += -0.0009cos(WGCCRE2006_moon_E13(d))
-
     return deg2rad(ans)
 end
 
 function moon_pole_w(d)
-
     ans = 38.3213+13.17635815d-1.4E-12d^2
     ans += 3.5610sin(WGCCRE2006_moon_E1(d))
     ans += 0.1208sin(WGCCRE2006_moon_E2(d))
@@ -317,6 +313,31 @@ function moon_pole_w(d)
     ans += +0.0040sin(WGCCRE2006_moon_E11(d))
     ans += +0.0019sin(WGCCRE2006_moon_E12(d))
     ans += -0.0044sin(WGCCRE2006_moon_E13(d))
-
     return deg2rad(ans)
+end
+
+#Moon orientation Euler angles (ϕ, θ, ψ) as a function of days since J2000.0
+function moon_euler_angles(d)
+    return (pi/2+moon_pole_ra(d), pi/2-moon_pole_dec(d), moon_pole_w(d))
+end
+
+function moon_omega(d::Taylor1)
+    ϕ, θ, ψ = moon_euler_angles(d)
+    dϕ = differentiate(ϕ)
+    dθ = differentiate(θ)
+    dψ = differentiate(ψ)
+    ωx = dϕ*sin(θ)*sin(ψ)+dθ*cos(ψ)
+    ωy = dϕ*sin(θ)*cos(ψ)-dθ*sin(ψ)
+    ωz = dψ+dϕ*cos(θ)
+    return [ωx, ωy, ωz]
+end
+
+#first term of time-dependent part of lunar total moment of inertia (without scalar factor)
+function ITM1()
+    return 0
+end
+
+#second term of time-dependent part of lunar total moment of inertia (without scalar factor)
+function ITM2()
+    return 0
 end

@@ -169,7 +169,7 @@
     local M_ = Array{Taylor1{S}}(undef, 3, 3, N)
     local M_[:,:,ea] = t2c_jpl_de430(dsj2k)
     local M_[:,:,su] = pole_rotation( αs, δs )
-    local M_[:,:,mo] = pole_rotation( αm, δm )
+    local M_[:,:,mo] = ( Rz(deg2rad(67.573/60))*Ry(deg2rad(78.580/60))*Rx(deg2rad(0.285/60)) )*pole_rotation( αm, δm )
     local dJ2E_temp = (one(t)+(dJ2E_norm*dsj2k))
 
     for j in _1_to_N
@@ -606,8 +606,8 @@ end
     local δm = moon_pole_dec(dsj2k)
     local M_ = Array{Taylor1{S}}(undef, 3, 3, N)
     local M_[:,:,ea] = t2c_jpl_de430(dsj2k)
-    local M_[:,:,su] = pole_rotation( αs, δs )
-    local M_[:,:,mo] = pole_rotation( αm, δm )
+    local M_[:,:,su] = pole_rotation(αs, δs)
+    local M_[:,:,mo] = ( Rz(deg2rad(67.573/60))*Ry(deg2rad(78.580/60))*Rx(deg2rad(0.285/60)) )*pole_rotation(αm, δm) # first three rotations represent the MER,430->PA,430 correction (Folkner et al., 2014, eq. 19)
     local dJ2E_temp = (one(t)+(dJ2E_norm*dsj2k))
 
     Threads.@threads for j in _1_to_N

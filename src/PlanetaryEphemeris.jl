@@ -459,6 +459,21 @@ const R_sun = 696000.0/au # Solar radius in au, value taken from DE430 docs
 const α_p_sun = 286.13 # Sun's rotation pole right ascension (degrees)
 const δ_p_sun = 63.87 # Sun's rotation pole declination (degrees)
 
+const R_moon = 1738.0/au # lunar radius in au, value taken from DE430 docs
+const β_L = 6.3102131934887270E-04 # Lunar moment parameter, β_L = (C_T-A_T)/B_T
+const γ_L = 2.2773171480091860E-04 # Lunar moment parameter, γ_L = (B_T-A_T)/C_T
+const k_2M = 0.024059 # potential Love number
+const τ_M = 9.5830547273306690E-02 # time-lag for the lunar solid-body tide (days)
+const J2_M_und = 2.0321568464952570E-04 # undistorted lunar 2nd zonal harmonic coefficient
+
+#diagonal elements of undistorted lunar moment of inertia
+const A_T = 2(1-β_L*γ_L)*J2_M_und/(2β_L-γ_L+β_L*γ_L)
+const B_T = 2(1+γ_L)*J2_M_und/(2β_L-γ_L+β_L*γ_L)
+const C_T = 2(1+β_L)*J2_M_und/(2β_L-γ_L+β_L*γ_L)
+
+const ld = 384402.0 # Lunar distance (km)
+const n_moon = sqrt((μ[4]+μ[5])/((ld/au)^3)) # lunar mean motion (rad/day)
+
 function __init__()
     @show length(methods(TaylorIntegration.jetcoeffs!))
     @show methods(NBP_pN_A_J23E_J23M_J2S!)
