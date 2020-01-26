@@ -9,7 +9,9 @@ export au, yr, sundofs, earthdofs,
     su, ea, mo, Λ2, Λ3, au, yr, daysec,
     c_au_per_day, c_au_per_sec, c_cm_per_sec,
     J2000, R_sun, α_p_sun, δ_p_sun, au,
-    UJ_interaction
+    UJ_interaction, de430_343ast_ids, Rx, Ry, Rz,
+    dJ2E_norm, ITM_und, ITM1, ITM2, R_moon, τ_M, k_2M,
+    JSEM, CM, SM, n1SEM, n2M
 
 using TaylorIntegration, LinearAlgebra
 using Printf
@@ -380,7 +382,7 @@ const μ = [0.0002959122082855911, 4.91248045036476e-11, 7.24345233264412e-10, #
 9.9000011897959020E-19  # 433 Eros
 ]
 
-ast343_ids =
+de430_343ast_ids =
     [1, 4, 2, 10, 31, 704, 511, 15, 3, 16,
     65, 88, 48, 52, 451, 87, 7, 423, 29, 24,
     13, 790, 372, 107, 354, 96, 386, 39, 324, 11,
@@ -459,6 +461,96 @@ const R_sun = 696000.0/au # Solar radius in au, value taken from DE430 docs
 const α_p_sun = 286.13 # Sun's rotation pole right ascension (degrees)
 const δ_p_sun = 63.87 # Sun's rotation pole declination (degrees)
 
+const RSUN  = 6.9600000000000000E+05
+const J2SUN = 2.1106088532726840E-07
+const JS = [J2SUN*(RSUN/au)^2]
+
+const RE     =  6.378136300E+03
+const J2E    =  1.082625450E-03
+const J3E    = -2.532410000E-06
+const J4E    = -1.619898000E-06
+const J5E    = -2.277345000E-07
+const J2EDOT = -2.600000000E-11
+const JE = [J2E*(RE/au)^2, J3E*(RE/au)^3, J4E*(RE/au)^4, J5E*(RE/au)^5]
+
+const RM = 1.7380000000000000E+03
+const J2M  =  2.0321568464952570E-04
+const J3M  =  8.4597026974594570E-06
+const J4M  = -9.7044138365700000E-06
+const J5M  =  7.4221608384052890E-07
+const J6M  = -1.3767531350969900E-05
+const JM = [J2M*(RM/au)^2, J3M*(RM/au)^3, J4M*(RM/au)^4, J5M*(RM/au)^5, J6M*(RM/au)^6]
+
+const JSEM = zeros(5, 6)
+JSEM[su,2:2] = JS
+JSEM[ea,2:5] = JE
+JSEM[mo,2:6] = JM
+
+const n1SEM = [2, 0, 0, 5, 6]
+const n2M = 6
+
+const C22M =  2.2382900680455860E-05
+
+const C31M =  2.8480741195592860E-05
+const S31M =  5.8915551555318640E-06
+const C32M =  4.8449420619770600E-06
+const S32M =  1.6844743962783900E-06
+const C33M =  1.6756178134114570E-06
+const S33M = -2.4742714379805760E-07
+const C3M = [C31M, C32M, C33M]*(RM/au)^3
+const S3M = [S31M, S32M, S33M]*(RM/au)^3
+
+const C41M = -5.7048697319733210E-06
+const S41M =  1.5789202789245720E-06
+const C42M = -1.5912271792977430E-06
+const S42M = -1.5153915796731720E-06
+const C43M = -8.0678881596778210E-08
+const S43M = -8.0349266627431070E-07
+const C44M = -1.2692158612216040E-07
+const S44M =  8.2964257754075220E-08
+const C4M = [C41M, C42M, C43M, C44M]*(RM/au)^4
+const S4M = [S41M, S42M, S43M, S44M]*(RM/au)^4
+
+const C51M = -8.6629769308983560E-07
+const S51M = -3.5272289393243820E-06
+const C52M =  7.1199537967353330E-07
+const S52M =  1.7107886673430380E-07
+const C53M =  1.5399750424904520E-08
+const S53M =  2.8736257616334340E-07
+const C54M =  2.1444704319218450E-08
+const S54M =  5.2652110720146800E-10
+const C55M =  7.6596153884006140E-09
+const S55M = -6.7824035473995330E-09
+const C5M = [C51M, C52M, C53M, C54M, C55M]*(RM/au)^5
+const S5M = [S51M, S52M, S53M, S54M, S55M]*(RM/au)^5
+
+const C61M =  1.2024363601545920E-06
+const S61M = -2.0453507141252220E-06
+const C62M = -5.4703897324156850E-07
+const S62M = -2.6966834353574270E-07
+const C63M = -6.8785612757292010E-08
+const S63M = -7.1063745295915780E-08
+const C64M =  1.2915580402925160E-09
+const S64M = -1.5361616966632300E-08
+const C65M =  1.1737698784460500E-09
+const S65M = -8.3465073195142520E-09
+const C66M = -1.0913395178881540E-09
+const S66M =  1.6844213702632920E-09
+const C6M = [C61M, C62M, C63M, C64M, C65M, C66M]*(RM/au)^6
+const S6M = [S61M, S62M, S63M, S64M, S65M, S66M]*(RM/au)^6
+
+const CM = zeros(6, 6)
+CM[3,1:3] = C3M
+CM[4,1:4] = C4M
+CM[5,1:5] = C5M
+CM[6,1:6] = C6M
+
+const SM = zeros(6, 6)
+SM[3,1:3] = S3M
+SM[4,1:4] = S4M
+SM[5,1:5] = S5M
+SM[6,1:6] = S6M
+
 const R_moon = 1738.0/au # lunar radius in au, value taken from DE430 docs
 const β_L = 6.3102131934887270E-04 # Lunar moment parameter, β_L = (C_T-A_T)/B_T
 const γ_L = 2.2773171480091860E-04 # Lunar moment parameter, γ_L = (B_T-A_T)/C_T
@@ -467,12 +559,15 @@ const τ_M = 9.5830547273306690E-02 # time-lag for the lunar solid-body tide (da
 const J2_M_und = 2.0321568464952570E-04 # undistorted lunar 2nd zonal harmonic coefficient
 
 #diagonal elements of undistorted lunar moment of inertia
-const A_T = 2(1-β_L*γ_L)*J2_M_und/(2β_L-γ_L+β_L*γ_L)
-const B_T = 2(1+γ_L)*J2_M_und/(2β_L-γ_L+β_L*γ_L)
-const C_T = 2(1+β_L)*J2_M_und/(2β_L-γ_L+β_L*γ_L)
+const A_T = (2(1-β_L*γ_L)/(2β_L-γ_L+β_L*γ_L))*J2_M_und
+const B_T = (2(1+γ_L)/(2β_L-γ_L+β_L*γ_L))*J2_M_und
+const C_T = (2(1+β_L)/(2β_L-γ_L+β_L*γ_L))*J2_M_und
+
+#lunar undistorted total moment of inertia
+const ITM_und = diagm([A_T, B_T, C_T]*μ[mo]*R_moon^2)
 
 const ld = 384402.0 # Lunar distance (km)
-const n_moon = sqrt((μ[4]+μ[5])/((ld/au)^3)) # lunar mean motion (rad/day)
+const n_moon = sqrt((μ[ea]+μ[mo])/((ld/au)^3)) # lunar mean motion (rad/day)
 
 function __init__()
     @show length(methods(TaylorIntegration.jetcoeffs!))

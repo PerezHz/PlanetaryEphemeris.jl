@@ -7,7 +7,7 @@
 # an estimated linear correction and on a modified IAU 1980 nutation model \* including
 # only terms with a period of 18.6 years.
 
-export moon_pole_ra, moon_pole_dec, t2c_jpl_de430, c2t_jpl_de430,
+export moon_pole_ra, moon_pole_dec, moon_pole_w, t2c_jpl_de430, c2t_jpl_de430,
     pole_rotation
 
 # The mean longitude of the ascending node of the lunar orbit measured on the ecliptic
@@ -18,6 +18,7 @@ export moon_pole_ra, moon_pole_dec, t2c_jpl_de430, c2t_jpl_de430,
 # where `t` is the TDB time in Julian days from J2000.0. The nutations in longitude
 # $\Delta \psi$ and obliquity $\Delta \epsilon$ are given by
 
+#(these expressions coincide with Moyer, 2003, eq. 5-190, page 5-72)
 Delta_psi(t) = deg2rad( (-17.1996/3600)*sin(Ω(t)) )
 Delta_epsilon(t) = deg2rad( (9.2025/3600)*cos(Ω(t)) )
 
@@ -41,7 +42,7 @@ end
 
 ϵ̄(t) = deg2rad( (84381.448/3600)-(46.815/3600)*(t/36525)-(0.00059/3600)*(t/36525)^2+(0.001813/3600)*(t/36525)^3 )
 
-# The pole unit vector in the intertial frame $\vec p_\mathrm{E}$ is computed by
+# The pole unit vector in the inertial frame $\vec p_\mathrm{E}$ is computed by
 # precessing the pole of date with an estimated linear correction,
 
 function pole_frame(t)
@@ -159,21 +160,11 @@ function pole_radec(t)
     return pole_ra, pole_dec
 end
 
-# rotation from inertial frame to frame with pole at right ascension α and declination δ
-function pole_rotation(α::T, δ::T) where {T <: Number}
-    m = Matrix{T}(undef, 3, 3)
-    # diagonal terms
-    m[1,1] = sin(α)^2 + sin(δ)*(cos(α)^2)
-    m[2,2] = cos(α)^2 + sin(δ)*(sin(α)^2)
-    m[3,3] = sin(δ)
-    # off-diagonal terms
-    m[1,2] = cos(α)*sin(α)*(-1+sin(δ))
-    m[3,1] = -cos(δ)*cos(α)
-    m[3,2] = -cos(δ)*sin(α)
-    m[2,1] = m[1,2]
-    m[1,3] = -m[3,1]
-    m[2,3] = -m[3,2]
-    return m
+# rotation from inertial frame to frame with pole at right ascension α, declination δ and prime meridian at W
+# taken from matrix A in Moyer (2003), eq. 6-3 (page 6-5)
+# note that rotation matrices (Rx, Ry, Rz) convention is the same as in Folkner et al. (2014)
+function pole_rotation(α::T, δ::T, W::T=zero(α)) where {T <: Number}
+    return Rz(W)*Rx(π/2-δ)*Rz(π/2+α)
 end
 
 # rotation matrix from inertial frame to Earth pole at time t (days) since J2000.0
@@ -207,9 +198,9 @@ end
 
 # celestial-to-terrestrial vector transformation, JPL DE 430/431 Earth orientation model
 function c2t_jpl_de430(t)
-    P_iau7680 = Rz(-zeta(t))*Ry(Theta(t))*Rz(-Zeta(t))
+    P_iau7680 = Rz(-zeta(t))*Ry(Theta(t))*Rz(-Zeta(t)) # Moyer (2003), eq. 5-147 (page 5-59)
     corrections = Ry(phi_y(t))*Rx(phi_x(t))
-    N_iau80 = nutation_iau80(t)
+    N_iau80 = nutation_iau80(t) # Moyer (2003), eq. 5-152 (page 5-60)
     return N_iau80*corrections*P_iau7680
 end
 
@@ -332,12 +323,45 @@ function moon_omega(d::Taylor1)
     return [ωx, ωy, ωz]
 end
 
-#first term of time-dependent part of lunar total moment of inertia (without scalar factor)
-function ITM1()
-    return 0
+#first term of time-dependent part of lunar total moment of inertia (Folkner et al., 2014, eq. 41, 1st term)
+function ITM1(x::T, dx::T, y::T, dy::T, z::T, dz::T) where {T <: Number}
+    # evaluate lunar geocentric position at time t-τ_M
+    xd = x-dx*τ_M # x(t-τ_M)
+    yd = y-dy*τ_M # y(t-τ_M)
+    zd = z-dz*τ_M # z(t-τ_M)
+    rd2 = xd^2+yd^2+zd^2 # r(t-τ_M)^2
+    rd5 = rd2^2.5 # r(t-τ_M)^5
+    # compute corresponding matrix elements
+    m = Matrix{T}(undef, 3, 3)
+    m[1,1] = xd^2-rd2/3
+    m[2,2] = yd^2-rd2/3
+    m[3,3] = zd^2-rd2/3
+    m[1,2] = xd*yd
+    m[2,1] = m[1,2]
+    m[1,3] = xd*zd
+    m[3,1] = m[1,3]
+    m[2,3] = yd*zd
+    m[3,2] = m[2,3]
+    return (-(k_2M*μ[ea]*R_moon^5)/rd5)*m
 end
 
-#second term of time-dependent part of lunar total moment of inertia (without scalar factor)
-function ITM2()
-    return 0
+#second term of time-dependent part of lunar total moment of inertia (Folkner et al., 2014, eq. 41, 2nd term)
+function ITM2(d::T) where {T <: Number}
+    m = Matrix{T}(undef, 3, 3)
+    ω = moon_omega(d-τ_M)
+    ωx2 = ω[1]*ω[1]
+    ωy2 = ω[2]*ω[2]
+    ωz2 = ω[3]*ω[3]
+    ω2 = ωx2+ωy2+ωz2
+    aux = -(ω2-n_moon^2)/3
+    m[1,1] = ωx2-aux
+    m[2,2] = ωy2-aux
+    m[3,3] = ωz2-(ω2+2n_moon^2)/3
+    m[1,2] = ω[1]*ω[2]
+    m[2,1] = m[1,2]
+    m[1,3] = ω[1]*ω[3]
+    m[3,1] = m[1,3]
+    m[2,3] = ω[2]*ω[3]
+    m[3,2] = m[2,3]
+    return ((k_2M*R_moon^5)/3)*m
 end
