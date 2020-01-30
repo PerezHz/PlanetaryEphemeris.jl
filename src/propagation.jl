@@ -1,18 +1,25 @@
-function propagate(maxsteps::Int, t0::T, tspan::T;
+function propagate(maxsteps::Int, t0::T, tspan::T, eulangfile::String;
         output::Bool=true, dense::Bool=false, ephfile::String="sseph.jld",
-        dynamics::Function=NBP_pN_A_J23E_J23M_J2S!) where {T<:Real}
+        dynamics::Function=NBP_pN_A_J23E_J23M_J2S!, nast::Int=343) where {T<:Real}
 
     # get initial conditions
-    q0 = initialcond(length(μ))
+    q0 = initialcond(11+nast)
+
+    # load DE430 lunar Euler angles Taylor ephemeris
+    # eulang = load(eulangfile, "eulang")
+    eulang_t = load(eulangfile, "t")
+    eulang_x = load(eulangfile, "x")
+    eulang = TaylorInterpolant(eulang_t, eulang_x)
+    params = eulang
 
     @show tmax = t0+tspan*yr #final time of integration
 
     # do integration
     if dense
-        @time interp = taylorinteg(dynamics, q0, t0, tmax, order, abstol, maxsteps=maxsteps, dense=dense)
+        @time interp = taylorinteg(dynamics, q0, t0, tmax, order, abstol, params, maxsteps=maxsteps, dense=dense)
         sol = (t=interp.t[:], x=interp.x[:,:])
     else
-        @time t, x = taylorinteg(dynamics, q0, t0, tmax, order, abstol, maxsteps=maxsteps, dense=dense)
+        @time t, x = taylorinteg(dynamics, q0, t0, tmax, order, abstol, params, maxsteps=maxsteps, dense=dense)
         sol = (t=t[:], x=x[:,:])
     end
 

@@ -9,6 +9,8 @@
 # - Kinematic model for the precession and nutation of the Earth's orientation (IAU 1976/1980 Earth orientation model)
 # - Kinematic model for the Moons's orientation (Seidelmann et al., 2006)
 @taylorize function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
+    local eulang_t = params(t)
+    local eulang_t_del = params(t-τ_M)
     local S = eltype(q[1])
     local N = Int((length(q))/6) # number of bodies
     local _1_to_N = Base.OneTo(N) # iterator over all bodies
@@ -92,6 +94,15 @@
     postNewtonZ = Array{Taylor1{S}}(undef, N, postnewton_iter+1)
 
     # (Jn, Cmn, Smn) acceleration auxiliaries
+    X_bf_1 = Array{Taylor1{S}}(undef, N, N)
+    Y_bf_1 = Array{Taylor1{S}}(undef, N, N)
+    Z_bf_1 = Array{Taylor1{S}}(undef, N, N)
+    X_bf_2 = Array{Taylor1{S}}(undef, N, N)
+    Y_bf_2 = Array{Taylor1{S}}(undef, N, N)
+    Z_bf_2 = Array{Taylor1{S}}(undef, N, N)
+    X_bf_3 = Array{Taylor1{S}}(undef, N, N)
+    Y_bf_3 = Array{Taylor1{S}}(undef, N, N)
+    Z_bf_3 = Array{Taylor1{S}}(undef, N, N)
     X_bf = Array{Taylor1{S}}(undef, N, N)
     Y_bf = Array{Taylor1{S}}(undef, N, N)
     Z_bf = Array{Taylor1{S}}(undef, N, N)
@@ -116,6 +127,8 @@
     F_CS_ξ_36 = Array{Taylor1{S}}(undef, N, N)
     F_CS_η_36 = Array{Taylor1{S}}(undef, N, N)
     F_CS_ζ_36 = Array{Taylor1{S}}(undef, N, N)
+    F_J_ξ_36 = Array{Taylor1{S}}(undef, N, N)
+    F_J_ζ_36 = Array{Taylor1{S}}(undef, N, N)
     sin_mλ = Array{Taylor1{S}}(undef, N, N, n1SEM[mo])
     cos_mλ = Array{Taylor1{S}}(undef, N, N, n1SEM[mo])
     secϕ_P_nm = Array{Taylor1{S}}(undef, N, N, n1SEM[mo]+1, n1SEM[mo]+1)
@@ -133,6 +146,12 @@
     ξx = Array{Taylor1{S}}(undef, N, N)
     ξy = Array{Taylor1{S}}(undef, N, N)
     ξz = Array{Taylor1{S}}(undef, N, N)
+    ηx_1 = Array{Taylor1{S}}(undef, N, N)
+    ηy_1 = Array{Taylor1{S}}(undef, N, N)
+    ηz_1 = Array{Taylor1{S}}(undef, N, N)
+    ηx_2 = Array{Taylor1{S}}(undef, N, N)
+    ηy_2 = Array{Taylor1{S}}(undef, N, N)
+    ηz_2 = Array{Taylor1{S}}(undef, N, N)
     ηx = Array{Taylor1{S}}(undef, N, N)
     ηy = Array{Taylor1{S}}(undef, N, N)
     ηz = Array{Taylor1{S}}(undef, N, N)
@@ -149,19 +168,17 @@
     local dsj2k = t-2.451545e6 # J2000.0 = 2.451545e6
     local αs = deg2rad(α_p_sun*one(t))
     local δs = deg2rad(δ_p_sun*one(t))
-    local αm = moon_pole_ra(dsj2k)
-    local δm = moon_pole_dec(dsj2k)
-    local Wm = moon_pole_w(dsj2k)
+    local αm = eulang_t[1] - (pi/2)
+    local δm = (pi/2) - eulang_t[2]
+    local Wm = eulang_t[3]
     local M_ = Array{Taylor1{S}}(undef, 3, 3, N)
     local M_[:,:,ea] = c2t_jpl_de430(dsj2k)
     local M_[:,:,su] = pole_rotation(αs, δs)
-    # space-fixed to moon PA frame: first three rotations represent the MER,430->PA,430 correction (Folkner et al., 2014, eq. 19)
-    #local M_[:,:,mo] = ( Rz(deg2rad(67.573/60))*Ry(deg2rad(78.580/60))*Rx(deg2rad(0.285/60)) )*pole_rotation(αm, δm, Wm)
-    local M_[:,:,mo] = pole_rotation(αm, δm, Wm) # Earth position (sometimes) behaves better without MER->PA corrections
+    local M_[:,:,mo] = pole_rotation(αm, δm, Wm)
     local dJ2E_temp = (one(t)+(dJ2E_norm*dsj2k)) #one_t
     ITM_t = Array{Taylor1{S}}(undef, 3, 3)
     ITM2_t = Array{Taylor1{S}}(undef, 3, 3)
-    local ITM2_t = ITM_und + ITM2(dsj2k) #*one(t)
+    local ITM2_t = ITM_und + ITM2(eulang_t_del[1], eulang_t_del[2], eulang_t_del[3]) #*one(t)
     local fact_num = -4.5257273867882326e-36 # == -k_2M*μ[ea]*(R_moon^5)
     local fact1_jsem = [(2n-1)/n for n in 1:maximum(n1SEM)]
     local fact2_jsem = [(n-1)/n for n in 1:maximum(n1SEM)]
@@ -175,7 +192,6 @@
     local lnm5 = [2n-1 for n in 1:6]
     local lnm6 = [-(n+1) for n in 1:6]
     local lnm7 = [m for m in 1:6]
-    # TODO: implement 6th order Cnm Snm interactions (Moon)
     # TODO: solve differences between parsed and non-parsed
     local J2E_t = JSEM[ea,2]*dJ2E_temp
     local J2S_t = JSEM[su,2]*one_t
@@ -294,9 +310,18 @@
                 #Jn, Cnm, Snm accelerations, if j-th body is flattened
                 if UJ_interaction[i,j]
                     # # rotate from inertial frame to extended-body frame
-                    X_bf[i,j] = ((X[i,j]*M_[1,1,j])+(Y[i,j]*M_[1,2,j]))+(Z[i,j]*M_[1,3,j]) # x-coordinate in body-fixed frame
-                    Y_bf[i,j] = ((X[i,j]*M_[2,1,j])+(Y[i,j]*M_[2,2,j]))+(Z[i,j]*M_[2,3,j]) # y-coordinate in body-fixed frame
-                    Z_bf[i,j] = ((X[i,j]*M_[3,1,j])+(Y[i,j]*M_[3,2,j]))+(Z[i,j]*M_[3,3,j]) # z-coordinate in body-fixed frame
+                    X_bf_1[i,j] = X[i,j]*M_[1,1,j]
+                    Y_bf_1[i,j] = X[i,j]*M_[2,1,j]
+                    Z_bf_1[i,j] = X[i,j]*M_[3,1,j]
+                    X_bf_2[i,j] = Y[i,j]*M_[1,2,j]
+                    Y_bf_2[i,j] = Y[i,j]*M_[2,2,j]
+                    Z_bf_2[i,j] = Y[i,j]*M_[3,2,j]
+                    X_bf_3[i,j] = Z[i,j]*M_[1,3,j]
+                    Y_bf_3[i,j] = Z[i,j]*M_[2,3,j]
+                    Z_bf_3[i,j] = Z[i,j]*M_[3,3,j]
+                    X_bf[i,j] = (X_bf_1[i,j] + X_bf_2[i,j]) + (X_bf_3[i,j]) # x-coordinate in body-fixed frame
+                    Y_bf[i,j] = (Y_bf_1[i,j] + Y_bf_2[i,j]) + (Y_bf_3[i,j]) # y-coordinate in body-fixed frame
+                    Z_bf[i,j] = (Z_bf_1[i,j] + Z_bf_2[i,j]) + (Z_bf_3[i,j]) # z-coordinate in body-fixed frame
 
                     # compute cartesian coordinates of acceleration due to body figure in body frame
                     sin_ϕ[i,j] = Z_bf[i,j]/r_p1d2[i,j] # Moyer (1971), eq. (165)
@@ -308,36 +333,31 @@
                     P_n[i,j,2] = sin_ϕ[i,j]
                     dP_n[i,j,1] = zero_q_1
                     dP_n[i,j,2] = one_t
-                    F_J_ξ[i,j] = zero_q_1
-                    F_J_ζ[i,j] = zero_q_1
-                    r_p4[i,j] = r_p2[i,j]^2
                     for n in 2:n1SEM[j] #min(3,n1SEM[j])
                         P_n[i,j,n+1] = ((P_n[i,j,n]*sin_ϕ[i,j])*fact1_jsem[n]) - (P_n[i,j,n-1]*fact2_jsem[n])
                         dP_n[i,j,n+1] = (dP_n[i,j,n]*sin_ϕ[i,j]) + (P_n[i,j,n]*fact3_jsem[n])
-                        temp_np1 = P_n[i,j,n+1]*fact4_jsem[n]
-                        temp_np3 = (-dP_n[i,j,n+1])*cos_ϕ[i,j]
-                        if n == 2
-                            if j == mo
-                                temp_np2 = temp_np1*J2M_t
-                                temp_np4 = temp_np3*J2M_t
-                            else
-                                if j == ea
-                                    temp_np2 = temp_np1*J2E_t
-                                    temp_np4 = temp_np3*J2E_t
-                                else
-                                    temp_np2 = temp_np1*J2S_t
-                                    temp_np4 = temp_np3*J2S_t
-                                end
-                            end
-                        else
-                            temp_np2 = temp_np1*JSEM[j,n]
-                            temp_np4 = temp_np3*JSEM[j,n]
-                        end
                         temp_rn[i,j,n] = r_p1d2[i,j]^fact5_jsem[n]
-                        temp_fjξ[i,j,n] = (temp_np2/temp_rn[i,j,n]) + F_J_ξ[i,j]
-                        temp_fjζ[i,j,n] = (temp_np4/temp_rn[i,j,n]) + F_J_ζ[i,j]
-                        F_J_ξ[i,j] = temp_fjξ[i,j,n]
-                        F_J_ζ[i,j] = temp_fjζ[i,j,n]
+                    end
+                    r_p4[i,j] = r_p2[i,j]^2
+                    if j == mo
+                        F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2M_t)/r_p4[i,j]
+                        F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2M_t)/r_p4[i,j]
+                    end
+                    if j == ea
+                        F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2E_t)/r_p4[i,j]
+                        F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2E_t)/r_p4[i,j]
+                    end
+                    if j == su
+                        F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2S_t)/r_p4[i,j]
+                        F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2S_t)/r_p4[i,j]
+                    end
+                    F_J_ξ_36[i,j] = zero_q_1
+                    F_J_ζ_36[i,j] = zero_q_1
+                    for n in 3:n1SEM[j] #min(3,n1SEM[j])
+                        temp_fjξ[i,j,n] = (((P_n[i,j,n+1]*fact4_jsem[n])*JSEM[j,n])/temp_rn[i,j,n]) + F_J_ξ_36[i,j]
+                        temp_fjζ[i,j,n] = ((((-dP_n[i,j,n+1])*cos_ϕ[i,j])*JSEM[j,n])/temp_rn[i,j,n]) + F_J_ζ_36[i,j]
+                        F_J_ξ_36[i,j] = temp_fjξ[i,j,n]
+                        F_J_ζ_36[i,j] = temp_fjζ[i,j,n]
                     end
 
                     # Moon: compute accelerations due to tesseral harmonics C_{nm}, S_{nm}
@@ -375,21 +395,21 @@
                         F_CS_ζ_36[i,j] = zero_q_1
                         for n in 3:n1SEM[mo]
                             for m in 1:n
-                                temp_CS_ξ = ((P_nm[i,j,n,m]*lnm6[n])*((cos_mλ[i,j,m]*CM[n,m])+(sin_mλ[i,j,m]*SM[m,n])))/temp_rn[i,j,n] + F_CS_ξ_36[i,j]
-                                temp_CS_η = ((secϕ_P_nm[i,j,n,m]*lnm7[m])*((cos_mλ[i,j,m]*SM[n,m])-(sin_mλ[i,j,m]*CM[m,n])))/temp_rn[i,j,n] + F_CS_η_36[i,j]
-                                temp_CS_ζ = (((cosϕ_dP_nm[i,j,n,m])*((cos_mλ[i,j,m]*CM[n,m])+(sin_mλ[i,j,m]*SM[m,n])))/temp_rn[i,j,n]) + F_CS_ζ_36[i,j]
+                                temp_CS_ξ = ((P_nm[i,j,n,m]*lnm6[n])*((cos_mλ[i,j,m]*CM[n,m])+(sin_mλ[i,j,m]*SM[n,m])))/temp_rn[i,j,n] + F_CS_ξ_36[i,j]
+                                temp_CS_η = ((secϕ_P_nm[i,j,n,m]*lnm7[m])*((cos_mλ[i,j,m]*SM[n,m])-(sin_mλ[i,j,m]*CM[n,m])))/temp_rn[i,j,n] + F_CS_η_36[i,j]
+                                temp_CS_ζ = (((cosϕ_dP_nm[i,j,n,m])*((cos_mλ[i,j,m]*CM[n,m])+(sin_mλ[i,j,m]*SM[n,m])))/temp_rn[i,j,n]) + F_CS_ζ_36[i,j]
                                 F_CS_ξ_36[i,j] = temp_CS_ξ
                                 F_CS_η_36[i,j] = temp_CS_η
                                 F_CS_ζ_36[i,j] = temp_CS_ζ
                             end
                         end
-                        F_JCS_ξ[i,j] = (F_J_ξ[i,j]) + (F_CS_ξ[i,j]+F_CS_ξ_36[i,j])
+                        F_JCS_ξ[i,j] = (F_J_ξ[i,j] + F_J_ξ_36[i,j]) + (F_CS_ξ[i,j]+F_CS_ξ_36[i,j])
                         F_JCS_η[i,j] = (F_CS_η[i,j]+F_CS_η_36[i,j])
-                        F_JCS_ζ[i,j] = (F_J_ζ[i,j]) + (F_CS_ζ[i,j]+F_CS_ζ_36[i,j])
+                        F_JCS_ζ[i,j] = (F_J_ζ[i,j] + F_J_ζ_36[i,j]) + (F_CS_ζ[i,j]+F_CS_ζ_36[i,j])
                     else
-                        F_JCS_ξ[i,j] = F_J_ξ[i,j]
+                        F_JCS_ξ[i,j] = (F_J_ξ[i,j] + F_J_ξ_36[i,j])
                         F_JCS_η[i,j] = zero_q_1
-                        F_JCS_ζ[i,j] = F_J_ζ[i,j]
+                        F_JCS_ζ[i,j] = (F_J_ζ[i,j] + F_J_ζ_36[i,j])
                     end
 
                     #Compute unit vectors ξ,η,ζ
@@ -398,9 +418,15 @@
                     ξy[i,j] = Y[i,j]/r_p1d2[i,j]
                     ξz[i,j] = Z[i,j]/r_p1d2[i,j]
                     #Compute η = p x ξ, where p is the unit pole of body in space-fixed coords
-                    ηx[i,j] = (M_[3,2,j]*ξz[i,j]) - (M_[3,3,j]*ξy[i,j])
-                    ηy[i,j] = (M_[3,3,j]*ξx[i,j]) - (M_[3,1,j]*ξz[i,j])
-                    ηz[i,j] = (M_[3,1,j]*ξy[i,j]) - (M_[3,2,j]*ξx[i,j])
+                    ηx_1[i,j] = M_[3,2,j]*ξz[i,j]
+                    ηy_1[i,j] = M_[3,3,j]*ξx[i,j]
+                    ηz_1[i,j] = M_[3,1,j]*ξy[i,j]
+                    ηx_2[i,j] = M_[3,3,j]*ξy[i,j]
+                    ηy_2[i,j] = M_[3,1,j]*ξz[i,j]
+                    ηz_2[i,j] = M_[3,2,j]*ξx[i,j]
+                    ηx[i,j] = ηx_1[i,j] - ηx_2[i,j]
+                    ηy[i,j] = ηy_1[i,j] - ηy_2[i,j]
+                    ηz[i,j] = ηz_1[i,j] - ηz_2[i,j]
                     #Compute ζ = ξ x η
                     ζx[i,j] = (ξy[i,j]*ηz[i,j]) - (ξz[i,j]*ηy[i,j])
                     ζy[i,j] = (ξz[i,j]*ηx[i,j]) - (ξx[i,j]*ηz[i,j])
@@ -536,6 +562,8 @@
 end
 
 @taylorize function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
+    local eulang_t = params(t)
+    local eulang_t_del = params(t-τ_M)
     local S = eltype(q[1])
     local N = Int((length(q))/6) # number of bodies
     local _1_to_N = Base.OneTo(N) # iterator over all bodies
@@ -619,6 +647,15 @@ end
     postNewtonZ = Array{Taylor1{S}}(undef, N, postnewton_iter+1)
 
     # (Jn, Cmn, Smn) acceleration auxiliaries
+    X_bf_1 = Array{Taylor1{S}}(undef, N, N)
+    Y_bf_1 = Array{Taylor1{S}}(undef, N, N)
+    Z_bf_1 = Array{Taylor1{S}}(undef, N, N)
+    X_bf_2 = Array{Taylor1{S}}(undef, N, N)
+    Y_bf_2 = Array{Taylor1{S}}(undef, N, N)
+    Z_bf_2 = Array{Taylor1{S}}(undef, N, N)
+    X_bf_3 = Array{Taylor1{S}}(undef, N, N)
+    Y_bf_3 = Array{Taylor1{S}}(undef, N, N)
+    Z_bf_3 = Array{Taylor1{S}}(undef, N, N)
     X_bf = Array{Taylor1{S}}(undef, N, N)
     Y_bf = Array{Taylor1{S}}(undef, N, N)
     Z_bf = Array{Taylor1{S}}(undef, N, N)
@@ -643,6 +680,8 @@ end
     F_CS_ξ_36 = Array{Taylor1{S}}(undef, N, N)
     F_CS_η_36 = Array{Taylor1{S}}(undef, N, N)
     F_CS_ζ_36 = Array{Taylor1{S}}(undef, N, N)
+    F_J_ξ_36 = Array{Taylor1{S}}(undef, N, N)
+    F_J_ζ_36 = Array{Taylor1{S}}(undef, N, N)
     sin_mλ = Array{Taylor1{S}}(undef, N, N, n1SEM[mo])
     cos_mλ = Array{Taylor1{S}}(undef, N, N, n1SEM[mo])
     secϕ_P_nm = Array{Taylor1{S}}(undef, N, N, n1SEM[mo]+1, n1SEM[mo]+1)
@@ -660,6 +699,12 @@ end
     ξx = Array{Taylor1{S}}(undef, N, N)
     ξy = Array{Taylor1{S}}(undef, N, N)
     ξz = Array{Taylor1{S}}(undef, N, N)
+    ηx_1 = Array{Taylor1{S}}(undef, N, N)
+    ηy_1 = Array{Taylor1{S}}(undef, N, N)
+    ηz_1 = Array{Taylor1{S}}(undef, N, N)
+    ηx_2 = Array{Taylor1{S}}(undef, N, N)
+    ηy_2 = Array{Taylor1{S}}(undef, N, N)
+    ηz_2 = Array{Taylor1{S}}(undef, N, N)
     ηx = Array{Taylor1{S}}(undef, N, N)
     ηy = Array{Taylor1{S}}(undef, N, N)
     ηz = Array{Taylor1{S}}(undef, N, N)
@@ -676,19 +721,17 @@ end
     local dsj2k = t-2.451545e6 # J2000.0 = 2.451545e6
     local αs = deg2rad(α_p_sun*one(t))
     local δs = deg2rad(δ_p_sun*one(t))
-    local αm = moon_pole_ra(dsj2k)
-    local δm = moon_pole_dec(dsj2k)
-    local Wm = moon_pole_w(dsj2k)
+    local αm = eulang_t[1] - (pi/2)
+    local δm = (pi/2) - eulang_t[2]
+    local Wm = eulang_t[3]
     local M_ = Array{Taylor1{S}}(undef, 3, 3, N)
     local M_[:,:,ea] = c2t_jpl_de430(dsj2k)
     local M_[:,:,su] = pole_rotation(αs, δs)
-    # space-fixed to moon PA frame: first three rotations represent the MER,430->PA,430 correction (Folkner et al., 2014, eq. 19)
-    #local M_[:,:,mo] = ( Rz(deg2rad(67.573/60))*Ry(deg2rad(78.580/60))*Rx(deg2rad(0.285/60)) )*pole_rotation(αm, δm, Wm)
-    local M_[:,:,mo] = pole_rotation(αm, δm, Wm) # Earth position (sometimes) behaves better without MER->PA corrections
+    local M_[:,:,mo] = pole_rotation(αm, δm, Wm)
     local dJ2E_temp = (one(t)+(dJ2E_norm*dsj2k)) #one_t
     ITM_t = Array{Taylor1{S}}(undef, 3, 3)
     ITM2_t = Array{Taylor1{S}}(undef, 3, 3)
-    local ITM2_t = ITM_und + ITM2(dsj2k) #*one(t)
+    local ITM2_t = ITM_und + ITM2(eulang_t_del[1], eulang_t_del[2], eulang_t_del[3]) #*one(t)
     local fact_num = -4.5257273867882326e-36 # == -k_2M*μ[ea]*(R_moon^5)
     local fact1_jsem = [(2n-1)/n for n in 1:maximum(n1SEM)]
     local fact2_jsem = [(n-1)/n for n in 1:maximum(n1SEM)]
@@ -702,7 +745,6 @@ end
     local lnm5 = [2n-1 for n in 1:6]
     local lnm6 = [-(n+1) for n in 1:6]
     local lnm7 = [m for m in 1:6]
-    # TODO: implement 6th order Cnm Snm interactions (Moon)
     # TODO: solve differences between parsed and non-parsed
     local J2E_t = JSEM[ea,2]*dJ2E_temp
     local J2S_t = JSEM[su,2]*one_t
@@ -821,9 +863,18 @@ end
                 #Jn, Cnm, Snm accelerations, if j-th body is flattened
                 if UJ_interaction[i,j]
                     # # rotate from inertial frame to extended-body frame
-                    X_bf[i,j] = ((X[i,j]*M_[1,1,j])+(Y[i,j]*M_[1,2,j]))+(Z[i,j]*M_[1,3,j]) # x-coordinate in body-fixed frame
-                    Y_bf[i,j] = ((X[i,j]*M_[2,1,j])+(Y[i,j]*M_[2,2,j]))+(Z[i,j]*M_[2,3,j]) # y-coordinate in body-fixed frame
-                    Z_bf[i,j] = ((X[i,j]*M_[3,1,j])+(Y[i,j]*M_[3,2,j]))+(Z[i,j]*M_[3,3,j]) # z-coordinate in body-fixed frame
+                    X_bf_1[i,j] = X[i,j]*M_[1,1,j]
+                    Y_bf_1[i,j] = X[i,j]*M_[2,1,j]
+                    Z_bf_1[i,j] = X[i,j]*M_[3,1,j]
+                    X_bf_2[i,j] = Y[i,j]*M_[1,2,j]
+                    Y_bf_2[i,j] = Y[i,j]*M_[2,2,j]
+                    Z_bf_2[i,j] = Y[i,j]*M_[3,2,j]
+                    X_bf_3[i,j] = Z[i,j]*M_[1,3,j]
+                    Y_bf_3[i,j] = Z[i,j]*M_[2,3,j]
+                    Z_bf_3[i,j] = Z[i,j]*M_[3,3,j]
+                    X_bf[i,j] = (X_bf_1[i,j] + X_bf_2[i,j]) + (X_bf_3[i,j]) # x-coordinate in body-fixed frame
+                    Y_bf[i,j] = (Y_bf_1[i,j] + Y_bf_2[i,j]) + (Y_bf_3[i,j]) # y-coordinate in body-fixed frame
+                    Z_bf[i,j] = (Z_bf_1[i,j] + Z_bf_2[i,j]) + (Z_bf_3[i,j]) # z-coordinate in body-fixed frame
 
                     # compute cartesian coordinates of acceleration due to body figure in body frame
                     sin_ϕ[i,j] = Z_bf[i,j]/r_p1d2[i,j] # Moyer (1971), eq. (165)
@@ -835,36 +886,31 @@ end
                     P_n[i,j,2] = sin_ϕ[i,j]
                     dP_n[i,j,1] = zero_q_1
                     dP_n[i,j,2] = one_t
-                    F_J_ξ[i,j] = zero_q_1
-                    F_J_ζ[i,j] = zero_q_1
-                    r_p4[i,j] = r_p2[i,j]^2
                     for n in 2:n1SEM[j] #min(3,n1SEM[j])
                         P_n[i,j,n+1] = ((P_n[i,j,n]*sin_ϕ[i,j])*fact1_jsem[n]) - (P_n[i,j,n-1]*fact2_jsem[n])
                         dP_n[i,j,n+1] = (dP_n[i,j,n]*sin_ϕ[i,j]) + (P_n[i,j,n]*fact3_jsem[n])
-                        temp_np1 = P_n[i,j,n+1]*fact4_jsem[n]
-                        temp_np3 = (-dP_n[i,j,n+1])*cos_ϕ[i,j]
-                        if n == 2
-                            if j == mo
-                                temp_np2 = temp_np1*J2M_t
-                                temp_np4 = temp_np3*J2M_t
-                            else
-                                if j == ea
-                                    temp_np2 = temp_np1*J2E_t
-                                    temp_np4 = temp_np3*J2E_t
-                                else
-                                    temp_np2 = temp_np1*J2S_t
-                                    temp_np4 = temp_np3*J2S_t
-                                end
-                            end
-                        else
-                            temp_np2 = temp_np1*JSEM[j,n]
-                            temp_np4 = temp_np3*JSEM[j,n]
-                        end
                         temp_rn[i,j,n] = r_p1d2[i,j]^fact5_jsem[n]
-                        temp_fjξ[i,j,n] = (temp_np2/temp_rn[i,j,n]) + F_J_ξ[i,j]
-                        temp_fjζ[i,j,n] = (temp_np4/temp_rn[i,j,n]) + F_J_ζ[i,j]
-                        F_J_ξ[i,j] = temp_fjξ[i,j,n]
-                        F_J_ζ[i,j] = temp_fjζ[i,j,n]
+                    end
+                    r_p4[i,j] = r_p2[i,j]^2
+                    if j == mo
+                        F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2M_t)/r_p4[i,j]
+                        F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2M_t)/r_p4[i,j]
+                    end
+                    if j == ea
+                        F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2E_t)/r_p4[i,j]
+                        F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2E_t)/r_p4[i,j]
+                    end
+                    if j == su
+                        F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2S_t)/r_p4[i,j]
+                        F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2S_t)/r_p4[i,j]
+                    end
+                    F_J_ξ_36[i,j] = zero_q_1
+                    F_J_ζ_36[i,j] = zero_q_1
+                    for n in 3:n1SEM[j] #min(3,n1SEM[j])
+                        temp_fjξ[i,j,n] = (((P_n[i,j,n+1]*fact4_jsem[n])*JSEM[j,n])/temp_rn[i,j,n]) + F_J_ξ_36[i,j]
+                        temp_fjζ[i,j,n] = ((((-dP_n[i,j,n+1])*cos_ϕ[i,j])*JSEM[j,n])/temp_rn[i,j,n]) + F_J_ζ_36[i,j]
+                        F_J_ξ_36[i,j] = temp_fjξ[i,j,n]
+                        F_J_ζ_36[i,j] = temp_fjζ[i,j,n]
                     end
 
                     # Moon: compute accelerations due to tesseral harmonics C_{nm}, S_{nm}
@@ -902,21 +948,21 @@ end
                         F_CS_ζ_36[i,j] = zero_q_1
                         for n in 3:n1SEM[mo]
                             for m in 1:n
-                                temp_CS_ξ = ((P_nm[i,j,n,m]*lnm6[n])*((cos_mλ[i,j,m]*CM[n,m])+(sin_mλ[i,j,m]*SM[m,n])))/temp_rn[i,j,n] + F_CS_ξ_36[i,j]
-                                temp_CS_η = ((secϕ_P_nm[i,j,n,m]*lnm7[m])*((cos_mλ[i,j,m]*SM[n,m])-(sin_mλ[i,j,m]*CM[m,n])))/temp_rn[i,j,n] + F_CS_η_36[i,j]
-                                temp_CS_ζ = (((cosϕ_dP_nm[i,j,n,m])*((cos_mλ[i,j,m]*CM[n,m])+(sin_mλ[i,j,m]*SM[m,n])))/temp_rn[i,j,n]) + F_CS_ζ_36[i,j]
+                                temp_CS_ξ = ((P_nm[i,j,n,m]*lnm6[n])*((cos_mλ[i,j,m]*CM[n,m])+(sin_mλ[i,j,m]*SM[n,m])))/temp_rn[i,j,n] + F_CS_ξ_36[i,j]
+                                temp_CS_η = ((secϕ_P_nm[i,j,n,m]*lnm7[m])*((cos_mλ[i,j,m]*SM[n,m])-(sin_mλ[i,j,m]*CM[n,m])))/temp_rn[i,j,n] + F_CS_η_36[i,j]
+                                temp_CS_ζ = (((cosϕ_dP_nm[i,j,n,m])*((cos_mλ[i,j,m]*CM[n,m])+(sin_mλ[i,j,m]*SM[n,m])))/temp_rn[i,j,n]) + F_CS_ζ_36[i,j]
                                 F_CS_ξ_36[i,j] = temp_CS_ξ
                                 F_CS_η_36[i,j] = temp_CS_η
                                 F_CS_ζ_36[i,j] = temp_CS_ζ
                             end
                         end
-                        F_JCS_ξ[i,j] = (F_J_ξ[i,j]) + (F_CS_ξ[i,j]+F_CS_ξ_36[i,j])
+                        F_JCS_ξ[i,j] = (F_J_ξ[i,j] + F_J_ξ_36[i,j]) + (F_CS_ξ[i,j]+F_CS_ξ_36[i,j])
                         F_JCS_η[i,j] = (F_CS_η[i,j]+F_CS_η_36[i,j])
-                        F_JCS_ζ[i,j] = (F_J_ζ[i,j]) + (F_CS_ζ[i,j]+F_CS_ζ_36[i,j])
+                        F_JCS_ζ[i,j] = (F_J_ζ[i,j] + F_J_ζ_36[i,j]) + (F_CS_ζ[i,j]+F_CS_ζ_36[i,j])
                     else
-                        F_JCS_ξ[i,j] = F_J_ξ[i,j]
+                        F_JCS_ξ[i,j] = (F_J_ξ[i,j] + F_J_ξ_36[i,j])
                         F_JCS_η[i,j] = zero_q_1
-                        F_JCS_ζ[i,j] = F_J_ζ[i,j]
+                        F_JCS_ζ[i,j] = (F_J_ζ[i,j] + F_J_ζ_36[i,j])
                     end
 
                     #Compute unit vectors ξ,η,ζ
@@ -925,9 +971,15 @@ end
                     ξy[i,j] = Y[i,j]/r_p1d2[i,j]
                     ξz[i,j] = Z[i,j]/r_p1d2[i,j]
                     #Compute η = p x ξ, where p is the unit pole of body in space-fixed coords
-                    ηx[i,j] = (M_[3,2,j]*ξz[i,j]) - (M_[3,3,j]*ξy[i,j])
-                    ηy[i,j] = (M_[3,3,j]*ξx[i,j]) - (M_[3,1,j]*ξz[i,j])
-                    ηz[i,j] = (M_[3,1,j]*ξy[i,j]) - (M_[3,2,j]*ξx[i,j])
+                    ηx_1[i,j] = M_[3,2,j]*ξz[i,j]
+                    ηy_1[i,j] = M_[3,3,j]*ξx[i,j]
+                    ηz_1[i,j] = M_[3,1,j]*ξy[i,j]
+                    ηx_2[i,j] = M_[3,3,j]*ξy[i,j]
+                    ηy_2[i,j] = M_[3,1,j]*ξz[i,j]
+                    ηz_2[i,j] = M_[3,2,j]*ξx[i,j]
+                    ηx[i,j] = ηx_1[i,j] - ηx_2[i,j]
+                    ηy[i,j] = ηy_1[i,j] - ηy_2[i,j]
+                    ηz[i,j] = ηz_1[i,j] - ηz_2[i,j]
                     #Compute ζ = ξ x η
                     ζx[i,j] = (ξy[i,j]*ηz[i,j]) - (ξz[i,j]*ηy[i,j])
                     ζy[i,j] = (ξz[i,j]*ηx[i,j]) - (ξx[i,j]*ηz[i,j])
