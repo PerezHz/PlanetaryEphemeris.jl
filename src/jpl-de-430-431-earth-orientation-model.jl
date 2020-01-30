@@ -7,8 +7,7 @@
 # an estimated linear correction and on a modified IAU 1980 nutation model \* including
 # only terms with a period of 18.6 years.
 
-export moon_pole_ra, moon_pole_dec, moon_pole_w, t2c_jpl_de430, c2t_jpl_de430,
-    pole_rotation
+export t2c_jpl_de430, c2t_jpl_de430, pole_rotation
 
 # The mean longitude of the ascending node of the lunar orbit measured on the ecliptic
 # plane from the mean equinox of date is calculated by
@@ -179,6 +178,7 @@ end
 # Δψ (rad): nutation in longitude
 # ϵ (rad): mean obliquity
 # ϵ0 (rad): true obliquity of date
+# same as Eq. (5-152) in Moyer, 2003
 function nutation_iau80(t)
     ϵ0 = ϵ̄(t)
     Δϵ = Delta_epsilon(t)
@@ -204,116 +204,7 @@ function c2t_jpl_de430(t)
     return N_iau80*corrections*P_iau7680
 end
 
-# The following was taken from "Report of the IAU/IAG Working Group", Seidelmann et. al, 2006
-#
-# Recommended values for the direction of the north pole of rotation and the
-# prime meridian of the satellites
-#
-# d = interval in days from the standard epoch (J2000.0)
-# T = interval in Julian centuries (of 36,525 days) from the standard epoch
-
-function WGCCRE2006_moon_E1(d)
-    return deg2rad(125.045-0.0529921d)
-end
-
-function WGCCRE2006_moon_E2(d)
-    return deg2rad(250.089-0.1059842d)
-end
-
-function WGCCRE2006_moon_E3(d)
-    return deg2rad(260.008+13.0120009d)
-end
-
-function WGCCRE2006_moon_E4(d)
-    return deg2rad(176.625+13.3407154d)
-end
-
-function WGCCRE2006_moon_E5(d)
-    return deg2rad(357.529+0.9856003d)
-end
-
-function WGCCRE2006_moon_E6(d)
-    return deg2rad(311.589+26.4057084d)
-end
-
-function WGCCRE2006_moon_E7(d)
-    return deg2rad(134.963+13.0649930d)
-end
-
-function WGCCRE2006_moon_E8(d)
-    return deg2rad(276.617+0.3287146d)
-end
-
-function WGCCRE2006_moon_E9(d)
-    return deg2rad(34.226+1.7484877d)
-end
-
-function WGCCRE2006_moon_E10(d)
-    return deg2rad(15.134-0.1589763d)
-end
-
-function WGCCRE2006_moon_E11(d)
-    return deg2rad(119.743+0.0036096d)
-end
-
-function WGCCRE2006_moon_E12(d)
-    return deg2rad(239.961+0.1643573d)
-end
-
-function WGCCRE2006_moon_E13(d)
-    return deg2rad(25.053+12.9590088d)
-end
-
-function moon_pole_ra(d)
-    ans = 269.9949+0.0031d/36525
-    ans += -3.8787sin(WGCCRE2006_moon_E1(d))
-    ans += -0.1204sin(WGCCRE2006_moon_E2(d))
-    ans +=  0.0700sin(WGCCRE2006_moon_E3(d))
-    ans += -0.0172sin(WGCCRE2006_moon_E4(d))
-    ans +=  0.0072sin(WGCCRE2006_moon_E6(d))
-    ans += -0.0052sin(WGCCRE2006_moon_E10(d))
-    ans +=  0.0043sin(WGCCRE2006_moon_E13(d))
-    return deg2rad(ans)
-end
-
-function moon_pole_dec(d)
-    ans = 66.5392+0.013d/36525
-    ans +=  1.5419cos(WGCCRE2006_moon_E1(d))
-    ans +=  0.0239cos(WGCCRE2006_moon_E2(d))
-    ans += -0.0278cos(WGCCRE2006_moon_E3(d))
-    ans +=  0.0068cos(WGCCRE2006_moon_E4(d))
-    ans += -0.0029cos(WGCCRE2006_moon_E6(d))
-    ans +=  0.0009cos(WGCCRE2006_moon_E7(d))
-    ans +=  0.0008cos(WGCCRE2006_moon_E10(d))
-    ans += -0.0009cos(WGCCRE2006_moon_E13(d))
-    return deg2rad(ans)
-end
-
-function moon_pole_w(d)
-    ans = 38.3213+13.17635815d-1.4E-12d^2
-    ans += 3.5610sin(WGCCRE2006_moon_E1(d))
-    ans += 0.1208sin(WGCCRE2006_moon_E2(d))
-    ans += -0.0642sin(WGCCRE2006_moon_E3(d))
-    ans += +0.0158sin(WGCCRE2006_moon_E4(d))
-    ans += +0.0252sin(WGCCRE2006_moon_E5(d))
-    ans += -0.0066sin(WGCCRE2006_moon_E6(d))
-    ans += -0.0047sin(WGCCRE2006_moon_E7(d))
-    ans += -0.0046sin(WGCCRE2006_moon_E8(d))
-    ans += +0.0028sin(WGCCRE2006_moon_E9(d))
-    ans += +0.0052sin(WGCCRE2006_moon_E10(d))
-    ans += +0.0040sin(WGCCRE2006_moon_E11(d))
-    ans += +0.0019sin(WGCCRE2006_moon_E12(d))
-    ans += -0.0044sin(WGCCRE2006_moon_E13(d))
-    return deg2rad(ans)
-end
-
-#Moon orientation Euler angles (ϕ, θ, ψ) as a function of days since J2000.0
-function moon_euler_angles(d)
-    return (pi/2+moon_pole_ra(d), pi/2-moon_pole_dec(d), moon_pole_w(d))
-end
-
-function moon_omega(d::Taylor1)
-    ϕ, θ, ψ = moon_euler_angles(d)
+function moon_omega(ϕ::Taylor1, θ::Taylor1, ψ::Taylor1)
     dϕ = differentiate(ϕ)
     dθ = differentiate(θ)
     dψ = differentiate(ψ)
@@ -346,14 +237,15 @@ function ITM1(x::T, dx::T, y::T, dy::T, z::T, dz::T) where {T <: Number}
 end
 
 #second term of time-dependent part of lunar total moment of inertia (Folkner et al., 2014, eq. 41, 2nd term)
-function ITM2(d::T) where {T <: Number}
+# note: Euler angles must be evaluated at time `t-τ_M`
+function ITM2(ϕ::T, θ::T, ψ::T) where {T <: Number}
     m = Matrix{T}(undef, 3, 3)
-    ω = moon_omega(d-τ_M)
+    ω = moon_omega(ϕ, θ, ψ)
     ωx2 = ω[1]*ω[1]
     ωy2 = ω[2]*ω[2]
     ωz2 = ω[3]*ω[3]
     ω2 = ωx2+ωy2+ωz2
-    aux = -(ω2-n_moon^2)/3
+    aux = (ω2-n_moon^2)/3
     m[1,1] = ωx2-aux
     m[2,2] = ωy2-aux
     m[3,3] = ωz2-(ω2+2n_moon^2)/3
