@@ -54,8 +54,8 @@ end
 
 # where
 
-phi_x(t) = deg2rad( (phi_x0 + 100*(t/36525)*Dt_phi_x)/3600 )
-phi_y(t) = deg2rad( (phi_y0 + 100*(t/36525)*Dt_phi_y)/3600 )
+phi_x(t) = deg2rad( (phi_x0 + (t/yr)*Dt_phi_x)/3600 )
+phi_y(t) = deg2rad( (phi_y0 + (t/yr)*Dt_phi_y)/3600 )
 
 phi_x0 = 5.6754203322893470E-03 #x-axis rotation at J2000.0 (arcseconds)
 phi_y0 = -1.7022656914989530E-02 #y-axis rotation at J2000.0 (arcseconds)
@@ -70,7 +70,7 @@ Dt_phi_y = -1.2118591216559240E-03 #Precession rate correction times sine of obl
 # zeta = t -> deg2rad( (2306.2181/3600)*(t/36525)+(1.09468/3600)*(t/36525)^2+(0.018203/3600)*(t/36525)^3 )
 
 function Zeta(t)
-    t_cy = t/36525
+    t_cy = t/(100yr)
     Zeta_arcsec = 0.017998*t_cy
     Zeta_arcsec = (0.30188 + Zeta_arcsec)*t_cy
     Zeta_arcsec = (2306.2181 + Zeta_arcsec)*t_cy
@@ -78,7 +78,7 @@ function Zeta(t)
 end
 
 function Theta(t)
-    t_cy = t/36525
+    t_cy = t/(100yr)
     Theta_arcsec = -0.041833*t_cy
     Theta_arcsec = (-0.42665 + Theta_arcsec)*t_cy
     Theta_arcsec = (2004.3109 + Theta_arcsec)*t_cy
@@ -86,7 +86,7 @@ function Theta(t)
 end
 
 function zeta(t)
-    t_cy = t/36525
+    t_cy = t/(100yr)
     zeta_arcsec = 0.018203*t_cy
     zeta_arcsec = (1.09468 + zeta_arcsec)*t_cy
     zeta_arcsec = (2306.2181 + zeta_arcsec)*t_cy
@@ -187,21 +187,22 @@ function nutation_iau80(t)
     return Rx(-ϵ)*Rz(-Δψ)*Rx(ϵ0)
 end
 
-# terrestrial-to-celestial vector transformation, JPL DE 430/431 Earth orientation model
+# terrestrial-to-celestial coordinate transformation, JPL DE 430/431 Earth orientation model
 function t2c_jpl_de430(t)
-    inv_P_iau7680 = Rz(Zeta(t))*Ry(-Theta(t))*Rz(zeta(t))
-    corrections = Rx(-phi_x(t))*Ry(-phi_y(t))
-    # inv_N_iau80 = inv(nutation_iau80(t))
-    inv_N_iau80 = transpose(nutation_iau80(t))
-    return inv_P_iau7680*corrections*inv_N_iau80
+    # inv_P_iau7680 = Rz(Zeta(t))*Ry(-Theta(t))*Rz(zeta(t))
+    # corrections = Rx(-phi_x(t))*Ry(-phi_y(t))
+    # # inv_N_iau80 = inv(nutation_iau80(t))
+    # inv_N_iau80 = transpose(nutation_iau80(t))
+    # return inv_P_iau7680*corrections*inv_N_iau80 #corrections*inv_P_iau7680*inv_N_iau80
+    return transpose(c2t_jpl_de430(t))
 end
 
-# celestial-to-terrestrial vector transformation, JPL DE 430/431 Earth orientation model
+# celestial-to-terrestrial coordinate transformation, JPL DE 430/431 Earth orientation model
 function c2t_jpl_de430(t)
     P_iau7680 = Rz(-zeta(t))*Ry(Theta(t))*Rz(-Zeta(t)) # Moyer (2003), eq. 5-147 (page 5-59)
     corrections = Ry(phi_y(t))*Rx(phi_x(t))
     N_iau80 = nutation_iau80(t) # Moyer (2003), eq. 5-152 (page 5-60)
-    return N_iau80*corrections*P_iau7680
+    return N_iau80*P_iau7680*corrections
 end
 
 function moon_omega(ϕ::Taylor1, θ::Taylor1, ψ::Taylor1)
