@@ -1,6 +1,6 @@
 module PlanetaryEphemeris
 
-__precompile__(false)
+# __precompile__(false)
 
 export au, yr, sundofs, earthdofs,
     c_au_per_day, μ, NBP_pN_A_J23E_J23M_J2S!,
@@ -11,7 +11,7 @@ export au, yr, sundofs, earthdofs,
     J2000, R_sun, α_p_sun, δ_p_sun, au,
     UJ_interaction, de430_343ast_ids, Rx, Ry, Rz,
     dJ2E_norm, ITM_und, ITM1, ITM2, R_moon, τ_M, k_2M,
-    JSEM, CM, SM, n1SEM, n2M
+    JSEM, CM, SM, n1SEM, n2M, J2E, J2EDOT, RE
 
 using TaylorIntegration, LinearAlgebra
 using Printf
@@ -29,13 +29,19 @@ const ea = 4 #Earth's index
 const mo = 5 #Moon's index
 
 # vector of G*m values
+GM1 = 0.491248045036476000E-10 # Mercury
+GM2 = 0.724345233264412000E-09 # Venus
+GM3 = 0.888769244512563400E-09 # Earth
+GM4 = 0.954954869555077000E-10 # Mars
+GM5 = 0.282534584083387000E-06 # Jupiter
+GM6 = 0.845970607324503000E-07 # Saturn
+GM7 = 0.129202482578296000E-07 # Uranus
+GM8 = 0.152435734788511000E-07 # Neptune
+GM9 = 0.217844105197418000E-11 # Pluto
+GMS = 0.295912208285591100E-03 # Sun
+GMM = 0.109318945074237400E-10 # Moon
 
-const μ = [0.0002959122082855911, 4.91248045036476e-11, 7.24345233264412e-10, # Sun, Mercury, Venus
-8.887692445125634e-10, 1.093189450742374e-11, 9.54954869555077e-11, # Earth, Moon, Mars
-2.82534584083387e-7, 8.45970607324503e-8, 1.29202482578296e-8, # Jupiter, Saturn, Uranus
-1.52435734788511e-8, # Neptune
-
-2.17844105197418e-12, # Pluto
+const μ = [GMS, GM1, GM2, GM3, GMM, GM4, GM5, GM6, GM7, GM8, GM9,
 
 1.4004765561723440E-13, # 1 Ceres
 3.8547501878088100E-14, # 4 Vesta
@@ -441,6 +447,7 @@ const Λ3 = zeros(N)
 # Matrix of J2 interactions included in DE430 ephemeris, according to Folkner et al., 2014
 const UJ_interaction = fill(false, N, N)
 UJ_interaction[2:10, su] .= true # per Folkner et al. (2014), Section III, 1st paragraph: Sun's J2 only interacts with the Moon and planets
+# UJ_interaction[2:end, su] .= true # per Folkner et al. (2014), Section III, 1st paragraph: Sun's J2 only interacts with the Moon and planets
 UJ_interaction[union(1:ea-1,ea+1:7), ea] .= true # Earth's grav potential interacts with Sun, Mercury, Venus, Moon, Mars and Jupiter
 UJ_interaction[union(1:mo-1,mo+1:7), mo] .= true # Moon's grav potential interacts with Sun, Mercury, Venus, Earth, Mars and Jupiter
 
@@ -551,7 +558,7 @@ SM[4,1:4] = S4M
 SM[5,1:5] = S5M
 SM[6,1:6] = S6M
 
-const R_moon = 1738.0/au # lunar radius in au, value taken from DE430 docs
+const R_moon = RM/au # lunar radius in au, value taken from DE430 docs
 const β_L = 6.3102131934887270E-04 # Lunar moment parameter, β_L = (C_T-A_T)/B_T
 const γ_L = 2.2773171480091860E-04 # Lunar moment parameter, γ_L = (B_T-A_T)/C_T
 const k_2M = 0.024059 # potential Love number
