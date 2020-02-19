@@ -303,7 +303,7 @@ version = "1.0.0"
 
 [[TaylorIntegration]]
 deps = ["AutoHashEquals", "DataStructures", "DiffEqBase", "Espresso", "LinearAlgebra", "Markdown", "Reexport", "Requires", "TaylorSeries"]
-git-tree-sha1 = "66e60bd4dfd057fd540db4159fe8f889e0f5111a"
+git-tree-sha1 = "751d73feb918c0a678a47a61772f588bae36732a"
 repo-rev = "jp/interpolation_threads_fix96"
 repo-url = "https://github.com/PerezHz/TaylorIntegration.jl.git"
 uuid = "92b13dbe-c966-51a2-8445-caca9f8a7d42"
