@@ -78,9 +78,9 @@ uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 
 [[DiffEqBase]]
 deps = ["ArrayInterface", "ChainRulesCore", "Compat", "DataStructures", "Distributed", "DocStringExtensions", "FunctionWrappers", "IterativeSolvers", "IteratorInterfaceExtensions", "LinearAlgebra", "MuladdMacro", "Parameters", "Printf", "RecipesBase", "RecursiveArrayTools", "RecursiveFactorization", "Requires", "Roots", "SparseArrays", "StaticArrays", "Statistics", "SuiteSparse", "TableTraits", "TreeViews", "ZygoteRules"]
-git-tree-sha1 = "ecc97a06c978b5b84acbbe574c7d9beae7a73a89"
+git-tree-sha1 = "bac85af923e848aaaf7ad0035ec3a820adcc217c"
 uuid = "2b5f629d-d688-5b77-993f-72d75c75574e"
-version = "6.16.0"
+version = "6.17.3"
 
 [[Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
@@ -302,9 +302,9 @@ uuid = "3783bdb8-4a98-5b6b-af9a-565f29a5fe9c"
 version = "1.0.0"
 
 [[TaylorIntegration]]
-deps = ["AutoHashEquals", "DataStructures", "DiffEqBase", "Espresso", "LinearAlgebra", "Markdown", "Reexport", "Requires", "TaylorSeries"]
-git-tree-sha1 = "751d73feb918c0a678a47a61772f588bae36732a"
-repo-rev = "jp/interpolation_threads_fix96"
+deps = ["AutoHashEquals", "DataStructures", "DiffEqBase", "Espresso", "InteractiveUtils", "LinearAlgebra", "Markdown", "Reexport", "Requires", "TaylorSeries"]
+git-tree-sha1 = "38cf61856ed671f2e0dd1cd2e89d0bf03278f1ee"
+repo-rev = "jp/interpolation_threads"
 repo-url = "https://github.com/PerezHz/TaylorIntegration.jl.git"
 uuid = "92b13dbe-c966-51a2-8445-caca9f8a7d42"
 version = "0.8.0"
