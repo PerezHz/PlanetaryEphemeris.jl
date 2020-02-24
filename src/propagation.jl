@@ -2,15 +2,19 @@ function propagate(maxsteps::Int, t0::T, tspan::T, eulangfile::String;
         output::Bool=true, dense::Bool=false, ephfile::String="sseph.jld",
         dynamics::Function=NBP_pN_A_J23E_J23M_J2S!, nast::Int=343) where {T<:Real}
 
+    # total number of bodies
+    N = 11+nast
     # get initial conditions
     q0 = initialcond(11+nast)
-
+    # auxiliary variable
+    S = eltype(q0)
     # load DE430 lunar Euler angles Taylor ephemeris
     # eulang = load(eulangfile, "eulang")
     eulang_t = load(eulangfile, "t")
     eulang_x = load(eulangfile, "x")
     eulang = TaylorInterpolant(eulang_t, eulang_x)
-    params = eulang
+
+    params = (N, S, eulang)
 
     @show tmax = t0+tspan*yr #final time of integration
 
