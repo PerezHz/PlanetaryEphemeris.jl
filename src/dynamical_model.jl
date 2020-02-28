@@ -186,7 +186,7 @@
     local J2E_t = (J2E + J2EDOT*(dsj2k/yr))*((RE/au)^2)
     local J2S_t = JSEM[su,2]*one_t
 
-    Threads.@threads for j in _1_to_N
+    for j in _1_to_N
         newtonX[j] = zero_q_1
         newtonY[j] = zero_q_1
         newtonZ[j] = zero_q_1
