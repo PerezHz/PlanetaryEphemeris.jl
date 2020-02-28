@@ -19,7 +19,6 @@
 
     #TODO: handle appropiately @taylorize'd version with postnewton_iter>1
     local postnewton_iter = 1 # number of iterations of post-Newtonian subroutine
-    local j2_body_index = [su, ea, mo] # indices of bodies with J2 flattening (note: Earth and Moon also have J3)
 
     # parameters related to speed of light, c
     local c_p2 = 29979.063823897606 # c^2 = 29979.063823897606 au^2/d^2
@@ -166,7 +165,6 @@
     local M_[:,:,ea] = c2t_jpl_de430(dsj2k)
     local M_[:,:,su] = pole_rotation(αs, δs)
     local M_[:,:,mo] = pole_rotation(αm, δm, Wm)
-    #local dJ2E_temp = (one_t+(dJ2E_norm*(dsj2k/yr))) #one_t
     ITM_t = Array{Taylor1{S}}(undef, 3, 3)
     ITM2_t = Array{Taylor1{S}}(undef, 3, 3)
     #local ITM2_t = ITM_und.*one_t
@@ -566,7 +564,6 @@ end
 
     #TODO: handle appropiately @taylorize'd version with postnewton_iter>1
     local postnewton_iter = 1 # number of iterations of post-Newtonian subroutine
-    local j2_body_index = [su, ea, mo] # indices of bodies with J2 flattening (note: Earth and Moon also have J3)
 
     # parameters related to speed of light, c
     local c_p2 = 29979.063823897606 # c^2 = 29979.063823897606 au^2/d^2
@@ -713,7 +710,6 @@ end
     local M_[:,:,ea] = c2t_jpl_de430(dsj2k)
     local M_[:,:,su] = pole_rotation(αs, δs)
     local M_[:,:,mo] = pole_rotation(αm, δm, Wm)
-    #local dJ2E_temp = (one_t+(dJ2E_norm*(dsj2k/yr))) #one_t
     ITM_t = Array{Taylor1{S}}(undef, 3, 3)
     ITM2_t = Array{Taylor1{S}}(undef, 3, 3)
     #local ITM2_t = ITM_und.*one_t
