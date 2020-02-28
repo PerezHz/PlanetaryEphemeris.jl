@@ -15,7 +15,6 @@
     local N, S, eulang_de430_ = params
     local eulang_t = eulang_de430_(t)
     local eulang_t_del = eulang_de430_(t-τ_M)
-    local _1_to_N = Base.OneTo(N) # iterator over all bodies
 
     #TODO: handle appropiately @taylorize'd version with postnewton_iter>1
     local postnewton_iter = 1 # number of iterations of post-Newtonian subroutine
@@ -186,7 +185,7 @@
     local J2E_t = (J2E + J2EDOT*(dsj2k/yr))*((RE/au)^2)
     local J2S_t = JSEM[su,2]*one_t
 
-    for j in _1_to_N
+    for j in 1:N
         newtonX[j] = zero_q_1
         newtonY[j] = zero_q_1
         newtonZ[j] = zero_q_1
@@ -203,10 +202,11 @@
     end
 
     #compute point-mass Newtonian accelerations, all bodies
-    for j in _1_to_N
-        for i in _1_to_N
+    for j in 1:N
+        for i in 1:N
             # i == j && continue
             if i == j
+                continue
             else
                 X[i,j] = q[3i-2]-q[3j-2]
                 Y[i,j] = q[3i-1]-q[3j-1]
@@ -258,7 +258,7 @@
                 newtonZ[j] = temp_003
                 temp_004 = newtonianNb_Potential[j] + newtonian1b_Potential[i, j]
                 newtonianNb_Potential[j] = temp_004
-            end #if i != j
+            end # else (i != j)
         end #for, i
         v2[j] = ( (dq[3j-2]^2)+(dq[3j-1]^2) ) + (dq[3j]^2)
     end #for, j
@@ -292,10 +292,11 @@
     S21M_t = (-ITM_t[3,2])/(μ[mo]) # S_{21,M}*R_M^2
     S22M_t = ((-ITM_t[2,1])/(μ[mo]))/2 # S_{22,M}*R_M^2
 
-    for j in _1_to_N
-        for i in _1_to_N
+    for j in 1:N
+        for i in 1:N
             # i == j && continue
             if i == j
+                continue
             else
                 #Jn, Cnm, Snm accelerations, if j-th body is flattened
                 if UJ_interaction[i,j]
@@ -428,19 +429,19 @@
                     F_JCS_y[i,j] = ((F_JCS_ξ[i,j]*Gc2p[i,j,1,2]) + (F_JCS_η[i,j]*Gc2p[i,j,2,2])) + (F_JCS_ζ[i,j]*Gc2p[i,j,3,2])
                     F_JCS_z[i,j] = ((F_JCS_ξ[i,j]*Gc2p[i,j,1,3]) + (F_JCS_η[i,j]*Gc2p[i,j,2,3])) + (F_JCS_ζ[i,j]*Gc2p[i,j,3,3])
                 end #if UJ_interaction[i,j]
-            end # if i == j
-        end #for i in _1_to_N
-    end #for j in _1_to_N
+            end # else (i != j)
+        end #for i in 1:N
+    end #for j in 1:N
 
-    for j in _1_to_N
-        for i in _1_to_N
+    for j in 1:N
+        for i in 1:N
             # i == j && continue
             if i == j
+                continue
             else
                 #Jn, Cnm, Snm accelerations, if j-th body is flattened
                 if UJ_interaction[i,j]
-                    # # add result to total acceleration on upon j-th body figure due to i-th point mass
-                    # @show "acc",j,"+μ",i,"Λ2",j
+                    # # add result to total acceleration upon j-th body figure due to i-th point mass
                     temp_accX_j[i,j] = accX[j] - (μ[i]*F_JCS_x[i,j])
                     accX[j] = temp_accX_j[i,j]
                     temp_accY_j[i,j] = accY[j] - (μ[i]*F_JCS_y[i,j])
@@ -449,7 +450,6 @@
                     accZ[j] = temp_accZ_j[i,j]
 
                     # # reaction force on i-th body
-                    # @show "acc",i,"-μ",j,"Λ2",j
                     temp_accX_i[i,j] = accX[i] + (μ[j]*F_JCS_x[i,j])
                     accX[i] = temp_accX_i[i,j]
                     temp_accY_i[i,j] = accY[i] + (μ[j]*F_JCS_y[i,j])
@@ -457,17 +457,18 @@
                     temp_accZ_i[i,j] = accZ[i] + (μ[j]*F_JCS_z[i,j])
                     accZ[i] = temp_accZ_i[i,j]
                 end
-            end
+            end # else (i != j)
         end
     end
 
     #post-Newtonian corrections to gravitational acceleration
     #Moyer, 1971, page 7 eq. 35
     # post-Newtonian iterative procedure setup and initialization
-    for j in _1_to_N
-        for i in _1_to_N
+    for j in 1:N
+        for i in 1:N
             # i == j && continue
             if i == j
+                continue
             else
                 _4ϕj[i,j] = 4newtonianNb_Potential[j]
                 ϕi_plus_4ϕj[i,j] = newtonianNb_Potential[i] + _4ϕj[i,j]
@@ -482,7 +483,7 @@
                 pn1t7 = (Rij_dot_Vi^2)/r_p2[i,j]
                 pn1t2_7 = ϕs_and_vs[i,j] - (1.5pn1t7)
                 pn1t1_7[i,j] = c_p2+pn1t2_7
-                for k in Base.OneTo(postnewton_iter)
+                for k in 1:postnewton_iter
                     pn1[i,j,k] = zero_q_1
                     X_t_pn1[i,j,k] = zero_q_1
                     Y_t_pn1[i,j,k] = zero_q_1
@@ -494,12 +495,12 @@
                     pNY_t_Y[i,j,k] = zero_q_1
                     pNZ_t_Z[i,j,k] = zero_q_1
                 end
-            end
+            end # else (i != j)
         end
         postNewtonX[j,1] = newtonX[j]
         postNewtonY[j,1] = newtonY[j]
         postNewtonZ[j,1] = newtonZ[j]
-        for k in Base.OneTo(postnewton_iter)
+        for k in 1:postnewton_iter
             pntempX[j,k] = zero_q_1
             pntempY[j,k] = zero_q_1
             pntempZ[j,k] = zero_q_1
@@ -507,11 +508,12 @@
     end
 
     # post-Newtonian iterations
-    for k in Base.OneTo(postnewton_iter)
-        for j in _1_to_N
-            for i in _1_to_N
+    for k in 1:postnewton_iter
+        for j in 1:N
+            for i in 1:N
                 # i == j && continue
                 if i == j
+                    continue
                 else
                     pNX_t_X[i,j,k] = postNewtonX[i,k]*X[i,j]
                     pNY_t_Y[i,j,k] = postNewtonY[i,k]*Y[i,j]
@@ -535,16 +537,16 @@
                     termpnz = ( Z_t_pn1[i,j,k] + (W_t_pn2[i,j]+pNZ_t_pn3[i,j,k]) )
                     sumpnz = pntempZ[j,k] + termpnz
                     pntempZ[j,k] = sumpnz
-                end
+                end # else (i != j)
             end
             postNewtonX[j,k+1] = pntempX[j,k]*c_m2
             postNewtonY[j,k+1] = pntempY[j,k]*c_m2
             postNewtonZ[j,k+1] = pntempZ[j,k]*c_m2
         end
-    end #for k in Base.OneTo(postnewton_iter) # (post-Newtonian iterations)
+    end #for k in 1:postnewton_iter # (post-Newtonian iterations)
 
     #fill accelerations (post-Newtonian and extended body accelerations)
-    for i in _1_to_N
+    for i in 1:N
         dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1] + accX[i]
         dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1] + accY[i]
         dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1] + accZ[i]
@@ -560,7 +562,6 @@ end
     local N, S, eulang_de430_ = params
     local eulang_t = eulang_de430_(t)
     local eulang_t_del = eulang_de430_(t-τ_M)
-    local _1_to_N = Base.OneTo(N) # iterator over all bodies
 
     #TODO: handle appropiately @taylorize'd version with postnewton_iter>1
     local postnewton_iter = 1 # number of iterations of post-Newtonian subroutine
@@ -731,7 +732,7 @@ end
     local J2E_t = (J2E + J2EDOT*(dsj2k/yr))*((RE/au)^2)
     local J2S_t = JSEM[su,2]*one_t
 
-    Threads.@threads for j in _1_to_N
+    Threads.@threads for j in 1:N
         newtonX[j] = zero_q_1
         newtonY[j] = zero_q_1
         newtonZ[j] = zero_q_1
@@ -748,10 +749,11 @@ end
     end
 
     #compute point-mass Newtonian accelerations, all bodies
-    Threads.@threads for j in _1_to_N
-        for i in _1_to_N
+    Threads.@threads for j in 1:N
+        for i in 1:N
             # i == j && continue
             if i == j
+                continue
             else
                 X[i,j] = q[3i-2]-q[3j-2]
                 Y[i,j] = q[3i-1]-q[3j-1]
@@ -803,7 +805,7 @@ end
                 newtonZ[j] = temp_003
                 temp_004 = newtonianNb_Potential[j] + newtonian1b_Potential[i, j]
                 newtonianNb_Potential[j] = temp_004
-            end #if i != j
+            end # else (i != j)
         end #for, i
         v2[j] = ( (dq[3j-2]^2)+(dq[3j-1]^2) ) + (dq[3j]^2)
     end #for, j
@@ -837,10 +839,11 @@ end
     S21M_t = (-ITM_t[3,2])/(μ[mo]) # S_{21,M}*R_M^2
     S22M_t = ((-ITM_t[2,1])/(μ[mo]))/2 # S_{22,M}*R_M^2
 
-    Threads.@threads for j in _1_to_N
-        for i in _1_to_N
+    Threads.@threads for j in 1:N
+        for i in 1:N
             # i == j && continue
             if i == j
+                continue
             else
                 #Jn, Cnm, Snm accelerations, if j-th body is flattened
                 if UJ_interaction[i,j]
@@ -973,19 +976,19 @@ end
                     F_JCS_y[i,j] = ((F_JCS_ξ[i,j]*Gc2p[i,j,1,2]) + (F_JCS_η[i,j]*Gc2p[i,j,2,2])) + (F_JCS_ζ[i,j]*Gc2p[i,j,3,2])
                     F_JCS_z[i,j] = ((F_JCS_ξ[i,j]*Gc2p[i,j,1,3]) + (F_JCS_η[i,j]*Gc2p[i,j,2,3])) + (F_JCS_ζ[i,j]*Gc2p[i,j,3,3])
                 end #if UJ_interaction[i,j]
-            end # if i == j
-        end #for i in _1_to_N
-    end #for j in _1_to_N
+            end # else (i != j)
+        end #for i in 1:N
+    end #for j in 1:N
 
-    for j in _1_to_N
-        for i in _1_to_N
+    for j in 1:N
+        for i in 1:N
             # i == j && continue
             if i == j
+                continue
             else
                 #Jn, Cnm, Snm accelerations, if j-th body is flattened
                 if UJ_interaction[i,j]
-                    # # add result to total acceleration on upon j-th body figure due to i-th point mass
-                    # @show "acc",j,"+μ",i,"Λ2",j
+                    # # add result to total acceleration upon j-th body figure due to i-th point mass
                     temp_accX_j[i,j] = accX[j] - (μ[i]*F_JCS_x[i,j])
                     accX[j] = temp_accX_j[i,j]
                     temp_accY_j[i,j] = accY[j] - (μ[i]*F_JCS_y[i,j])
@@ -994,7 +997,6 @@ end
                     accZ[j] = temp_accZ_j[i,j]
 
                     # # reaction force on i-th body
-                    # @show "acc",i,"-μ",j,"Λ2",j
                     temp_accX_i[i,j] = accX[i] + (μ[j]*F_JCS_x[i,j])
                     accX[i] = temp_accX_i[i,j]
                     temp_accY_i[i,j] = accY[i] + (μ[j]*F_JCS_y[i,j])
@@ -1002,17 +1004,18 @@ end
                     temp_accZ_i[i,j] = accZ[i] + (μ[j]*F_JCS_z[i,j])
                     accZ[i] = temp_accZ_i[i,j]
                 end
-            end
+            end # else (i != j)
         end
     end
 
     #post-Newtonian corrections to gravitational acceleration
     #Moyer, 1971, page 7 eq. 35
     # post-Newtonian iterative procedure setup and initialization
-    Threads.@threads for j in _1_to_N
-        for i in _1_to_N
+    Threads.@threads for j in 1:N
+        for i in 1:N
             # i == j && continue
             if i == j
+                continue
             else
                 _4ϕj[i,j] = 4newtonianNb_Potential[j]
                 ϕi_plus_4ϕj[i,j] = newtonianNb_Potential[i] + _4ϕj[i,j]
@@ -1027,7 +1030,7 @@ end
                 pn1t7 = (Rij_dot_Vi^2)/r_p2[i,j]
                 pn1t2_7 = ϕs_and_vs[i,j] - (1.5pn1t7)
                 pn1t1_7[i,j] = c_p2+pn1t2_7
-                for k in Base.OneTo(postnewton_iter)
+                for k in 1:postnewton_iter
                     pn1[i,j,k] = zero_q_1
                     X_t_pn1[i,j,k] = zero_q_1
                     Y_t_pn1[i,j,k] = zero_q_1
@@ -1039,12 +1042,12 @@ end
                     pNY_t_Y[i,j,k] = zero_q_1
                     pNZ_t_Z[i,j,k] = zero_q_1
                 end
-            end
+            end # else (i != j)
         end
         postNewtonX[j,1] = newtonX[j]
         postNewtonY[j,1] = newtonY[j]
         postNewtonZ[j,1] = newtonZ[j]
-        for k in Base.OneTo(postnewton_iter)
+        for k in 1:postnewton_iter
             pntempX[j,k] = zero_q_1
             pntempY[j,k] = zero_q_1
             pntempZ[j,k] = zero_q_1
@@ -1052,11 +1055,12 @@ end
     end
 
     # post-Newtonian iterations
-    for k in Base.OneTo(postnewton_iter)
-        Threads.@threads for j in _1_to_N
-            for i in _1_to_N
+    for k in 1:postnewton_iter
+        Threads.@threads for j in 1:N
+            for i in 1:N
                 # i == j && continue
                 if i == j
+                    continue
                 else
                     pNX_t_X[i,j,k] = postNewtonX[i,k]*X[i,j]
                     pNY_t_Y[i,j,k] = postNewtonY[i,k]*Y[i,j]
@@ -1080,16 +1084,16 @@ end
                     termpnz = ( Z_t_pn1[i,j,k] + (W_t_pn2[i,j]+pNZ_t_pn3[i,j,k]) )
                     sumpnz = pntempZ[j,k] + termpnz
                     pntempZ[j,k] = sumpnz
-                end
+                end # else (i != j)
             end
             postNewtonX[j,k+1] = pntempX[j,k]*c_m2
             postNewtonY[j,k+1] = pntempY[j,k]*c_m2
             postNewtonZ[j,k+1] = pntempZ[j,k]*c_m2
         end
-    end #for k in Base.OneTo(postnewton_iter) # (post-Newtonian iterations)
+    end #for k in 1:postnewton_iter # (post-Newtonian iterations)
 
     #fill accelerations (post-Newtonian and extended body accelerations)
-    Threads.@threads for i in _1_to_N
+    Threads.@threads for i in 1:N
         dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1] + accX[i]
         dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1] + accY[i]
         dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1] + accZ[i]
