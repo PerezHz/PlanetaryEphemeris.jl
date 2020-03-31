@@ -412,9 +412,10 @@ UJ_interaction[union(1:mo-1,mo+1:7), mo] .= true # Moon's grav potential interac
 const au = 1.495978707E8 # astronomical unit value in km
 const yr = 365.25 # days in a Julian year
 const daysec = 86_400 # number of seconds in a day
-const c_au_per_day = daysec*(299_792.458/au) # speed of light in au per day
-const c_au_per_sec = 299_792.458/au # speed of light in au per sec
-const c_cm_per_sec = 100_000*299_792.458 # speed of light in cm per sec
+const clightkms = 2.99792458E5 # speed of light, km/sec
+const c_au_per_day = daysec*(clightkms/au) # speed of light in au per day
+const c_au_per_sec = clightkms/au # speed of light in au per sec
+const c_cm_per_sec = 100_000*clightkms # speed of light in cm per sec
 
 const sundofs = union(1:3, 3(N+su)-2:3(N+su))
 const earthdofs = union(3ea-2:3ea, 3(N+ea)-2:3(N+ea))

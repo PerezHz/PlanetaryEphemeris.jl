@@ -6,7 +6,7 @@ export au, yr, sundofs, earthdofs,
     c_au_per_day, μ, NBP_pN_A_J23E_J23M_J2S!,
     NBP_pN_A_J23E_J23M_J2S_threads!,
     semimajoraxis, eccentricity, inclination,
-    su, ea, mo, au, yr, daysec,
+    su, ea, mo, au, yr, daysec, clightkms,
     c_au_per_day, c_au_per_sec, c_cm_per_sec,
     J2000, R_sun, α_p_sun, δ_p_sun, au,
     UJ_interaction, de430_343ast_ids, Rx, Ry, Rz,
@@ -19,6 +19,7 @@ using Dates: DateTime, julian2datetime, datetime2julian
 using DelimitedFiles
 using Test
 using JLD
+using ArbNumerics
 
 # integration parameters
 const order = 30

@@ -17,7 +17,7 @@ const dynamics = NBP_pN_A_J23E_J23M_J2S_threads!
 const nast = 16 # number of asteroid perturbers
 
 # path of lunar Euler angles ephemeris file
-eulangfile = joinpath(dirname(pathof(PlanetaryEphemeris)), "../eph/moon_pa_de430_tx_2008_2013.jld")
+eulangfile = joinpath(dirname(pathof(PlanetaryEphemeris)), "../eph/moon_pa_de430_tx_2004_2013.jld")
 
 #integrator warmup
 PlanetaryEphemeris.propagate(1, t0, nyears, eulangfile, output=false, dense=dense, dynamics=dynamics, nast=nast)
