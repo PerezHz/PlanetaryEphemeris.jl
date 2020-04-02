@@ -19,7 +19,7 @@ using Dates: DateTime, julian2datetime, datetime2julian
 using DelimitedFiles
 using Test
 using JLD
-using ArbNumerics
+using Quadmath
 
 # integration parameters
 const order = 30
