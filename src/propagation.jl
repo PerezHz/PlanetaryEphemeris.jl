@@ -1,29 +1,50 @@
-function propagate(maxsteps::Int, t0::T, tspan::T, eulangfile::String;
+function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
         output::Bool=true, dense::Bool=false, ephfile::String="sseph.jld",
-        dynamics::Function=NBP_pN_A_J23E_J23M_J2S!, nast::Int=343) where {T<:Real}
+        dynamics::Function=NBP_pN_A_J23E_J23M_J2S!, nast::Int=343,
+        quadmath::Bool=false) where {T<:Real}
 
     # total number of bodies
     N = 11+nast
     # get initial conditions
-    q0 = initialcond(11+nast)
+    if quadmath
+        # use quadruple precision
+        _q0 = Float128.( initialcond(11+nast) )
+        _t0 = Float128(zero(jd0))
+        @show _tmax = zero(_t0)+tspan*yr #final time of integration
+        _abstol = Float128(abstol)
+        # load DE430 lunar Euler angles Taylor ephemeris
+        __eulang_de430 = load(eulangfile, "eulang_de430")
+        _eulang_de430 = TaylorInterpolant(Float128(__eulang_de430.t0), Float128.(__eulang_de430.t), map(x->Taylor1(Float128.(x.coeffs)), __eulang_de430.x))
+    else
+        _q0 = initialcond(11+nast)
+        _t0 = zero(jd0)
+        @show _tmax = zero(_t0)+tspan*yr #final time of integration
+        _abstol = abstol
+        # load DE430 lunar Euler angles Taylor ephemeris
+        _eulang_de430 = load(eulangfile, "eulang_de430")
+    end
     # auxiliary variable
-    S = eltype(q0)
-    # load DE430 lunar Euler angles Taylor ephemeris
-    # eulang = load(eulangfile, "eulang")
-    eulang_t = load(eulangfile, "t")
-    eulang_x = load(eulangfile, "x")
-    eulang = TaylorInterpolant(eulang_t, eulang_x)
+    S = eltype(_q0)
 
-    params = (N, S, eulang)
-
-    @show tmax = t0+tspan*yr #final time of integration
+    params = (N, S, _eulang_de430, jd0)
 
     # do integration
     if dense
-        @time interp = taylorinteg(dynamics, q0, t0, tmax, order, abstol, params, maxsteps=maxsteps, dense=dense)
-        sol = (t=interp.t[:], x=interp.x[:,:])
+        @time sseph_ = taylorinteg(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
+        # transform Julian dates to TDB seconds since initial Julian date
+        if quadmath
+            et0 = (jd0-J2000)*daysec
+            etv = Float64.( sseph_.t[:]*daysec )
+            sseph_x_et = map( x->x(Taylor1(order)/daysec), map(x->Taylor1(Float64.(x.coeffs)), sseph_.x[:,:]) )
+        else
+            et0 = (jd0-J2000)*daysec
+            etv = sseph_.t[:]*daysec
+            sseph_x_et = map(x->x(Taylor1(order)/daysec), sseph_.x[:,:])
+        end
+        sseph = TaylorInterpolant(et0, etv, sseph_x_et)
+        sol = (sseph=sseph,)
     else
-        @time t, x = taylorinteg(dynamics, q0, t0, tmax, order, abstol, params, maxsteps=maxsteps, dense=dense)
+        @time t, x = taylorinteg(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
         sol = (t=t[:], x=x[:,:])
     end
 
@@ -31,7 +52,7 @@ function propagate(maxsteps::Int, t0::T, tspan::T, eulangfile::String;
     if output
         println("Saving solution to file: $ephfile")
         jldopen(ephfile, "w") do file
-            addrequire(file, TaylorSeries)
+            addrequire(file, TaylorIntegration)
             # write variables to jld file
             for ind in eachindex(sol)
                 varname = string(ind)

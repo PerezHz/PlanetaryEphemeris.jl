@@ -12,9 +12,9 @@
     # N: number of bodies
     # S: auxiliary variable =eltype(q0)
     # eulang_de430_: Taylor interpolant for DE430 lunar orientation Euler angles
-    local N, S, eulang_de430_ = params
-    local eulang_t = eulang_de430_(t)
-    local eulang_t_del = eulang_de430_(t-τ_M)
+    local N, S, eulang_de430_, jd0 = params
+    local eulang_t = eulang_de430_( (t+(jd0-J2000))*daysec )
+    local eulang_t_del = eulang_de430_( ((t-τ_M)+(jd0-J2000))*daysec )
 
     #TODO: handle appropiately @taylorize'd version with postnewton_iter>1
     local postnewton_iter = 1 # number of iterations of post-Newtonian subroutine
@@ -154,7 +154,7 @@
     accZ = Array{Taylor1{S}}(undef, N)
 
     # rotations to and from Earth, Sun and Moon pole-oriented frames
-    local dsj2k = t-2.451545e6 # J2000.0 = 2.451545e6
+    local dsj2k = t+(jd0-2.451545e6) # J2000.0 = 2.451545e6
     local αs = deg2rad(α_p_sun*one_t)
     local δs = deg2rad(δ_p_sun*one_t)
     local αm = eulang_t[1] - (pi/2)
@@ -559,9 +559,9 @@ end
     # N: number of bodies
     # S: auxiliary variable =eltype(q0)
     # eulang_de430_: Taylor interpolant for DE430 lunar orientation Euler angles
-    local N, S, eulang_de430_ = params
-    local eulang_t = eulang_de430_(t)
-    local eulang_t_del = eulang_de430_(t-τ_M)
+    local N, S, eulang_de430_, jd0 = params
+    local eulang_t = eulang_de430_( (t+(jd0-J2000))*daysec )
+    local eulang_t_del = eulang_de430_( ((t-τ_M)+(jd0-J2000))*daysec )
 
     #TODO: handle appropiately @taylorize'd version with postnewton_iter>1
     local postnewton_iter = 1 # number of iterations of post-Newtonian subroutine
@@ -701,7 +701,7 @@ end
     accZ = Array{Taylor1{S}}(undef, N)
 
     # rotations to and from Earth, Sun and Moon pole-oriented frames
-    local dsj2k = t-2.451545e6 # J2000.0 = 2.451545e6
+    local dsj2k = t+(jd0-2.451545e6) # J2000.0 = 2.451545e6
     local αs = deg2rad(α_p_sun*one_t)
     local δs = deg2rad(δ_p_sun*one_t)
     local αm = eulang_t[1] - (pi/2)
