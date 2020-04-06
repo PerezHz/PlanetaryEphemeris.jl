@@ -404,7 +404,7 @@ const N = length(μ)
 
 # Matrix of J2 interactions included in DE430 ephemeris, according to Folkner et al., 2014
 const UJ_interaction = fill(false, N, N)
-UJ_interaction[2:10, su] .= true # per Folkner et al. (2014), Section III, 1st paragraph: Sun's J2 only interacts with the Moon and planets
+UJ_interaction[2:end, su] .= true # per Folkner et al. (2014), Section III, 1st paragraph: Sun's J2 only interacts with the Moon and planets
 # UJ_interaction[2:end, su] .= true # per Folkner et al. (2014), Section III, 1st paragraph: Sun's J2 only interacts with the Moon and planets
 UJ_interaction[union(1:ea-1,ea+1:7), ea] .= true # Earth's grav potential interacts with Sun, Mercury, Venus, Moon, Mars and Jupiter
 UJ_interaction[union(1:mo-1,mo+1:7), mo] .= true # Moon's grav potential interacts with Sun, Mercury, Venus, Earth, Mars and Jupiter
