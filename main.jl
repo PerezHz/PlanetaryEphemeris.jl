@@ -18,7 +18,7 @@ const nast = 16 # number of asteroid perturbers
 const quadmath = true # use quadruple precision
 
 # path of lunar Euler angles ephemeris file
-eulangfile = joinpath(dirname(pathof(PlanetaryEphemeris)), "../eph/moon_pa_de430_2004_2013_et.jld")
+eulangfile = joinpath(dirname(pathof(PlanetaryEphemeris)), "../eph/moon_pa_de430_2004_2032_et.jld")
 
 #integrator warmup
 PlanetaryEphemeris.propagate(1, jd0, nyears, eulangfile, output=false, dense=dense, dynamics=dynamics, nast=nast, quadmath=quadmath)
