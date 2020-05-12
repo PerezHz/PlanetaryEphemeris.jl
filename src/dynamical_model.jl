@@ -164,10 +164,7 @@
     local M_[:,:,ea] = c2t_jpl_de430(dsj2k)
     local M_[:,:,su] = pole_rotation(αs, δs)
     local M_[:,:,mo] = pole_rotation(αm, δm, Wm)
-    ITM_t = Array{Taylor1{S}}(undef, 3, 3)
-    ITM2_t = Array{Taylor1{S}}(undef, 3, 3)
-    #local ITM2_t = ITM_und.*one_t
-    local ITM2_t = ITM_und.*one_t + ITM2(eulang_t_del[1], eulang_t_del[2], eulang_t_del[3])
+    local ITM_t = ITM_und.*one_t + ITM2(eulang_t_del[1], eulang_t_del[2], eulang_t_del[3])
     local fact_num = -4.5257273867882326e-36 # == -k_2M*μ[ea]*(R_moon^5)
     local fact1_jsem = [(2n-1)/n for n in 1:maximum(n1SEM)]
     local fact2_jsem = [(n-1)/n for n in 1:maximum(n1SEM)]
@@ -263,29 +260,6 @@
         v2[j] = ( (dq[3j-2]^2)+(dq[3j-1]^2) ) + (dq[3j]^2)
     end #for, j
 
-    # transform geocentric position, velocity of Moon (space-fixed->lunar mantle frame)
-    xme_bf = ((M_[1,1,mo]*X[mo,ea])+(M_[1,2,mo]*Y[mo,ea])) + (M_[1,3,mo]*Z[mo,ea])
-    yme_bf = ((M_[2,1,mo]*X[mo,ea])+(M_[2,2,mo]*Y[mo,ea])) + (M_[2,3,mo]*Z[mo,ea])
-    zme_bf = ((M_[3,1,mo]*X[mo,ea])+(M_[3,2,mo]*Y[mo,ea])) + (M_[3,3,mo]*Z[mo,ea])
-    ume_bf = ((M_[1,1,mo]*U[mo,ea])+(M_[1,2,mo]*V[mo,ea])) + (M_[1,3,mo]*W[mo,ea])
-    vme_bf = ((M_[2,1,mo]*U[mo,ea])+(M_[2,2,mo]*V[mo,ea])) + (M_[2,3,mo]*W[mo,ea])
-    wme_bf = ((M_[3,1,mo]*U[mo,ea])+(M_[3,2,mo]*V[mo,ea])) + (M_[3,3,mo]*W[mo,ea])
-    # r_ME(t-τ_M) ≈ r_ME(t)-v_ME(t)*τ_M
-    xmed = xme_bf-(ume_bf*τ_M)
-    ymed = yme_bf-(vme_bf*τ_M)
-    zmed = zme_bf-(wme_bf*τ_M)
-    # compute matrix elements of lunar moment of inertia (Folkner et al. 2014, eq. 41)
-    rmed2 = ((xmed^2)+(ymed^2))+(zmed^2)
-    factmed = fact_num/(rmed2^2.5)
-    ITM_t[1,1] = ITM2_t[1,1] #+ ( factmed*((xmed^2)-(rmed2/3)) )
-    ITM_t[2,2] = ITM2_t[2,2] #+ ( factmed*((ymed^2)-(rmed2/3)) )
-    ITM_t[3,3] = ITM2_t[3,3] #+ ( factmed*((zmed^2)-(rmed2/3)) )
-    ITM_t[1,2] = ITM2_t[1,2] #+ (factmed*(xmed*ymed))
-    ITM_t[2,1] = ITM_t[1,2]#
-    ITM_t[1,3] = ITM2_t[1,3] #+ (factmed*(xmed*zmed))
-    ITM_t[3,1] = ITM_t[1,3]#
-    ITM_t[2,3] = ITM2_t[2,3] #+ (factmed*(ymed*zmed))
-    ITM_t[3,2] = ITM_t[2,3]
     J2M_t = ( ITM_t[3,3] - ((ITM_t[1,1]+ITM_t[2,2])/2) )/(μ[mo]) # J_{2,M}*R_M^2
     C22M_t = ((ITM_t[2,2] - ITM_t[1,1])/(μ[mo]))/4 # C_{22,M}*R_M^2
     C21M_t = (-ITM_t[1,3])/(μ[mo]) # C_{21,M}*R_M^2
@@ -711,10 +685,7 @@ end
     local M_[:,:,ea] = c2t_jpl_de430(dsj2k)
     local M_[:,:,su] = pole_rotation(αs, δs)
     local M_[:,:,mo] = pole_rotation(αm, δm, Wm)
-    ITM_t = Array{Taylor1{S}}(undef, 3, 3)
-    ITM2_t = Array{Taylor1{S}}(undef, 3, 3)
-    #local ITM2_t = ITM_und.*one_t
-    local ITM2_t = ITM_und.*one_t + ITM2(eulang_t_del[1], eulang_t_del[2], eulang_t_del[3])
+    local ITM_t = ITM_und.*one_t + ITM2(eulang_t_del[1], eulang_t_del[2], eulang_t_del[3])
     local fact_num = -4.5257273867882326e-36 # == -k_2M*μ[ea]*(R_moon^5)
     local fact1_jsem = [(2n-1)/n for n in 1:maximum(n1SEM)]
     local fact2_jsem = [(n-1)/n for n in 1:maximum(n1SEM)]
@@ -810,29 +781,6 @@ end
         v2[j] = ( (dq[3j-2]^2)+(dq[3j-1]^2) ) + (dq[3j]^2)
     end #for, j
 
-    # transform geocentric position, velocity of Moon (space-fixed->lunar mantle frame)
-    xme_bf = ((M_[1,1,mo]*X[mo,ea])+(M_[1,2,mo]*Y[mo,ea])) + (M_[1,3,mo]*Z[mo,ea])
-    yme_bf = ((M_[2,1,mo]*X[mo,ea])+(M_[2,2,mo]*Y[mo,ea])) + (M_[2,3,mo]*Z[mo,ea])
-    zme_bf = ((M_[3,1,mo]*X[mo,ea])+(M_[3,2,mo]*Y[mo,ea])) + (M_[3,3,mo]*Z[mo,ea])
-    ume_bf = ((M_[1,1,mo]*U[mo,ea])+(M_[1,2,mo]*V[mo,ea])) + (M_[1,3,mo]*W[mo,ea])
-    vme_bf = ((M_[2,1,mo]*U[mo,ea])+(M_[2,2,mo]*V[mo,ea])) + (M_[2,3,mo]*W[mo,ea])
-    wme_bf = ((M_[3,1,mo]*U[mo,ea])+(M_[3,2,mo]*V[mo,ea])) + (M_[3,3,mo]*W[mo,ea])
-    # r_ME(t-τ_M) ≈ r_ME(t)-v_ME(t)*τ_M
-    xmed = xme_bf-(ume_bf*τ_M)
-    ymed = yme_bf-(vme_bf*τ_M)
-    zmed = zme_bf-(wme_bf*τ_M)
-    # compute matrix elements of lunar moment of inertia (Folkner et al. 2014, eq. 41)
-    rmed2 = ((xmed^2)+(ymed^2))+(zmed^2)
-    factmed = fact_num/(rmed2^2.5)
-    ITM_t[1,1] = ITM2_t[1,1] #+ ( factmed*((xmed^2)-(rmed2/3)) )
-    ITM_t[2,2] = ITM2_t[2,2] #+ ( factmed*((ymed^2)-(rmed2/3)) )
-    ITM_t[3,3] = ITM2_t[3,3] #+ ( factmed*((zmed^2)-(rmed2/3)) )
-    ITM_t[1,2] = ITM2_t[1,2] #+ (factmed*(xmed*ymed))
-    ITM_t[2,1] = ITM_t[1,2]#
-    ITM_t[1,3] = ITM2_t[1,3] #+ (factmed*(xmed*zmed))
-    ITM_t[3,1] = ITM_t[1,3]#
-    ITM_t[2,3] = ITM2_t[2,3] #+ (factmed*(ymed*zmed))
-    ITM_t[3,2] = ITM_t[2,3]
     J2M_t = ( ITM_t[3,3] - ((ITM_t[1,1]+ITM_t[2,2])/2) )/(μ[mo]) # J_{2,M}*R_M^2
     C22M_t = ((ITM_t[2,2] - ITM_t[1,1])/(μ[mo]))/4 # C_{22,M}*R_M^2
     C21M_t = (-ITM_t[1,3])/(μ[mo]) # C_{21,M}*R_M^2
