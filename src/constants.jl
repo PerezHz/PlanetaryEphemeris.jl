@@ -404,8 +404,7 @@ const N = length(μ)
 
 # Matrix of J2 interactions included in DE430 ephemeris, according to Folkner et al., 2014
 const UJ_interaction = fill(false, N, N)
-UJ_interaction[2:end, su] .= true # per Folkner et al. (2014), Section III, 1st paragraph: Sun's J2 only interacts with the Moon and planets
-# UJ_interaction[2:end, su] .= true # per Folkner et al. (2014), Section III, 1st paragraph: Sun's J2 only interacts with the Moon and planets
+UJ_interaction[2:11, su] .= true # per Folkner et al. (2014), Section III, 1st paragraph: Sun's J2 only interacts with the Moon and planets
 UJ_interaction[union(1:ea-1,ea+1:7), ea] .= true # Earth's grav potential interacts with Sun, Mercury, Venus, Moon, Mars and Jupiter
 UJ_interaction[union(1:mo-1,mo+1:7), mo] .= true # Moon's grav potential interacts with Sun, Mercury, Venus, Earth, Mars and Jupiter
 
@@ -534,3 +533,18 @@ const ITM_und = diagm([A_T, B_T, C_T]*μ[mo]*R_moon^2)
 
 const ld = 384402.0 # Lunar distance (km)
 const n_moon = sqrt((μ[ea]+μ[mo])/((ld/au)^3)) # lunar mean motion (rad/day)
+
+const k_20E = 0.335 # Potential Love number for long-period deformation
+const k_21E = 0.32 # Potential Love number for diurnal deformation
+const k_22E = 0.32 # Potential Love number for semi-diurnal deformation
+
+const τ_0p = 0.0640 # Orbital time-lag for long-period deformation, days
+const τ_1p = -0.0044 # Orbital time-lag for diurnal deformation, days
+const τ_2p = -0.1000 # Orbital time-lag for semi-diurnal deformation, days
+
+const τ_0 = 0.0 # Rotational time-lag for long-period deformation, days
+const τ_1 = 7.3632190228041890E-03 # Rotational time-lag for diurnal deformation, days
+const τ_2 = 2.5352978633388720E-03 # Rotational time-lag for semi-diurnal deformation, days
+
+# standard value of nominal mean angular velocity of Earth (rad/day), ESAA 2014 Sec 7.4.3.3 p. 296: 7.2921151467e-5 rad/second
+const ω_E = daysec*7.2921151467e-5 # rad/day
