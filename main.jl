@@ -12,7 +12,8 @@ const jd0 = datetime2julian(DateTime(2008,9,24,0,0,0)) #starting time of integra
 @show jd0 == 2454733.5
 const dense = true #false
 # const dynamics = NBP_pN_A_J23E_J23M_J2S!
-const dynamics = NBP_pN_A_J23E_J23M_J2S_threads!
+# const dynamics = NBP_pN_A_J23E_J23M_J2S_threads!
+const dynamics = DE430!
 @show dynamics
 const nast = 16 # number of asteroid perturbers
 const quadmath = true # use quadruple precision
