@@ -1206,31 +1206,12 @@ end
     accZ = Array{Taylor1{S}}(undef, N)
 
     # tidal accelerations
-    rho_star_M_0 = Array{Taylor1{S}}(undef, 3)
-    rho_star_S_0 = Array{Taylor1{S}}(undef, 3)
-    rho_star_M_1 = Array{Taylor1{S}}(undef, 3)
-    rho_star_S_1 = Array{Taylor1{S}}(undef, 3)
-    rho_star_M_2 = Array{Taylor1{S}}(undef, 3)
-    rho_star_S_2 = Array{Taylor1{S}}(undef, 3)
-    zeta_star_M_0 = Array{Taylor1{S}}(undef, 3)
-    zeta_star_S_0 = Array{Taylor1{S}}(undef, 3)
-    zeta_star_M_1 = Array{Taylor1{S}}(undef, 3)
-    zeta_star_S_1 = Array{Taylor1{S}}(undef, 3)
-    zeta_star_M_2 = Array{Taylor1{S}}(undef, 3)
-    zeta_star_S_2 = Array{Taylor1{S}}(undef, 3)
-
-    local rho_star_M_0 .= zero_q_1
-    local rho_star_S_0 .= zero_q_1
-    local rho_star_M_1 .= zero_q_1
-    local rho_star_S_1 .= zero_q_1
-    local rho_star_M_2 .= zero_q_1
-    local rho_star_S_2 .= zero_q_1
-    local zeta_star_M_0 .= zero_q_1
-    local zeta_star_S_0 .= zero_q_1
-    local zeta_star_M_1 .= zero_q_1
-    local zeta_star_S_1 .= zero_q_1
-    local zeta_star_M_2 .= zero_q_1
-    local zeta_star_S_2 .= zero_q_1
+    r_star_M_0 = Array{Taylor1{S}}(undef, 3)
+    r_star_S_0 = Array{Taylor1{S}}(undef, 3)
+    r_star_M_1 = Array{Taylor1{S}}(undef, 3)
+    r_star_S_1 = Array{Taylor1{S}}(undef, 3)
+    r_star_M_2 = Array{Taylor1{S}}(undef, 3)
+    r_star_S_2 = Array{Taylor1{S}}(undef, 3)
 
     # rotations to and from Earth, Sun and Moon pole-oriented frames
     local dsj2k = t+(jd0-2.451545e6) # J2000.0 = 2.451545e6
@@ -1662,48 +1643,48 @@ end
     # Folkner et al. (2014), Eq. (31)
     # note: "starred" vectors should be initialized to zero
     # r-star 0, Moon
-    rho_star_M_0[1]  = ((R30[1,1]*X_ME_τ_0) + (R30[1,2]*Y_ME_τ_0)) + (R30[1,3]*Z_ME_τ_0)
-    rho_star_M_0[2]  = ((R30[2,1]*X_ME_τ_0) + (R30[2,2]*Y_ME_τ_0)) + (R30[2,3]*Z_ME_τ_0)
-    zeta_star_M_0[3] = ((R30[3,1]*X_ME_τ_0) + (R30[3,2]*Y_ME_τ_0)) + (R30[3,3]*Z_ME_τ_0)
+    r_star_M_0[1] = ((R30[1,1]*X_ME_τ_0) + (R30[1,2]*Y_ME_τ_0)) + (R30[1,3]*Z_ME_τ_0)
+    r_star_M_0[2] = ((R30[2,1]*X_ME_τ_0) + (R30[2,2]*Y_ME_τ_0)) + (R30[2,3]*Z_ME_τ_0)
+    r_star_M_0[3] = ((R30[3,1]*X_ME_τ_0) + (R30[3,2]*Y_ME_τ_0)) + (R30[3,3]*Z_ME_τ_0)
     # r-star 1, Moon
-    rho_star_M_1[1]  = ((R31[1,1]*X_ME_τ_1) + (R31[1,2]*Y_ME_τ_1)) + (R31[1,3]*Z_ME_τ_1)
-    rho_star_M_1[2]  = ((R31[2,1]*X_ME_τ_1) + (R31[2,2]*Y_ME_τ_1)) + (R31[2,3]*Z_ME_τ_1)
-    zeta_star_M_1[3] = ((R31[3,1]*X_ME_τ_1) + (R31[3,2]*Y_ME_τ_1)) + (R31[3,3]*Z_ME_τ_1)
+    r_star_M_1[1] = ((R31[1,1]*X_ME_τ_1) + (R31[1,2]*Y_ME_τ_1)) + (R31[1,3]*Z_ME_τ_1)
+    r_star_M_1[2] = ((R31[2,1]*X_ME_τ_1) + (R31[2,2]*Y_ME_τ_1)) + (R31[2,3]*Z_ME_τ_1)
+    r_star_M_1[3] = ((R31[3,1]*X_ME_τ_1) + (R31[3,2]*Y_ME_τ_1)) + (R31[3,3]*Z_ME_τ_1)
     # r-star 2, Moon
-    rho_star_M_2[1]  = ((R32[1,1]*X_ME_τ_2) + (R32[1,2]*Y_ME_τ_2)) + (R32[1,3]*Z_ME_τ_2)
-    rho_star_M_2[2]  = ((R32[2,1]*X_ME_τ_2) + (R32[2,2]*Y_ME_τ_2)) + (R32[2,3]*Z_ME_τ_2)
-    zeta_star_M_2[3] = ((R32[3,1]*X_ME_τ_2) + (R32[3,2]*Y_ME_τ_2)) + (R32[3,3]*Z_ME_τ_2)
+    r_star_M_2[1] = ((R32[1,1]*X_ME_τ_2) + (R32[1,2]*Y_ME_τ_2)) + (R32[1,3]*Z_ME_τ_2)
+    r_star_M_2[2] = ((R32[2,1]*X_ME_τ_2) + (R32[2,2]*Y_ME_τ_2)) + (R32[2,3]*Z_ME_τ_2)
+    r_star_M_2[3] = ((R32[3,1]*X_ME_τ_2) + (R32[3,2]*Y_ME_τ_2)) + (R32[3,3]*Z_ME_τ_2)
     # r-star 0, Sun
-    rho_star_S_0[1]  = ((R30[1,1]*X_SE_τ_0) + (R30[1,2]*Y_SE_τ_0)) + (R30[1,3]*Z_SE_τ_0)
-    rho_star_S_0[2]  = ((R30[2,1]*X_SE_τ_0) + (R30[2,2]*Y_SE_τ_0)) + (R30[2,3]*Z_SE_τ_0)
-    zeta_star_S_0[3] = ((R30[3,1]*X_SE_τ_0) + (R30[3,2]*Y_SE_τ_0)) + (R30[3,3]*Z_SE_τ_0)
+    r_star_S_0[1] = ((R30[1,1]*X_SE_τ_0) + (R30[1,2]*Y_SE_τ_0)) + (R30[1,3]*Z_SE_τ_0)
+    r_star_S_0[2] = ((R30[2,1]*X_SE_τ_0) + (R30[2,2]*Y_SE_τ_0)) + (R30[2,3]*Z_SE_τ_0)
+    r_star_S_0[3] = ((R30[3,1]*X_SE_τ_0) + (R30[3,2]*Y_SE_τ_0)) + (R30[3,3]*Z_SE_τ_0)
     # r-star 1, Sun
-    rho_star_S_1[1]  = ((R31[1,1]*X_SE_τ_1) + (R31[1,2]*Y_SE_τ_1)) + (R31[1,3]*Z_SE_τ_1)
-    rho_star_S_1[2]  = ((R31[2,1]*X_SE_τ_1) + (R31[2,2]*Y_SE_τ_1)) + (R31[2,3]*Z_SE_τ_1)
-    zeta_star_S_1[3] = ((R31[3,1]*X_SE_τ_1) + (R31[3,2]*Y_SE_τ_1)) + (R31[3,3]*Z_SE_τ_1)
+    r_star_S_1[1] = ((R31[1,1]*X_SE_τ_1) + (R31[1,2]*Y_SE_τ_1)) + (R31[1,3]*Z_SE_τ_1)
+    r_star_S_1[2] = ((R31[2,1]*X_SE_τ_1) + (R31[2,2]*Y_SE_τ_1)) + (R31[2,3]*Z_SE_τ_1)
+    r_star_S_1[3] = ((R31[3,1]*X_SE_τ_1) + (R31[3,2]*Y_SE_τ_1)) + (R31[3,3]*Z_SE_τ_1)
     # r-star 2, Sun
-    rho_star_S_2[1]  = ((R32[1,1]*X_SE_τ_2) + (R32[1,2]*Y_SE_τ_2)) + (R32[1,3]*Z_SE_τ_2)
-    rho_star_S_2[2]  = ((R32[2,1]*X_SE_τ_2) + (R32[2,2]*Y_SE_τ_2)) + (R32[2,3]*Z_SE_τ_2)
-    zeta_star_S_2[3] = ((R32[3,1]*X_SE_τ_2) + (R32[3,2]*Y_SE_τ_2)) + (R32[3,3]*Z_SE_τ_2)
+    r_star_S_2[1] = ((R32[1,1]*X_SE_τ_2) + (R32[1,2]*Y_SE_τ_2)) + (R32[1,3]*Z_SE_τ_2)
+    r_star_S_2[2] = ((R32[2,1]*X_SE_τ_2) + (R32[2,2]*Y_SE_τ_2)) + (R32[2,3]*Z_SE_τ_2)
+    r_star_S_2[3] = ((R32[3,1]*X_SE_τ_2) + (R32[3,2]*Y_SE_τ_2)) + (R32[3,3]*Z_SE_τ_2)
 
     # X_bf[mo,ea] are geocentric, Earth-fixed "unprimed" position of perturbed body (Moon) in cylindrical coordinates
 
-    ρ0s2_M = (rho_star_M_0[1]^2) + (rho_star_M_0[2]^2)
+    ρ0s2_M = (r_star_M_0[1]^2) + (r_star_M_0[2]^2)
     ρ0s_M = sqrt(ρ0s2_M)
-    z0s2_M = zeta_star_M_0[3]^2
+    z0s2_M = r_star_M_0[3]^2
     r0s2_M = ρ0s2_M + z0s2_M
     r0s_M = sqrt(r0s2_M)
     r0s5_M = r0s_M^5
 
-    ρ0s2_S = (rho_star_S_0[1]^2) + (rho_star_S_0[2]^2)
+    ρ0s2_S = (r_star_S_0[1]^2) + (r_star_S_0[2]^2)
     ρ0s_S = sqrt(ρ0s2_S)
-    z0s2_S = zeta_star_S_0[3]^2
+    z0s2_S = r_star_S_0[3]^2
     r0s2_S = ρ0s2_S + z0s2_S
     r0s_S = sqrt(r0s2_S)
     r0s5_S = r0s_S^5
 
-    coeff0_M = r0s2_M - 5( ( ((Z_bf[mo,ea]*zeta_star_M_0[3])^2) + 0.5((r_xy[mo,ea]*ρ0s_M)^2) )/r_p2[mo,ea] )
-    coeff0_S = r0s2_S - 5( ( ((Z_bf[mo,ea]*zeta_star_S_0[3])^2) + 0.5((r_xy[mo,ea]*ρ0s_S)^2) )/r_p2[mo,ea] )
+    coeff0_M = r0s2_M - 5( ( ((Z_bf[mo,ea]*r_star_M_0[3])^2) + 0.5((r_xy[mo,ea]*ρ0s_M)^2) )/r_p2[mo,ea] )
+    coeff0_S = r0s2_S - 5( ( ((Z_bf[mo,ea]*r_star_S_0[3])^2) + 0.5((r_xy[mo,ea]*ρ0s_S)^2) )/r_p2[mo,ea] )
 
     k_20E_div_r0s5_M = k_20E/r0s5_M
     k_20E_div_r0s5_S = k_20E/r0s5_S
@@ -1715,24 +1696,24 @@ end
     aux0_S_y = k_20E_div_r0s5_S*((ρ0s2_S + coeff0_S)*Y_bf[mo,ea])
     aux0_S_z = k_20E_div_r0s5_S*(((2z0s2_S) + coeff0_S)*Z_bf[mo,ea])
 
-    ρ1s2_M = (rho_star_M_1[1]^2) + (rho_star_M_1[2]^2)
+    ρ1s2_M = (r_star_M_1[1]^2) + (r_star_M_1[2]^2)
     ρ1s_M = sqrt(ρ1s2_M)
-    z1s2_M = zeta_star_M_1[3]^2
+    z1s2_M = r_star_M_1[3]^2
     r1s2_M = ρ1s2_M + z1s2_M
     r1s_M = sqrt(r1s2_M)
     r1s5_M = r1s_M^5
 
-    ρ1s2_S = (rho_star_S_1[1]^2) + (rho_star_S_1[2]^2)
+    ρ1s2_S = (r_star_S_1[1]^2) + (r_star_S_1[2]^2)
     ρ1s_S = sqrt(ρ1s2_S)
-    z1s2_S = zeta_star_S_1[3]^2
+    z1s2_S = r_star_S_1[3]^2
     r1s2_S = ρ1s2_S + z1s2_S
     r1s_S = sqrt(r1s2_S)
     r1s5_S = r1s_S^5
 
-    coeff1_1_M = (X_bf[mo,ea]*rho_star_M_1[1]) + (Y_bf[mo,ea]*rho_star_M_1[2])
-    coeff1_1_S = (X_bf[mo,ea]*rho_star_S_1[1]) + (Y_bf[mo,ea]*rho_star_S_1[2])
-    coeff2_1_M = Z_bf[mo,ea]*zeta_star_M_1[3]
-    coeff2_1_S = Z_bf[mo,ea]*zeta_star_S_1[3]
+    coeff1_1_M = (X_bf[mo,ea]*r_star_M_1[1]) + (Y_bf[mo,ea]*r_star_M_1[2])
+    coeff1_1_S = (X_bf[mo,ea]*r_star_S_1[1]) + (Y_bf[mo,ea]*r_star_S_1[2])
+    coeff2_1_M = Z_bf[mo,ea]*r_star_M_1[3]
+    coeff2_1_S = Z_bf[mo,ea]*r_star_S_1[3]
 
     coeff3_1_M = ((10coeff1_1_M)*coeff2_1_M)/r_p2[mo,ea]
     coeff3_1_S = ((10coeff1_1_S)*coeff2_1_S)/r_p2[mo,ea]
@@ -1740,43 +1721,41 @@ end
     k_21E_div_r1s5_M = k_21E/r1s5_M
     k_21E_div_r1s5_S = k_21E/r1s5_S
 
-    aux1_M_x = k_21E_div_r1s5_M*((2coeff2_1_M*rho_star_M_1[1]) - (coeff3_1_M*X_bf[mo,ea]))
-    aux1_M_y = k_21E_div_r1s5_M*((2coeff2_1_M*rho_star_M_1[2]) - (coeff3_1_M*Y_bf[mo,ea]))
-    aux1_M_z = k_21E_div_r1s5_M*((2coeff1_1_M*zeta_star_M_1[3]) - (coeff3_1_M*Z_bf[mo,ea]))
-    aux1_S_x = k_21E_div_r1s5_S*((2coeff2_1_S*rho_star_S_1[1]) - (coeff3_1_S*X_bf[mo,ea]))
-    aux1_S_y = k_21E_div_r1s5_S*((2coeff2_1_S*rho_star_S_1[2]) - (coeff3_1_S*Y_bf[mo,ea]))
-    aux1_S_z = k_21E_div_r1s5_S*((2coeff1_1_S*zeta_star_S_1[3]) - (coeff3_1_S*Z_bf[mo,ea]))
+    aux1_M_x = k_21E_div_r1s5_M*((2coeff2_1_M*r_star_M_1[1]) - (coeff3_1_M*X_bf[mo,ea]))
+    aux1_M_y = k_21E_div_r1s5_M*((2coeff2_1_M*r_star_M_1[2]) - (coeff3_1_M*Y_bf[mo,ea]))
+    aux1_M_z = k_21E_div_r1s5_M*((2coeff1_1_M*r_star_M_1[3]) - (coeff3_1_M*Z_bf[mo,ea]))
+    aux1_S_x = k_21E_div_r1s5_S*((2coeff2_1_S*r_star_S_1[1]) - (coeff3_1_S*X_bf[mo,ea]))
+    aux1_S_y = k_21E_div_r1s5_S*((2coeff2_1_S*r_star_S_1[2]) - (coeff3_1_S*Y_bf[mo,ea]))
+    aux1_S_z = k_21E_div_r1s5_S*((2coeff1_1_S*r_star_S_1[3]) - (coeff3_1_S*Z_bf[mo,ea]))
 
-    ρ2s2_M = (rho_star_M_2[1]^2) + (rho_star_M_2[2]^2)
+    ρ2s2_M = (r_star_M_2[1]^2) + (r_star_M_2[2]^2)
     ρ2s_M = sqrt(ρ2s2_M)
-    z2s2_M = zeta_star_M_2[3]^2
+    z2s2_M = r_star_M_2[3]^2
     r2s2_M = ρ2s2_M + z2s2_M
     r2s_M = sqrt(r2s2_M)
     r2s5_M = r2s_M^5
 
-    ρ2s2_S = (rho_star_S_2[1]^2) + (rho_star_S_2[2]^2)
+    ρ2s2_S = (r_star_S_2[1]^2) + (r_star_S_2[2]^2)
     ρ2s_S = sqrt(ρ2s2_S)
-    z2s2_S = zeta_star_S_2[3]^2
+    z2s2_S = r_star_S_2[3]^2
     r2s2_S = ρ2s2_S + z2s2_S
     r2s_S = sqrt(r2s2_S)
     r2s5_S = r2s_S^5
 
-    coeff1_2_M = (X_bf[mo,ea]*rho_star_M_2[1]) + (Y_bf[mo,ea]*rho_star_M_2[2])
-    coeff1_2_S = (X_bf[mo,ea]*rho_star_S_2[1]) + (Y_bf[mo,ea]*rho_star_S_2[2])
-    coeff2_2_M = ρ2s2_M^2
-    coeff2_2_S = ρ2s2_S^2
+    coeff1_2_M = (X_bf[mo,ea]*r_star_M_2[1]) + (Y_bf[mo,ea]*r_star_M_2[2])
+    coeff1_2_S = (X_bf[mo,ea]*r_star_S_2[1]) + (Y_bf[mo,ea]*r_star_S_2[2])
 
-    coeff3_2_M = 5( (coeff1_2_M^2) - 0.5((r_xy[mo,ea]^2)*coeff2_2_M) )/r_p2[mo,ea]
-    coeff3_2_S = 5( (coeff1_2_S^2) - 0.5((r_xy[mo,ea]^2)*coeff2_2_S) )/r_p2[mo,ea]
+    coeff3_2_M = 5( (coeff1_2_M^2) - 0.5((r_xy[mo,ea]^2)*ρ2s2_M) )/r_p2[mo,ea]
+    coeff3_2_S = 5( (coeff1_2_S^2) - 0.5((r_xy[mo,ea]^2)*ρ2s2_S) )/r_p2[mo,ea]
 
     k_22E_div_r2s5_M = k_22E/r2s5_M
     k_22E_div_r2s5_S = k_22E/r2s5_S
 
-    aux2_M_x = k_22E_div_r2s5_M*(  (2coeff1_2_M*rho_star_M_2[1])-(coeff2_2_M+coeff3_2_M)*X_bf[mo,ea]  )
-    aux2_M_y = k_22E_div_r2s5_M*(  (2coeff1_2_M*rho_star_M_2[2])-(coeff2_2_M+coeff3_2_M)*Y_bf[mo,ea]  )
+    aux2_M_x = k_22E_div_r2s5_M*(  (2coeff1_2_M*r_star_M_2[1])-(ρ2s2_M+coeff3_2_M)*X_bf[mo,ea]  )
+    aux2_M_y = k_22E_div_r2s5_M*(  (2coeff1_2_M*r_star_M_2[2])-(ρ2s2_M+coeff3_2_M)*Y_bf[mo,ea]  )
     aux2_M_z = k_22E_div_r2s5_M*(  -coeff3_2_M*Z_bf[mo,ea]  )
-    aux2_S_x = k_22E_div_r2s5_S*(  (2coeff1_2_S*rho_star_S_2[1])-(coeff2_2_S+coeff3_2_S)*X_bf[mo,ea]  )
-    aux2_S_y = k_22E_div_r2s5_S*(  (2coeff1_2_S*rho_star_S_2[2])-(coeff2_2_S+coeff3_2_S)*Y_bf[mo,ea]  )
+    aux2_S_x = k_22E_div_r2s5_S*(  (2coeff1_2_S*r_star_S_2[1])-(ρ2s2_S+coeff3_2_S)*X_bf[mo,ea]  )
+    aux2_S_y = k_22E_div_r2s5_S*(  (2coeff1_2_S*r_star_S_2[2])-(ρ2s2_S+coeff3_2_S)*Y_bf[mo,ea]  )
     aux2_S_z = k_22E_div_r2s5_S*(  -coeff3_2_S*Z_bf[mo,ea]  )
 
     RE_div_r_p5 = (RE_au/r_p1d2[mo,ea])^5
