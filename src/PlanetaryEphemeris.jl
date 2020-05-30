@@ -37,11 +37,4 @@ include("dynamical_model.jl")
 include("propagation.jl")
 include("osculating.jl")
 
-function __init__()
-    @show length(methods(TaylorIntegration.jetcoeffs!))
-    @show methods(NBP_pN_A_J23E_J23M_J2S!)
-    @show methods(NBP_pN_A_J23E_J23M_J2S_threads!)
-    @show methods(TaylorIntegration.jetcoeffs!)
-end
-
 end # module
