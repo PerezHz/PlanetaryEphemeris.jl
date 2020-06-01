@@ -5,6 +5,8 @@
 using PlanetaryEphemeris
 using Dates, JLD
 
+Threads.nthreads()
+
 #script parameters (TODO: use ArgParse.jl instead)
 const maxsteps = 10000
 const nyears = 5.0 #24.0
