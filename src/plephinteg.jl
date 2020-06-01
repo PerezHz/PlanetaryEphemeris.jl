@@ -77,9 +77,10 @@ function taylorinteg_threads(f!, q0::Array{U,1}, t0::T, tmax::T, order::Int, abs
     # Integration
     nsteps = 1
     while sign_tstep*t0 < sign_tstep*tmax
-        δt = taylorstep_threads!(f!, t, x, dx, xaux, abstol, params, parse_eqs) # δt is positive!
+        # δt = taylorstep_threads!(f!, t, x, dx, xaux, abstol, params, parse_eqs) # δt is positive!
         # Below, δt has the proper sign according to the direction of the integration
-        δt = sign_tstep * min(δt, sign_tstep*(tmax-t0))
+        # δt = sign_tstep * min(δt, sign_tstep*(tmax-t0))
+        δt = sign_tstep * one(t0)
         evaluate_threads!(x, δt, x0) # new initial condition
         if dense
             xv_interp[:,nsteps] .= deepcopy(x)
