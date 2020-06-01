@@ -30,7 +30,8 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
 
     # do integration
     if dense
-        @time sseph_ = taylorinteg(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
+        # @time sseph_ = taylorinteg(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
+        @time sseph_ = taylorinteg_threads(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
         # transform Julian dates to TDB seconds since initial Julian date
         if quadmath
             et0 = (jd0-J2000)*daysec
@@ -44,7 +45,8 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
         sseph = TaylorInterpolant(et0, etv, sseph_x_et)
         sol = (sseph=sseph,)
     else
-        @time t, x = taylorinteg(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
+        # @time t, x = taylorinteg(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
+        @time t, x = taylorinteg_threads(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
         sol = (t=t[:], x=x[:,:])
     end
 
