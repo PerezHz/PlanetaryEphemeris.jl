@@ -83,7 +83,15 @@ function taylorinteg_threads(f!, q0::Array{U,1}, t0::T, tmax::T, order::Int, abs
         δt = sign_tstep * one(t0)
         evaluate_threads!(x, δt, x0) # new initial condition
         if dense
-            xv_interp[:,nsteps] .= deepcopy(x)
+            # @inbounds xv_interp[:,nsteps] .= deepcopy(x)
+            Threads.@threads for i in eachindex(x0)
+                @inbounds xv_interp[i,nsteps] = deepcopy(x[i])
+            end
+        else
+            # @inbounds xv[:,nsteps] .= x0
+            Threads.@threads for i in eachindex(x0)
+                @inbounds xv[i,nsteps] = x0[i]
+            end
         end
         Threads.@threads for i in eachindex(x0)
             @inbounds x[i][0] = x0[i]
@@ -93,7 +101,6 @@ function taylorinteg_threads(f!, q0::Array{U,1}, t0::T, tmax::T, order::Int, abs
         @inbounds t[0] = t0
         nsteps += 1
         @inbounds tv[nsteps] = t0
-        @inbounds xv[:,nsteps] .= x0
         if nsteps > maxsteps
             @warn("""
             Maximum number of integration steps reached; exiting.
