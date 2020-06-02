@@ -71,8 +71,10 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
             @show recovered_sol_i == sol[ind]
         end
         println("Saved solution")
+        return nothing
+    else
+        return sseph
     end
-    return nothing
 end
 
 # # auxiliary function; generates ephemeris file for bodies `i1` through `i2` out of `ephfile`, which stores ephemeris of a full Solar System integration
