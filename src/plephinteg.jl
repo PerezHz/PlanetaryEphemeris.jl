@@ -14,22 +14,23 @@ function stepsize_threads(q::AbstractArray{Taylor1{U},1}, epsilon::T) where
         {T<:Real, U<:Number}
     R = promote_type(typeof(norm(constant_term(q[1]), Inf)), T)
     h = convert(R, Inf)
-    Threads.@threads for i in eachindex(q)
-        @inbounds hi = TaylorIntegration.stepsize( q[i], epsilon )
-        h = min( h, hi )
-    end
+    # Threads.@threads for i in eachindex(q)
+    #     @inbounds hi = TaylorIntegration.stepsize( q[i], epsilon )
+    #     h = min( h, hi )
+    # end
 
-    # If `isinf(h)==true`, we use the maximum (finite)
-    # step-size obtained from all coefficients as above.
-    # Note that the time step is independent from `epsilon`.
-    if isinf(h)
-        h = zero(R)
-        Threads.@threads for i in eachindex(q)
-            @inbounds hi = TaylorIntegration._second_stepsize(q[i], epsilon)
-            h = max( h, hi )
-        end
-    end
-    return h::R
+    # # If `isinf(h)==true`, we use the maximum (finite)
+    # # step-size obtained from all coefficients as above.
+    # # Note that the time step is independent from `epsilon`.
+    # if isinf(h)
+    #     h = zero(R)
+    #     Threads.@threads for i in eachindex(q)
+    #         @inbounds hi = TaylorIntegration._second_stepsize(q[i], epsilon)
+    #         h = max( h, hi )
+    #     end
+    # end
+    h = TaylorIntegration.stepsize( q[1], epsilon )
+    return one(h)::R
 end
 
 function taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}},
@@ -77,11 +78,13 @@ function taylorinteg_threads(f!, q0::Array{U,1}, t0::T, tmax::T, order::Int, abs
     # Integration
     nsteps = 1
     while sign_tstep*t0 < sign_tstep*tmax
-        # δt = taylorstep_threads!(f!, t, x, dx, xaux, abstol, params, parse_eqs) # δt is positive!
+        δt = taylorstep_threads!(f!, t, x, dx, xaux, abstol, params, parse_eqs) # δt is positive!
+        # δt = TaylorIntegration.taylorstep!(f!, t, x, dx, xaux, abstol, params, parse_eqs) # δt is positive!
         # Below, δt has the proper sign according to the direction of the integration
         # δt = sign_tstep * min(δt, sign_tstep*(tmax-t0))
-        δt = sign_tstep * one(t0)
+        δt = sign_tstep * min(δt, sign_tstep*(tmax-t0))
         evaluate_threads!(x, δt, x0) # new initial condition
+        # evaluate!(x, δt, x0) # new initial condition
         if dense
             # @inbounds xv_interp[:,nsteps] .= deepcopy(x)
             Threads.@threads for i in eachindex(x0)
