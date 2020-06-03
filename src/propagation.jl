@@ -30,24 +30,24 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
 
     # do integration
     if dense
-        # @time sseph_ = taylorinteg(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
-        @time sseph_ = taylorinteg_threads(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
+        # @time sol_ = taylorinteg(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
+        @time sol_ = taylorinteg_threads(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
         # transform Julian dates to TDB seconds since initial Julian date
         if quadmath
             et0 = (jd0-J2000)*daysec
-            etv = Float64.( sseph_.t[:]*daysec )
-            sseph_x_et = map( x->x(Taylor1(order)/daysec), map(x->Taylor1(Float64.(x.coeffs)), sseph_.x[:,:]) )
+            etv = Float64.( sol_.t[:]*daysec )
+            sseph_x_et = map( x->x(Taylor1(order)/daysec), map(x->Taylor1(Float64.(x.coeffs)), sol_.x[:,:]) )
         else
             et0 = (jd0-J2000)*daysec
-            etv = sseph_.t[:]*daysec
-            sseph_x_et = map(x->x(Taylor1(order)/daysec), sseph_.x[:,:])
+            etv = sol_.t[:]*daysec
+            sseph_x_et = map(x->x(Taylor1(order)/daysec), sol_.x[:,:])
         end
         sseph = TaylorInterpolant(et0, etv, sseph_x_et)
         sol = (sseph=sseph,)
     else
-        # @time t, x = taylorinteg(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
-        @time t, x = taylorinteg_threads(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
-        sol = (t=t[:], x=x[:,:])
+        # @time sol_ = taylorinteg(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
+        @time sol_ = taylorinteg_threads(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
+        sol = (t=sol_[1][:], x=sol_[2][:,:])
     end
 
     #write solution to .jld files

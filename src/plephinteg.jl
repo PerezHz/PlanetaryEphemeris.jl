@@ -1,7 +1,6 @@
 # Threaded version of TaylorSeries.evaluate!
 function evaluate_threads!(x::Array{Taylor1{T},1}, δt::T,
         x0::Union{Array{T,1},SubArray{T,1}}) where {T<:Number}
-
     # @assert length(x) == length(x0)
     Threads.@threads for i in eachindex(x, x0)
         x0[i] = evaluate( x[i], δt )
@@ -14,23 +13,24 @@ function stepsize_threads(q::AbstractArray{Taylor1{U},1}, epsilon::T) where
         {T<:Real, U<:Number}
     R = promote_type(typeof(norm(constant_term(q[1]), Inf)), T)
     h = convert(R, Inf)
-    # Threads.@threads for i in eachindex(q)
-    #     @inbounds hi = TaylorIntegration.stepsize( q[i], epsilon )
-    #     h = min( h, hi )
-    # end
+    Threads.@threads for i in eachindex(q)
+        @inbounds hi = TaylorIntegration.stepsize( q[i], epsilon )
+        h = min( h, hi )
+    end
 
-    # # If `isinf(h)==true`, we use the maximum (finite)
-    # # step-size obtained from all coefficients as above.
-    # # Note that the time step is independent from `epsilon`.
-    # if isinf(h)
-    #     h = zero(R)
-    #     Threads.@threads for i in eachindex(q)
-    #         @inbounds hi = TaylorIntegration._second_stepsize(q[i], epsilon)
-    #         h = max( h, hi )
-    #     end
-    # end
-    h = TaylorIntegration.stepsize( q[1], epsilon )
-    return one(h)::R
+    # If `isinf(h)==true`, we use the maximum (finite)
+    # step-size obtained from all coefficients as above.
+    # Note that the time step is independent from `epsilon`.
+    if isinf(h)
+        h = zero(R)
+        Threads.@threads for i in eachindex(q)
+            @inbounds hi = TaylorIntegration._second_stepsize(q[i], epsilon)
+            h = max( h, hi )
+        end
+    end
+    return h::R
+    # h = TaylorIntegration.stepsize( q[1], epsilon )
+    # return one(h)::R
 end
 
 function taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}},
