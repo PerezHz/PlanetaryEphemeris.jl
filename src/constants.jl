@@ -547,4 +547,4 @@ const τ_1 = 7.3632190228041890E-03 # Rotational time-lag for diurnal deformatio
 const τ_2 = 2.5352978633388720E-03 # Rotational time-lag for semi-diurnal deformation, days
 
 # standard value of nominal mean angular velocity of Earth (rad/day), ESAA 2014 Sec 7.4.3.3 p. 296: 7.2921151467e-5 rad/second
-const ω_E = daysec*7.2921151467e-5 # rad/day
+const ω_E = daysec*7.2921151467e-5 # (7.2921151467e-5 rad/sec)*daysec -> rad/day
