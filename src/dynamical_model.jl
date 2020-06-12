@@ -1220,7 +1220,7 @@ end
     local αm = eulang_t[1] - (pi/2)
     local δm = (pi/2) - eulang_t[2]
     local Wm = eulang_t[3]
-    local M_ = Array{Taylor1{S}}(undef, 3, 3, N)
+    local M_ = Array{Taylor1{S}}(undef, 3, 3, 5)
     local M_[:,:,ea] = c2t_jpl_de430(dsj2k)
     local M_[:,:,su] = pole_rotation(αs, δs)
     local M_[:,:,mo] = pole_rotation(αm, δm, Wm)
@@ -1246,10 +1246,10 @@ end
     local RE_au = (RE/au)
     local J2E_t = (J2E + J2EDOT*(dsj2k/yr))*(RE_au^2)
     local J2S_t = JSEM[su,2]*one_t
-    # Moon tidal acc: space-fixed -> Earth-fixed -> rotational time-delay
-    local R30 = M_[:,:,ea] #Rz(-ω_E*τ_0)* # .*one_t #
-    local R31 = Rz(-ω_E*τ_1)*R30 #* # .*one_t #
-    local R32 = Rz(-ω_E*τ_2)*R30 #* # .*one_t #
+    # Moon tidal acc: geocentric space-fixed -> rotational time-delay -> geocentric Earth true-equator-of-date frame
+    local R30 = M_[:,:,ea] #c2t_jpl_de430(dsj2k-τ_0p) #Rz(-ω_E*τ_0) == Id(3x3), since τ_0=0
+    local R31 = Rz(-ω_E*τ_1)*R30 # *c2t_jpl_de430(dsj2k-τ_1p)
+    local R32 = Rz(-ω_E*τ_2)*R30 # *c2t_jpl_de430(dsj2k-τ_2p)
     local tid_num_coeff = 1.5*(1.0 + μ[mo]/μ[ea])
 
     Threads.@threads for j in 1:N
@@ -1768,7 +1768,7 @@ end
     tidal_bf_y = (tide_acc_coeff_M*((aux0_M_y+aux1_M_y)+aux2_M_y)) + (tide_acc_coeff_S*((aux0_S_y+aux1_S_y)+aux2_S_y))
     tidal_bf_z = (tide_acc_coeff_M*((aux0_M_z+aux1_M_z)+aux2_M_z)) + (tide_acc_coeff_S*((aux0_S_z+aux1_S_z)+aux2_S_z))
 
-    # transform from geocentric Earth-fixed coordinates to geocentric space-fixed coordinates
+    # transform from geocentric Earth-true-equator-of-date coordinates to geocentric mean equator of J2000.0 coordinates
     tidal_x = ((M_[1,1,ea]*tidal_bf_x)+(M_[2,1,ea]*tidal_bf_y)) + (M_[3,1,ea]*tidal_bf_z)
     tidal_y = ((M_[1,2,ea]*tidal_bf_x)+(M_[2,2,ea]*tidal_bf_y)) + (M_[3,2,ea]*tidal_bf_z)
     tidal_z = ((M_[1,3,ea]*tidal_bf_x)+(M_[2,3,ea]*tidal_bf_y)) + (M_[3,3,ea]*tidal_bf_z)
