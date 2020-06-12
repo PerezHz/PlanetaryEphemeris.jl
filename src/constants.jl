@@ -539,7 +539,7 @@ const k_21E = 0.32 # Potential Love number for diurnal deformation
 const k_22E = 0.32 # Potential Love number for semi-diurnal deformation
 
 const τ_0p = 0.0640 # Orbital time-lag for long-period deformation, days
-const τ_1p = -0.0044 # Orbital time-lag for diurnal deformation, days
+const τ_1p = -0.044 # Orbital time-lag for diurnal deformation, days --> DE430 report states -0.0044, but tech comments and Williams et al. (2006) state -0.044
 const τ_2p = -0.1000 # Orbital time-lag for semi-diurnal deformation, days
 
 const τ_0 = 0.0 # Rotational time-lag for long-period deformation, days
