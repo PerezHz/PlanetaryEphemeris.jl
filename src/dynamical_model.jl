@@ -1056,9 +1056,11 @@ end
     # S: auxiliary variable =eltype(q0)
     # eulang_de430_: Taylor interpolant for DE430 lunar orientation Euler angles
     local N, S, eulang_de430_, jd0 = params
-    local qq_ = Taylor1.(constant_term.(q), t.order)
+    local N_back = 11 # number of bodies in backward integration
+    local params_back = (N_back, S, eulang_de430_, jd0)
+    local qq_ = Taylor1.(constant_term.(q[union(1:3N_back, 3N+1:3N+3N_back)]), t.order)
     local dqq_ = similar(qq_)
-    local jtcffs = TaylorIntegration.jetcoeffs!(Val(NBP_pN_A_J23E_J23M_J2S_threads!), t, qq_, dqq_, params)
+    local jtcffs = TaylorIntegration.jetcoeffs!(Val(NBP_pN_A_J23E_J23M_J2S_threads!), t, qq_, dqq_, params_back)
     local __t = Taylor1(t.order)
     local q_del_τ_M = qq_(__t-τ_M)
     local q_del_τ_0 = qq_(__t-τ_0p)
