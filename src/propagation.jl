@@ -1,7 +1,7 @@
 function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
         output::Bool=true, dense::Bool=false, ephfile::String="sseph.jld",
         dynamics::Function=NBP_pN_A_J23E_J23M_J2S!, nast::Int=343,
-        quadmath::Bool=false) where {T<:Real}
+        quadmath::Bool=false, ss16ast::Bool=true) where {T<:Real}
 
     # total number of bodies
     N = 11+nast
@@ -44,6 +44,20 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
         end
         sseph = TaylorInterpolant(et0, etv, sseph_x_et)
         sol = (sseph=sseph,)
+        if ss16ast && output
+            i1 = 1
+            i2 = 27 # 11 major bodies + 16 asteroids
+            i2 > N && (i2 = N)
+            indvec = union(3i1-2:3i2, 3*(N+i1)-2:3*(N+i2))
+            sgn_yrs = sign(tspan) == 1.0 ? "p" : "m"
+            nyrs_int = Int(abs(tspan))
+            jldopen("ss16ast343_eph_"*sgn_yrs*"$(nyrs_int)y_et.jld", "w") do file
+                addrequire(file, TaylorSeries)
+                addrequire(file, TaylorIntegration)
+                ss16ast_eph = TaylorInterpolant(sseph.t0, sseph.t, sseph.x[:, indvec])
+                write(file, "ss16ast_eph", ss16ast_eph)
+            end
+        end
     else
         # @time sol_ = taylorinteg(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
         @time sol_ = taylorinteg_threads(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
@@ -73,7 +87,7 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
         println("Saved solution")
         return nothing
     else
-        return sseph
+        return sol
     end
 end
 

@@ -202,7 +202,7 @@ function c2t_jpl_de430(t)
     P_iau7680 = Rz(-zeta(t))*Ry(Theta(t))*Rz(-Zeta(t)) # Moyer (2003), eq. 5-147 (page 5-59)
     corrections = Ry(phi_y(t))*Rx(phi_x(t))
     N_iau80 = nutation_iau80(t) # Moyer (2003), eq. 5-152 (page 5-60)
-    return N_iau80*P_iau7680*corrections
+    return N_iau80*corrections*P_iau7680
 end
 
 function moon_omega(ϕ::Taylor1, θ::Taylor1, ψ::Taylor1)
