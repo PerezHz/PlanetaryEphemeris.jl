@@ -454,7 +454,7 @@ JSEM[mo,2:6] = JM
 const n1SEM = [2, 0, 0, 5, 6]
 const n2M = 6
 
-const C22M =  2.2382900680455860E-05
+const C22M =  2.2382740590560020E-05
 
 const C31M =  2.8480741195592860E-05
 const S31M =  5.8915551555318640E-06
@@ -521,15 +521,27 @@ const β_L = 6.3102131934887270E-04 # Lunar moment parameter, β_L = (C_T-A_T)/B
 const γ_L = 2.2773171480091860E-04 # Lunar moment parameter, γ_L = (B_T-A_T)/C_T
 const k_2M = 0.024059 # potential Love number
 const τ_M = 9.5830547273306690E-02 # time-lag for the lunar solid-body tide (days)
+const α_c = 0.0007 # Ratio of polar moment of inertia of core to mean total polar moment of inertia
+const f_c = 2.4623904789198150E-04 #oblateness of core
+const k_ν_div_C_T = 1.6365616533709530E-08 # Friction coefficient between core and mantle, radian/day
+
 const J2_M_und = 2.0321568464952570E-04 # undistorted lunar 2nd zonal harmonic coefficient
 
-#diagonal elements of undistorted lunar moment of inertia
+#diagonal elements of undistorted lunar mantle moment of inertia
 const A_T = (2(1-β_L*γ_L)/(2β_L-γ_L+β_L*γ_L))*J2_M_und
 const B_T = (2(1+γ_L)/(2β_L-γ_L+β_L*γ_L))*J2_M_und
 const C_T = (2(1+β_L)/(2β_L-γ_L+β_L*γ_L))*J2_M_und
 
+#diagonal elements of lunar core moment of inertia
+const A_c = α_c*C_T*(1-f_c)
+const B_c = α_c*C_T*(1-f_c)
+const C_c = α_c*C_T
+
 #lunar undistorted total moment of inertia
 const ITM_und = diagm([A_T, B_T, C_T]*μ[mo]*R_moon^2)
+
+#lunar core moment of inertia
+const I_c = diagm([A_c, B_c, C_c]*μ[mo]*R_moon^2)
 
 const ld = 384402.0 # Lunar distance (km)
 const n_moon = sqrt((μ[ea]+μ[mo])/((ld/au)^3)) # lunar mean motion (rad/day)
