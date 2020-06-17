@@ -535,6 +535,7 @@ end
     # S: auxiliary variable =eltype(q0)
     # eulang_de430_: Taylor interpolant for DE430 lunar orientation Euler angles
     local N, S, eulang_de430_, jd0 = params
+    local N_ext = 11
     local eulang_t = eulang_de430_( (t+(jd0-J2000))*daysec )
     #local eulang_t_del = eulang_de430_( ((t-τ_M)+(jd0-J2000))*daysec )
 
@@ -616,64 +617,64 @@ end
     postNewtonZ = Array{Taylor1{S}}(undef, N, postnewton_iter+1)
 
     # (Jn, Cmn, Smn) acceleration auxiliaries
-    X_bf_1 = Array{Taylor1{S}}(undef, N, N)
-    Y_bf_1 = Array{Taylor1{S}}(undef, N, N)
-    Z_bf_1 = Array{Taylor1{S}}(undef, N, N)
-    X_bf_2 = Array{Taylor1{S}}(undef, N, N)
-    Y_bf_2 = Array{Taylor1{S}}(undef, N, N)
-    Z_bf_2 = Array{Taylor1{S}}(undef, N, N)
-    X_bf_3 = Array{Taylor1{S}}(undef, N, N)
-    Y_bf_3 = Array{Taylor1{S}}(undef, N, N)
-    Z_bf_3 = Array{Taylor1{S}}(undef, N, N)
-    X_bf = Array{Taylor1{S}}(undef, N, N)
-    Y_bf = Array{Taylor1{S}}(undef, N, N)
-    Z_bf = Array{Taylor1{S}}(undef, N, N)
-    F_JCS_x = Array{Taylor1{S}}(undef, N, N)
-    F_JCS_y = Array{Taylor1{S}}(undef, N, N)
-    F_JCS_z = Array{Taylor1{S}}(undef, N, N)
-    temp_accX_j = Array{Taylor1{S}}(undef, N, N)
-    temp_accY_j = Array{Taylor1{S}}(undef, N, N)
-    temp_accZ_j = Array{Taylor1{S}}(undef, N, N)
-    temp_accX_i = Array{Taylor1{S}}(undef, N, N)
-    temp_accY_i = Array{Taylor1{S}}(undef, N, N)
-    temp_accZ_i = Array{Taylor1{S}}(undef, N, N)
-    sin_ϕ = Array{Taylor1{S}}(undef, N, N)
-    cos_ϕ = Array{Taylor1{S}}(undef, N, N)
-    sin_λ = Array{Taylor1{S}}(undef, N, N)
-    cos_λ = Array{Taylor1{S}}(undef, N, N)
-    r_xy = Array{Taylor1{S}}(undef, N, N)
-    r_p4 = Array{Taylor1{S}}(undef, N, N)
-    P_n = Array{Taylor1{S}}(undef, N, N, maximum(n1SEM)+1)
-    dP_n = Array{Taylor1{S}}(undef, N, N, maximum(n1SEM)+1)
-    temp_fjξ = Array{Taylor1{S}}(undef, N, N, maximum(n1SEM)+1)
-    temp_fjζ = Array{Taylor1{S}}(undef, N, N, maximum(n1SEM)+1)
-    temp_rn = Array{Taylor1{S}}(undef, N, N, maximum(n1SEM)+1)
-    F_CS_ξ_36 = Array{Taylor1{S}}(undef, N, N)
-    F_CS_η_36 = Array{Taylor1{S}}(undef, N, N)
-    F_CS_ζ_36 = Array{Taylor1{S}}(undef, N, N)
-    F_J_ξ_36 = Array{Taylor1{S}}(undef, N, N)
-    F_J_ζ_36 = Array{Taylor1{S}}(undef, N, N)
-    sin_mλ = Array{Taylor1{S}}(undef, N, N, n1SEM[mo])
-    cos_mλ = Array{Taylor1{S}}(undef, N, N, n1SEM[mo])
-    secϕ_P_nm = Array{Taylor1{S}}(undef, N, N, n1SEM[mo]+1, n1SEM[mo]+1)
-    P_nm = Array{Taylor1{S}}(undef, N, N, n1SEM[mo]+1, n1SEM[mo]+1)
-    cosϕ_dP_nm = Array{Taylor1{S}}(undef, N, N, n1SEM[mo]+1, n1SEM[mo]+1)
-    F_J_ξ = Array{Taylor1{S}}(undef, N, N)
-    F_J_η = Array{Taylor1{S}}(undef, N, N)
-    F_J_ζ = Array{Taylor1{S}}(undef, N, N)
-    F_CS_ξ = Array{Taylor1{S}}(undef, N, N)
-    F_CS_η = Array{Taylor1{S}}(undef, N, N)
-    F_CS_ζ = Array{Taylor1{S}}(undef, N, N)
-    F_JCS_ξ = Array{Taylor1{S}}(undef, N, N)
-    F_JCS_η = Array{Taylor1{S}}(undef, N, N)
-    F_JCS_ζ = Array{Taylor1{S}}(undef, N, N)
-    Rb2p = Array{Taylor1{S}}(undef, N, N, 3, 3) #R matrix body-fixed to "primed" ξηζ frame (Moyer, 1971, eq. 161)
-    Gc2p = Array{Taylor1{S}}(undef, N, N, 3, 3) #G matrix "space-fixed" to "primed" ξηζ frame (Moyer, 1971, eq. 163)
+    X_bf_1 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    Y_bf_1 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    Z_bf_1 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    X_bf_2 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    Y_bf_2 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    Z_bf_2 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    X_bf_3 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    Y_bf_3 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    Z_bf_3 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    X_bf = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    Y_bf = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    Z_bf = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_JCS_x = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_JCS_y = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_JCS_z = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    temp_accX_j = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    temp_accY_j = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    temp_accZ_j = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    temp_accX_i = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    temp_accY_i = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    temp_accZ_i = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    sin_ϕ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    cos_ϕ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    sin_λ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    cos_λ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    r_xy = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    r_p4 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    P_n = Array{Taylor1{S}}(undef, N_ext, N_ext, maximum(n1SEM)+1)
+    dP_n = Array{Taylor1{S}}(undef, N_ext, N_ext, maximum(n1SEM)+1)
+    temp_fjξ = Array{Taylor1{S}}(undef, N_ext, N_ext, maximum(n1SEM)+1)
+    temp_fjζ = Array{Taylor1{S}}(undef, N_ext, N_ext, maximum(n1SEM)+1)
+    temp_rn = Array{Taylor1{S}}(undef, N_ext, N_ext, maximum(n1SEM)+1)
+    F_CS_ξ_36 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_CS_η_36 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_CS_ζ_36 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_J_ξ_36 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_J_ζ_36 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    sin_mλ = Array{Taylor1{S}}(undef, N_ext, N_ext, n1SEM[mo])
+    cos_mλ = Array{Taylor1{S}}(undef, N_ext, N_ext, n1SEM[mo])
+    secϕ_P_nm = Array{Taylor1{S}}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
+    P_nm = Array{Taylor1{S}}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
+    cosϕ_dP_nm = Array{Taylor1{S}}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
+    F_J_ξ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_J_η = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_J_ζ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_CS_ξ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_CS_η = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_CS_ζ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_JCS_ξ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_JCS_η = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_JCS_ζ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    Rb2p = Array{Taylor1{S}}(undef, N_ext, N_ext, 3, 3) #R matrix body-fixed to "primed" ξηζ frame (Moyer, 1971, eq. 161)
+    Gc2p = Array{Taylor1{S}}(undef, N_ext, N_ext, 3, 3) #G matrix "space-fixed" to "primed" ξηζ frame (Moyer, 1971, eq. 163)
 
     # extended-body accelerations
-    accX = Array{Taylor1{S}}(undef, N)
-    accY = Array{Taylor1{S}}(undef, N)
-    accZ = Array{Taylor1{S}}(undef, N)
+    accX = Array{Taylor1{S}}(undef, N_ext)
+    accY = Array{Taylor1{S}}(undef, N_ext)
+    accZ = Array{Taylor1{S}}(undef, N_ext)
 
     # rotations to and from Earth, Sun and Moon pole-oriented frames
     local dsj2k = t+(jd0-2.451545e6) # J2000.0 = 2.451545e6
@@ -682,7 +683,7 @@ end
     local αm = eulang_t[1] - (pi/2)
     local δm = (pi/2) - eulang_t[2]
     local Wm = eulang_t[3]
-    local M_ = Array{Taylor1{S}}(undef, 3, 3, N)
+    local M_ = Array{Taylor1{S}}(undef, 3, 3, 5)
     local M_[:,:,ea] = c2t_jpl_de430(dsj2k)
     local M_[:,:,su] = pole_rotation(αs, δs)
     local M_[:,:,mo] = pole_rotation(αm, δm, Wm)
@@ -701,7 +702,8 @@ end
     local lnm6 = [-(n+1) for n in 1:6]
     local lnm7 = [m for m in 1:6]
     # TODO: solve differences between parsed and non-parsed
-    local J2E_t = (J2E + J2EDOT*(dsj2k/yr))*((RE/au)^2)
+    local RE_au = (RE/au)
+    local J2E_t = (J2E + J2EDOT*(dsj2k/yr))*(RE_au^2)
     local J2S_t = JSEM[su,2]*one_t
 
     Threads.@threads for j in 1:N
@@ -711,9 +713,11 @@ end
 
         newtonianNb_Potential[j] = zero_q_1
 
-        accX[j] = zero_q_1
-        accY[j] = zero_q_1
-        accZ[j] = zero_q_1
+        if j ≤ N_ext
+            accX[j] = zero_q_1
+            accY[j] = zero_q_1
+            accZ[j] = zero_q_1
+        end
 
         dq[3j-2] = q[3(N+j)-2]
         dq[3j-1] = q[3(N+j)-1]
@@ -788,15 +792,15 @@ end
     S21M_t = (-ITM_t[3,2])/(μ[mo]) # S_{21,M}*R_M^2
     S22M_t = ((-ITM_t[2,1])/(μ[mo]))/2 # S_{22,M}*R_M^2
 
-    Threads.@threads for j in 1:N
-        for i in 1:N
+    Threads.@threads for j in 1:N_ext
+        for i in 1:N_ext
             # i == j && continue
             if i == j
                 continue
             else
                 #Jn, Cnm, Snm accelerations, if j-th body is flattened
                 if UJ_interaction[i,j]
-                    # # rotate from inertial frame to extended-body frame
+                    # rotate from inertial frame to extended-body frame
                     X_bf_1[i,j] = X[i,j]*M_[1,1,j]
                     X_bf_2[i,j] = Y[i,j]*M_[1,2,j]
                     X_bf_3[i,j] = Z[i,j]*M_[1,3,j]
@@ -926,11 +930,11 @@ end
                     F_JCS_z[i,j] = ((F_JCS_ξ[i,j]*Gc2p[i,j,1,3]) + (F_JCS_η[i,j]*Gc2p[i,j,2,3])) + (F_JCS_ζ[i,j]*Gc2p[i,j,3,3])
                 end #if UJ_interaction[i,j]
             end # else (i != j)
-        end #for i in 1:N
-    end #for j in 1:N
+        end #for i in 1:N_ext
+    end #for j in 1:N_ext
 
-    for j in 1:N
-        for i in 1:N
+    for j in 1:N_ext
+        for i in 1:N_ext
             # i == j && continue
             if i == j
                 continue
@@ -1043,9 +1047,15 @@ end
 
     #fill accelerations (post-Newtonian and extended body accelerations)
     Threads.@threads for i in 1:N
-        dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1] + accX[i]
-        dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1] + accY[i]
-        dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1] + accZ[i]
+        if i ≤ N_ext
+            dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1] + accX[i]
+            dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1] + accY[i]
+            dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1] + accZ[i]
+        else
+            dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1]
+            dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1]
+            dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1]
+        end
     end
 
     nothing
@@ -1056,10 +1066,13 @@ end
     # S: auxiliary variable =eltype(q0)
     # eulang_de430_: Taylor interpolant for DE430 lunar orientation Euler angles
     local N, S, eulang_de430_, jd0 = params
+    local N_ext = 11 # number of bodies in extended-body accelerations
     local N_back = 11 # number of bodies in backward integration
     local params_back = (N_back, S, eulang_de430_, jd0)
     local qq_ = Taylor1.(constant_term.(q[union(1:3N_back, 3N+1:3N+3N_back)]), t.order)
     local dqq_ = similar(qq_)
+    #local xaux_ = similar(qq_)
+    #local jtcffs = TaylorIntegration.jetcoeffs!(NBP_pN_A_J23E_J23M_J2S_threads!, t, qq_, dqq_, xaux_, params_back)
     local jtcffs = TaylorIntegration.jetcoeffs!(Val(NBP_pN_A_J23E_J23M_J2S_threads!), t, qq_, dqq_, params_back)
     local __t = Taylor1(t.order)
     local q_del_τ_M = qq_(__t-τ_M)
@@ -1148,64 +1161,64 @@ end
     postNewtonZ = Array{Taylor1{S}}(undef, N, postnewton_iter+1)
 
     # (Jn, Cmn, Smn) acceleration auxiliaries
-    X_bf_1 = Array{Taylor1{S}}(undef, N, N)
-    Y_bf_1 = Array{Taylor1{S}}(undef, N, N)
-    Z_bf_1 = Array{Taylor1{S}}(undef, N, N)
-    X_bf_2 = Array{Taylor1{S}}(undef, N, N)
-    Y_bf_2 = Array{Taylor1{S}}(undef, N, N)
-    Z_bf_2 = Array{Taylor1{S}}(undef, N, N)
-    X_bf_3 = Array{Taylor1{S}}(undef, N, N)
-    Y_bf_3 = Array{Taylor1{S}}(undef, N, N)
-    Z_bf_3 = Array{Taylor1{S}}(undef, N, N)
-    X_bf = Array{Taylor1{S}}(undef, N, N)
-    Y_bf = Array{Taylor1{S}}(undef, N, N)
-    Z_bf = Array{Taylor1{S}}(undef, N, N)
-    F_JCS_x = Array{Taylor1{S}}(undef, N, N)
-    F_JCS_y = Array{Taylor1{S}}(undef, N, N)
-    F_JCS_z = Array{Taylor1{S}}(undef, N, N)
-    temp_accX_j = Array{Taylor1{S}}(undef, N, N)
-    temp_accY_j = Array{Taylor1{S}}(undef, N, N)
-    temp_accZ_j = Array{Taylor1{S}}(undef, N, N)
-    temp_accX_i = Array{Taylor1{S}}(undef, N, N)
-    temp_accY_i = Array{Taylor1{S}}(undef, N, N)
-    temp_accZ_i = Array{Taylor1{S}}(undef, N, N)
-    sin_ϕ = Array{Taylor1{S}}(undef, N, N)
-    cos_ϕ = Array{Taylor1{S}}(undef, N, N)
-    sin_λ = Array{Taylor1{S}}(undef, N, N)
-    cos_λ = Array{Taylor1{S}}(undef, N, N)
-    r_xy = Array{Taylor1{S}}(undef, N, N)
-    r_p4 = Array{Taylor1{S}}(undef, N, N)
-    P_n = Array{Taylor1{S}}(undef, N, N, maximum(n1SEM)+1)
-    dP_n = Array{Taylor1{S}}(undef, N, N, maximum(n1SEM)+1)
-    temp_fjξ = Array{Taylor1{S}}(undef, N, N, maximum(n1SEM)+1)
-    temp_fjζ = Array{Taylor1{S}}(undef, N, N, maximum(n1SEM)+1)
-    temp_rn = Array{Taylor1{S}}(undef, N, N, maximum(n1SEM)+1)
-    F_CS_ξ_36 = Array{Taylor1{S}}(undef, N, N)
-    F_CS_η_36 = Array{Taylor1{S}}(undef, N, N)
-    F_CS_ζ_36 = Array{Taylor1{S}}(undef, N, N)
-    F_J_ξ_36 = Array{Taylor1{S}}(undef, N, N)
-    F_J_ζ_36 = Array{Taylor1{S}}(undef, N, N)
-    sin_mλ = Array{Taylor1{S}}(undef, N, N, n1SEM[mo])
-    cos_mλ = Array{Taylor1{S}}(undef, N, N, n1SEM[mo])
-    secϕ_P_nm = Array{Taylor1{S}}(undef, N, N, n1SEM[mo]+1, n1SEM[mo]+1)
-    P_nm = Array{Taylor1{S}}(undef, N, N, n1SEM[mo]+1, n1SEM[mo]+1)
-    cosϕ_dP_nm = Array{Taylor1{S}}(undef, N, N, n1SEM[mo]+1, n1SEM[mo]+1)
-    F_J_ξ = Array{Taylor1{S}}(undef, N, N)
-    F_J_η = Array{Taylor1{S}}(undef, N, N)
-    F_J_ζ = Array{Taylor1{S}}(undef, N, N)
-    F_CS_ξ = Array{Taylor1{S}}(undef, N, N)
-    F_CS_η = Array{Taylor1{S}}(undef, N, N)
-    F_CS_ζ = Array{Taylor1{S}}(undef, N, N)
-    F_JCS_ξ = Array{Taylor1{S}}(undef, N, N)
-    F_JCS_η = Array{Taylor1{S}}(undef, N, N)
-    F_JCS_ζ = Array{Taylor1{S}}(undef, N, N)
-    Rb2p = Array{Taylor1{S}}(undef, N, N, 3, 3) #R matrix body-fixed to "primed" ξηζ frame (Moyer, 1971, eq. 161)
-    Gc2p = Array{Taylor1{S}}(undef, N, N, 3, 3) #G matrix "space-fixed" to "primed" ξηζ frame (Moyer, 1971, eq. 163)
+    X_bf_1 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    Y_bf_1 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    Z_bf_1 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    X_bf_2 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    Y_bf_2 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    Z_bf_2 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    X_bf_3 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    Y_bf_3 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    Z_bf_3 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    X_bf = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    Y_bf = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    Z_bf = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_JCS_x = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_JCS_y = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_JCS_z = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    temp_accX_j = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    temp_accY_j = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    temp_accZ_j = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    temp_accX_i = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    temp_accY_i = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    temp_accZ_i = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    sin_ϕ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    cos_ϕ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    sin_λ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    cos_λ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    r_xy = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    r_p4 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    P_n = Array{Taylor1{S}}(undef, N_ext, N_ext, maximum(n1SEM)+1)
+    dP_n = Array{Taylor1{S}}(undef, N_ext, N_ext, maximum(n1SEM)+1)
+    temp_fjξ = Array{Taylor1{S}}(undef, N_ext, N_ext, maximum(n1SEM)+1)
+    temp_fjζ = Array{Taylor1{S}}(undef, N_ext, N_ext, maximum(n1SEM)+1)
+    temp_rn = Array{Taylor1{S}}(undef, N_ext, N_ext, maximum(n1SEM)+1)
+    F_CS_ξ_36 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_CS_η_36 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_CS_ζ_36 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_J_ξ_36 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_J_ζ_36 = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    sin_mλ = Array{Taylor1{S}}(undef, N_ext, N_ext, n1SEM[mo])
+    cos_mλ = Array{Taylor1{S}}(undef, N_ext, N_ext, n1SEM[mo])
+    secϕ_P_nm = Array{Taylor1{S}}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
+    P_nm = Array{Taylor1{S}}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
+    cosϕ_dP_nm = Array{Taylor1{S}}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
+    F_J_ξ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_J_η = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_J_ζ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_CS_ξ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_CS_η = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_CS_ζ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_JCS_ξ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_JCS_η = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    F_JCS_ζ = Array{Taylor1{S}}(undef, N_ext, N_ext)
+    Rb2p = Array{Taylor1{S}}(undef, N_ext, N_ext, 3, 3) #R matrix body-fixed to "primed" ξηζ frame (Moyer, 1971, eq. 161)
+    Gc2p = Array{Taylor1{S}}(undef, N_ext, N_ext, 3, 3) #G matrix "space-fixed" to "primed" ξηζ frame (Moyer, 1971, eq. 163)
 
     # extended-body accelerations
-    accX = Array{Taylor1{S}}(undef, N)
-    accY = Array{Taylor1{S}}(undef, N)
-    accZ = Array{Taylor1{S}}(undef, N)
+    accX = Array{Taylor1{S}}(undef, N_ext)
+    accY = Array{Taylor1{S}}(undef, N_ext)
+    accZ = Array{Taylor1{S}}(undef, N_ext)
 
     # tidal accelerations
     r_star_M_0 = Array{Taylor1{S}}(undef, 3)
@@ -1229,7 +1242,6 @@ end
     local M_del_mo = pole_rotation(eulang_t_del[1] - (pi/2), (pi/2) - eulang_t_del[2], eulang_t_del[3])
     ITM_t = Array{Taylor1{S}}(undef, 3, 3)
     ITM2_t = Array{Taylor1{S}}(undef, 3, 3)
-    #local ITM2_t = ITM_und.*one_t
     local ITM2_t = ITM_und.*one_t + ITM2(eulang_t_del[1], eulang_t_del[2], eulang_t_del[3])
     local fact_num = -4.5257273867882326e-36 # == -k_2M*μ[ea]*(R_moon^5)
     local fact1_jsem = [(2n-1)/n for n in 1:maximum(n1SEM)]
@@ -1249,9 +1261,9 @@ end
     local J2E_t = (J2E + J2EDOT*(dsj2k/yr))*(RE_au^2)
     local J2S_t = JSEM[su,2]*one_t
     # Moon tidal acc: geocentric space-fixed -> rotational time-delay -> geocentric Earth true-equator-of-date frame
-    local R30 = M_[:,:,ea] #c2t_jpl_de430(dsj2k-τ_0p) #Rz(-ω_E*τ_0) == Id(3x3), since τ_0=0
-    local R31 = Rz(-ω_E*τ_1)*R30 # *c2t_jpl_de430(dsj2k-τ_1p)
-    local R32 = Rz(-ω_E*τ_2)*R30 # *c2t_jpl_de430(dsj2k-τ_2p)
+    local R30 = c2t_jpl_de430(dsj2k-τ_0p) #M_[:,:,ea] # #Rz(-ω_E*τ_0) == Id(3x3), since τ_0=0
+    local R31 = Rz(-ω_E*τ_1)*c2t_jpl_de430(dsj2k-τ_1p) # *R30
+    local R32 = Rz(-ω_E*τ_2)*c2t_jpl_de430(dsj2k-τ_2p) # *R30
     local tid_num_coeff = 1.5*(1.0 + μ[mo]/μ[ea])
 
     Threads.@threads for j in 1:N
@@ -1261,9 +1273,11 @@ end
 
         newtonianNb_Potential[j] = zero_q_1
 
-        accX[j] = zero_q_1
-        accY[j] = zero_q_1
-        accZ[j] = zero_q_1
+        if j ≤ N_ext
+            accX[j] = zero_q_1
+            accY[j] = zero_q_1
+            accZ[j] = zero_q_1
+        end
 
         dq[3j-2] = q[3(N+j)-2]
         dq[3j-1] = q[3(N+j)-1]
@@ -1357,8 +1371,8 @@ end
     S21M_t = (-ITM_t[3,2])/(μ[mo]) # S_{21,M}*R_M^2
     S22M_t = ((-ITM_t[2,1])/(μ[mo]))/2 # S_{22,M}*R_M^2
 
-    Threads.@threads for j in 1:N
-        for i in 1:N
+    Threads.@threads for j in 1:N_ext
+        for i in 1:N_ext
             # i == j && continue
             if i == j
                 continue
@@ -1409,7 +1423,7 @@ end
                     end
                     F_J_ξ_36[i,j] = zero_q_1
                     F_J_ζ_36[i,j] = zero_q_1
-                    for n in 3:n1SEM[j] # min(3,n1SEM[j])
+                    for n in 3:n1SEM[j] #min(3,n1SEM[j])
                         temp_fjξ[i,j,n] = (((P_n[i,j,n+1]*fact4_jsem[n])*JSEM[j,n])/temp_rn[i,j,n]) + F_J_ξ_36[i,j]
                         temp_fjζ[i,j,n] = ((((-dP_n[i,j,n+1])*cos_ϕ[i,j])*JSEM[j,n])/temp_rn[i,j,n]) + F_J_ζ_36[i,j]
                         F_J_ξ_36[i,j] = temp_fjξ[i,j,n]
@@ -1495,11 +1509,11 @@ end
                     F_JCS_z[i,j] = ((F_JCS_ξ[i,j]*Gc2p[i,j,1,3]) + (F_JCS_η[i,j]*Gc2p[i,j,2,3])) + (F_JCS_ζ[i,j]*Gc2p[i,j,3,3])
                 end #if UJ_interaction[i,j]
             end # else (i != j)
-        end #for i in 1:N
-    end #for j in 1:N
+        end #for i in 1:N_ext
+    end #for j in 1:N_ext
 
-    for j in 1:N
-        for i in 1:N
+    for j in 1:N_ext
+        for i in 1:N_ext
             # i == j && continue
             if i == j
                 continue
@@ -1785,9 +1799,15 @@ end
 
     #fill accelerations (post-Newtonian and extended body accelerations)
     Threads.@threads for i in 1:N
-        dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1] + accX[i]
-        dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1] + accY[i]
-        dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1] + accZ[i]
+        if i ≤ N_ext
+            dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1] + accX[i]
+            dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1] + accY[i]
+            dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1] + accZ[i]
+        else
+            dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1]
+            dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1]
+            dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1]
+        end
     end
 
     nothing
