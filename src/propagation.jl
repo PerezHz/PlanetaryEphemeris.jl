@@ -44,20 +44,6 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
         end
         sseph = TaylorInterpolant(et0, etv, sseph_x_et)
         sol = (sseph=sseph,)
-        if ss16ast && output
-            i1 = 1
-            i2 = 27 # 11 major bodies + 16 asteroids
-            i2 > N && (i2 = N)
-            indvec = union(3i1-2:3i2, 3*(N+i1)-2:3*(N+i2))
-            sgn_yrs = sign(tspan) == 1.0 ? "p" : "m"
-            nyrs_int = Int(abs(tspan))
-            jldopen("ss16ast343_eph_"*sgn_yrs*"$(nyrs_int)y_et.jld", "w") do file
-                addrequire(file, TaylorSeries)
-                addrequire(file, TaylorIntegration)
-                ss16ast_eph = TaylorInterpolant(sseph.t0, sseph.t, sseph.x[:, indvec])
-                write(file, "ss16ast_eph", ss16ast_eph)
-            end
-        end
     else
         # @time sol_ = taylorinteg(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
         @time sol_ = taylorinteg_threads(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
@@ -66,42 +52,47 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
 
     #write solution to .jld files
     if output
-        println("Saving solution to file: $ephfile")
-        jldopen(ephfile, "w") do file
-            addrequire(file, TaylorIntegration)
-            # write variables to jld file
+        if ss16ast
+            i1 = 1
+            i2 = 27 # 11 major bodies + 16 asteroids
+            i2 > N && (i2 = N)
+            indvec = union(3i1-2:3i2, 3*(N+i1)-2:3*(N+i2))
+            sgn_yrs = sign(tspan) == 1.0 ? "p" : "m"
+            nyrs_int = Int(abs(tspan))
+            # write output to jld file
+            ss16ast_fname = "ss16ast343_eph_"*sgn_yrs*"$(nyrs_int)y_et.jld"
+            ss16ast_eph = TaylorInterpolant(sseph.t0, sseph.t, sseph.x[:, indvec])
+            jldopen(ss16ast_fname, "w") do file
+                addrequire(file, TaylorSeries)
+                addrequire(file, TaylorIntegration)
+                write(file, "ss16ast_eph", ss16ast_eph)
+            end
+            #check that written output is equal to original variable `ss16ast_eph`
+            recovered_sol_i = load(ss16ast_fname, "ss16ast_eph")
+            @show recovered_sol_i == ss16ast_eph
+        else
+            println("Saving solution to file: $ephfile")
+            jldopen(ephfile, "w") do file
+                addrequire(file, TaylorIntegration)
+                # write variables to jld file
+                for ind in eachindex(sol)
+                    varname = string(ind)
+                    println("Saving variable: ", varname)
+                    write(file, varname, sol[ind])
+                end
+            end
+            #check that recovered variables are equal to original variables
             for ind in eachindex(sol)
                 varname = string(ind)
-                println("Saving variable: ", varname)
-                write(file, varname, sol[ind])
+                #read varname from jld file and assign recovered variable to recovered_sol_i
+                recovered_sol_i = load(ephfile, varname)
+                #check that recovered variable is equal to original variable
+                @show recovered_sol_i == sol[ind]
             end
-        end
-        #check that recovered variables are equal to original variables
-        for ind in eachindex(sol)
-            varname = string(ind)
-            #read varname from jld file and assign recovered variable to recovered_sol_i
-            recovered_sol_i = load(ephfile, varname)
-            #check that recovered variable is equal to original variable
-            @show recovered_sol_i == sol[ind]
         end
         println("Saved solution")
         return nothing
     else
         return sol
-    end
-end
-
-# # auxiliary function; generates ephemeris file for bodies `i1` through `i2` out of `ephfile`, which stores ephemeris of a full Solar System integration
-# # by default, the selected bodies are the Sun, the eight planets, the Moon, and 16 most-massive main-belt asteroids
-function save_bodies_eph(ephfile::String, outfile::String, i1::Int=1, i2::Int=27)
-    @assert i2 ≥ i1
-    t = load(ephfile, "t")
-    x = load(ephfile, "x")
-    indvec = union(3i1-2:3i2, 3*(N+i1)-2:3*(N+i2))
-    # ny = Int(floor( (t[end]-t[1])/yr ))
-    jldopen(outfile, "w") do file
-        addrequire(file, TaylorSeries)
-        write(file, "t", t)
-        write(file, "x", x[:, indvec])
     end
 end
