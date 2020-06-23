@@ -362,7 +362,7 @@ const μ = [GMS, GM1, GM2, GM3, GMM, GM4, GM5, GM6, GM7, GM8, GM9,
 9.9000011897959020E-19  # 433 Eros
 ]
 
-de430_343ast_ids =
+const de430_343ast_ids =
     [1, 4, 2, 10, 31, 704, 511, 15, 3, 16,
     65, 88, 48, 52, 451, 87, 7, 423, 29, 24,
     13, 790, 372, 107, 354, 96, 386, 39, 324, 11,
@@ -560,3 +560,6 @@ const τ_2 = 2.5352978633388720E-03 # Rotational time-lag for semi-diurnal defor
 
 # standard value of nominal mean angular velocity of Earth (rad/day), ESAA 2014 Sec 7.4.3.3 p. 296: 7.2921151467e-5 rad/second
 const ω_E = daysec*7.2921151467e-5 # (7.2921151467e-5 rad/sec)*daysec -> rad/day
+
+# Earth/Moon mass ratio
+const EMRAT = 8.1300569074190620E+01
