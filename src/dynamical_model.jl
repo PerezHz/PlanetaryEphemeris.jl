@@ -535,7 +535,7 @@ end
     # S: auxiliary variable =eltype(q0)
     # eulang_de430_: Taylor interpolant for DE430 lunar orientation Euler angles
     local N, S, eulang_de430_, jd0 = params
-    local N_ext = 11
+    local N_ext = 11 # number of bodies in extended-body accelerations
     local eulang_t = eulang_de430_( (t+(jd0-J2000))*daysec )
     #local eulang_t_del = eulang_de430_( ((t-τ_M)+(jd0-J2000))*daysec )
 
@@ -705,23 +705,24 @@ end
     local RE_au = (RE/au)
     local J2E_t = (J2E + J2EDOT*(dsj2k/yr))*(RE_au^2)
     local J2S_t = JSEM[su,2]*one_t
+    local J2_t = Array{Taylor1{S}}(undef, 5)
+    J2_t[su] = J2S_t
+    J2_t[ea] = J2E_t
 
     Threads.@threads for j in 1:N
         newtonX[j] = zero_q_1
         newtonY[j] = zero_q_1
         newtonZ[j] = zero_q_1
-
         newtonianNb_Potential[j] = zero_q_1
-
-        if j ≤ N_ext
-            accX[j] = zero_q_1
-            accY[j] = zero_q_1
-            accZ[j] = zero_q_1
-        end
-
         dq[3j-2] = q[3(N+j)-2]
         dq[3j-1] = q[3(N+j)-1]
         dq[3j  ] = q[3(N+j)  ]
+    end
+
+    Threads.@threads for j in 1:N_ext
+        accX[j] = zero_q_1
+        accY[j] = zero_q_1
+        accZ[j] = zero_q_1
     end
 
     #compute point-mass Newtonian accelerations, all bodies
@@ -791,6 +792,7 @@ end
     C21M_t = (-ITM_t[1,3])/(μ[mo]) # C_{21,M}*R_M^2
     S21M_t = (-ITM_t[3,2])/(μ[mo]) # S_{21,M}*R_M^2
     S22M_t = ((-ITM_t[2,1])/(μ[mo]))/2 # S_{22,M}*R_M^2
+    J2_t[mo] = J2M_t
 
     Threads.@threads for j in 1:N_ext
         for i in 1:N_ext
@@ -832,16 +834,18 @@ end
                         temp_rn[i,j,n] = r_p1d2[i,j]^fact5_jsem[n]
                     end
                     r_p4[i,j] = r_p2[i,j]^2
-                    if j == mo
-                        F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2M_t)/r_p4[i,j]
-                        F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2M_t)/r_p4[i,j]
-                    elseif j == ea
-                        F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2E_t)/r_p4[i,j]
-                        F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2E_t)/r_p4[i,j]
-                    elseif j == su
-                        F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2S_t)/r_p4[i,j]
-                        F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2S_t)/r_p4[i,j]
-                    end
+                    # if j == mo
+                    #     F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2M_t)/r_p4[i,j]
+                    #     F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2M_t)/r_p4[i,j]
+                    # elseif j == ea
+                    #     F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2E_t)/r_p4[i,j]
+                    #     F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2E_t)/r_p4[i,j]
+                    # elseif j == su
+                    #     F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2S_t)/r_p4[i,j]
+                    #     F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2S_t)/r_p4[i,j]
+                    # end
+                    F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2_t[j])/r_p4[i,j]
+                    F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2_t[j])/r_p4[i,j]
                     F_J_ξ_36[i,j] = zero_q_1
                     F_J_ζ_36[i,j] = zero_q_1
                     for n in 3:n1SEM[j] #min(3,n1SEM[j])
@@ -1046,16 +1050,15 @@ end
     end #for k in 1:postnewton_iter # (post-Newtonian iterations)
 
     #fill accelerations (post-Newtonian and extended body accelerations)
-    Threads.@threads for i in 1:N
-        if i ≤ N_ext
-            dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1] + accX[i]
-            dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1] + accY[i]
-            dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1] + accZ[i]
-        else
-            dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1]
-            dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1]
-            dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1]
-        end
+    Threads.@threads for i in 1:N_ext
+        dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1] + accX[i]
+        dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1] + accY[i]
+        dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1] + accZ[i]
+    end
+    Threads.@threads for i in N_ext+1:N
+        dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1]
+        dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1]
+        dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1]
     end
 
     nothing
@@ -1080,8 +1083,9 @@ end
     local q_del_τ_1 = qq_(__t-τ_1p)
     local q_del_τ_2 = qq_(__t-τ_2p)
 
-    local eulang_t = eulang_de430_( (t+(jd0-J2000))*daysec )
-    local eulang_t_del = eulang_de430_( ((t-τ_M)+(jd0-J2000))*daysec )
+    local dsj2k = t+(jd0-2.451545e6) # days since J2000.0 (TDB)
+    local eulang_t = eulang_de430_( dsj2k*daysec )
+    local eulang_t_del = eulang_de430_( (dsj2k-τ_M)*daysec )
 
     #TODO: handle appropiately @taylorize'd version with postnewton_iter>1
     local postnewton_iter = 1 # number of iterations of post-Newtonian subroutine
@@ -1229,7 +1233,6 @@ end
     r_star_S_2 = Array{Taylor1{S}}(undef, 3)
 
     # rotations to and from Earth, Sun and Moon pole-oriented frames
-    local dsj2k = t+(jd0-2.451545e6) # J2000.0 = 2.451545e6
     local αs = deg2rad(α_p_sun*one_t)
     local δs = deg2rad(δ_p_sun*one_t)
     local αm = eulang_t[1] - (pi/2)
@@ -1260,6 +1263,9 @@ end
     local RE_au = (RE/au)
     local J2E_t = (J2E + J2EDOT*(dsj2k/yr))*(RE_au^2)
     local J2S_t = JSEM[su,2]*one_t
+    local J2_t = Array{Taylor1{S}}(undef, 5)
+    J2_t[su] = J2S_t
+    J2_t[ea] = J2E_t
     # Moon tidal acc: geocentric space-fixed -> rotational time-delay -> geocentric Earth true-equator-of-date frame
     local R30 = c2t_jpl_de430(dsj2k-τ_0p) #M_[:,:,ea] # #Rz(-ω_E*τ_0) == Id(3x3), since τ_0=0
     local R31 = Rz(-ω_E*τ_1)*c2t_jpl_de430(dsj2k-τ_1p) # *R30
@@ -1270,18 +1276,16 @@ end
         newtonX[j] = zero_q_1
         newtonY[j] = zero_q_1
         newtonZ[j] = zero_q_1
-
         newtonianNb_Potential[j] = zero_q_1
-
-        if j ≤ N_ext
-            accX[j] = zero_q_1
-            accY[j] = zero_q_1
-            accZ[j] = zero_q_1
-        end
-
         dq[3j-2] = q[3(N+j)-2]
         dq[3j-1] = q[3(N+j)-1]
         dq[3j  ] = q[3(N+j)  ]
+    end
+
+    Threads.@threads for j in 1:N_ext
+        accX[j] = zero_q_1
+        accY[j] = zero_q_1
+        accZ[j] = zero_q_1
     end
 
     #compute point-mass Newtonian accelerations, all bodies
@@ -1370,6 +1374,7 @@ end
     C21M_t = (-ITM_t[1,3])/(μ[mo]) # C_{21,M}*R_M^2
     S21M_t = (-ITM_t[3,2])/(μ[mo]) # S_{21,M}*R_M^2
     S22M_t = ((-ITM_t[2,1])/(μ[mo]))/2 # S_{22,M}*R_M^2
+    J2_t[mo] = J2M_t
 
     Threads.@threads for j in 1:N_ext
         for i in 1:N_ext
@@ -1411,16 +1416,18 @@ end
                         temp_rn[i,j,n] = r_p1d2[i,j]^fact5_jsem[n]
                     end
                     r_p4[i,j] = r_p2[i,j]^2
-                    if j == mo
-                        F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2M_t)/r_p4[i,j]
-                        F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2M_t)/r_p4[i,j]
-                    elseif j == ea
-                        F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2E_t)/r_p4[i,j]
-                        F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2E_t)/r_p4[i,j]
-                    elseif j == su
-                        F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2S_t)/r_p4[i,j]
-                        F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2S_t)/r_p4[i,j]
-                    end
+                    # if j == mo
+                    #     F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2M_t)/r_p4[i,j]
+                    #     F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2M_t)/r_p4[i,j]
+                    # elseif j == ea
+                    #     F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2E_t)/r_p4[i,j]
+                    #     F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2E_t)/r_p4[i,j]
+                    # elseif j == su
+                    #     F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2S_t)/r_p4[i,j]
+                    #     F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2S_t)/r_p4[i,j]
+                    # end
+                    F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2_t[j])/r_p4[i,j]
+                    F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2_t[j])/r_p4[i,j]
                     F_J_ξ_36[i,j] = zero_q_1
                     F_J_ζ_36[i,j] = zero_q_1
                     for n in 3:n1SEM[j] #min(3,n1SEM[j])
@@ -1798,16 +1805,15 @@ end
     accZ[mo] = accZ_mo_tides
 
     #fill accelerations (post-Newtonian and extended body accelerations)
-    Threads.@threads for i in 1:N
-        if i ≤ N_ext
-            dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1] + accX[i]
-            dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1] + accY[i]
-            dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1] + accZ[i]
-        else
-            dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1]
-            dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1]
-            dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1]
-        end
+    Threads.@threads for i in 1:N_ext
+        dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1] + accX[i]
+        dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1] + accY[i]
+        dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1] + accZ[i]
+    end
+    Threads.@threads for i in N_ext+1:N
+        dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1]
+        dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1]
+        dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1]
     end
 
     nothing
