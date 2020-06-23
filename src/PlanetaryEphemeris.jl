@@ -16,7 +16,7 @@ export au, yr, sundofs, earthdofs,
     UJ_interaction, de430_343ast_ids, Rx, Ry, Rz,
     ITM_und, ITM1, ITM2, R_moon, τ_M, k_2M,
     JSEM, CM, SM, n1SEM, n2M, J2E, J2EDOT, RE,
-    k_20E, k_21E, k_22E, τ_0p, τ_1p, τ_2p, τ_0, τ_1, τ_2, ω_E
+    k_20E, k_21E, k_22E, τ_0p, τ_1p, τ_2p, τ_0, τ_1, τ_2, ω_E, EMRAT
 
 using TaylorIntegration, LinearAlgebra
 using Printf
