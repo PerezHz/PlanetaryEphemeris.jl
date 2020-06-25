@@ -83,7 +83,7 @@ function longascnode(
 
     res = atan( y*w-z*v, x*w-z*u)
 
-    if res ≥ zero(res)
+    if constant_term(res) ≥ zero(constant_term(res))
         return res
     else
         return res+2pi
@@ -104,13 +104,12 @@ function argperi(
 
     #n = (z-axis unit vector)×h = (-hy, hx, 0)
     n = [x*w-z*u, y*w-z*v, zero(x)]
-    ex, ey, ez = rungelenz(x,y,z,u,v,w,m1,m2) #cartesian comps. of Laplace-Runge-Lenz vector
-    e = [ex, ey, ez]
+    e = lrlvec(x,y,z,u,v,w,m1,m2) #cartesian comps. of Laplace-Runge-Lenz vector
     n = n/sqrt(n[1]^2+n[2]^2+n[3]^2)
-    e = e/sqrt(ex^2+ey^2+ez^2)
+    e = e/sqrt(e[1]^2+e[2]^2+e[3]^2)
     cosω = dot(n, e)
 
-    if ez >= zero(x)
+    if constant_term(e[3]) >= zero(constant_term(x))
         return acos(cosω)
     else
         return 2pi-acos(cosω)
@@ -192,11 +191,7 @@ function ecanomaly(
 
     res = atan(sinE, cosE)
 
-    if res ≥ zero(res)
-        return res
-    else
-        return res+2pi
-    end
+    return res
 
 end
 
