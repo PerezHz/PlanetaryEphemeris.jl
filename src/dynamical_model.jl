@@ -1,3 +1,11 @@
+macro taylorize_pleph(ex)
+    nex = TaylorIntegration._make_parsed_jetcoeffs(ex)
+    return quote
+        $(esc(ex))
+        $(esc(nex))
+    end
+end
+
 # Solar System ( JPL DE430/431) dynamical model
 # Bodies considered in the model are: the Sun, the eight planets, the Moon and
 # the 343 main-belt asteroids included in the JPL DE 430 ephemeris
@@ -9,7 +17,7 @@
 # - Kinematic model for the precession and nutation of the Earth's orientation (IAU 1976/1980 Earth orientation model)
 # - Kinematic model for the Moons's orientation (Seidelmann et al., 2006)
 # - tidal secular acceleration of Moon due to rides raised on Earth by both the Moon and the Sun
-ex1 = :(function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
+@taylorize_pleph function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     # N: number of bodies
     # S: auxiliary variable =eltype(q0)
     # eulang_de430_: Taylor interpolant for DE430 lunar orientation Euler angles
@@ -528,9 +536,9 @@ ex1 = :(function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     end
 
     nothing
-end)
+end
 
-ex2 = :(function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
+@taylorize_pleph function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     # N: number of bodies
     # S: auxiliary variable =eltype(q0)
     # eulang_de430_: Taylor interpolant for DE430 lunar orientation Euler angles
@@ -1062,9 +1070,9 @@ ex2 = :(function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     end
 
     nothing
-end)
+end
 
-ex3 = :(function DE430!(dq, q, params, t)
+@taylorize_pleph function DE430!(dq, q, params, t)
     # N: number of bodies
     # S: auxiliary variable =eltype(q0)
     # eulang_de430_: Taylor interpolant for DE430 lunar orientation Euler angles
@@ -1817,16 +1825,4 @@ ex3 = :(function DE430!(dq, q, params, t)
     end
 
     nothing
-end)
-
-nex1 = TaylorIntegration._make_parsed_jetcoeffs(ex1)
-nex2 = TaylorIntegration._make_parsed_jetcoeffs(ex2)
-nex3 = TaylorIntegration._make_parsed_jetcoeffs(ex3)
-
-@eval $ex1
-@eval $ex2
-@eval $ex3
-
-@eval $nex1
-@eval $nex2
-@eval $nex3
+end
