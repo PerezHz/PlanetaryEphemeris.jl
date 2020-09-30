@@ -13,7 +13,7 @@ function stepsize_threads(q::AbstractArray{Taylor1{U},1}, epsilon::T) where
         {T<:Real, U<:Number}
     R = promote_type(typeof(norm(constant_term(q[1]), Inf)), T)
     h = convert(R, Inf)
-    Threads.@threads for i in eachindex(q)
+    #= Threads.@threads =# for i in eachindex(q)
         @inbounds hi = TaylorIntegration.stepsize( q[i], epsilon )
         h = min( h, hi )
     end
@@ -22,7 +22,7 @@ function stepsize_threads(q::AbstractArray{Taylor1{U},1}, epsilon::T) where
     # Note that the time step is independent from `epsilon`.
     if isinf(h)
         h = zero(R)
-        Threads.@threads for i in eachindex(q)
+        #= Threads.@threads =# for i in eachindex(q)
             @inbounds hi = TaylorIntegration._second_stepsize(q[i], epsilon)
             h = max( h, hi )
         end
@@ -45,6 +45,9 @@ function taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}},
 
     # Compute the Taylor coefficients
     TaylorIntegration.__jetcoeffs!(Val(parse_eqs), f!, t, x, dx, xaux, params)
+    # @time TaylorIntegration.__jetcoeffs!(Val(parse_eqs), f!, t, x, dx, xaux, params)
+    # @time TaylorIntegration.__jetcoeffs!(Val(false), f!, t, x, dx, xaux, params)
+    # @time TaylorIntegration.__jetcoeffs!(Val(true), f!, t, x, dx, xaux, params)
 
     # Compute the step-size of the integration using `abstol`
     δt = stepsize_threads(x, abstol)
@@ -80,6 +83,8 @@ function taylorinteg_threads(f!, q0::Array{U,1}, t0::T, tmax::T, order::Int, abs
 
     # Determine if specialized jetcoeffs! method exists
     parse_eqs = TaylorIntegration._determine_parsing!(parse_eqs, f!, t, x, dx, params)
+
+    @show parse_eqs
 
     # Integration
     nsteps = 1
