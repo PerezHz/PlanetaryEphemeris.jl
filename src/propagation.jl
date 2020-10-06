@@ -63,6 +63,8 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
             ss16ast_fname = "ss16ast343_eph_"*sgn_yrs*"$(nyrs_int)y_et.jld"
             ss16ast_eph = TaylorInterpolant(sseph.t0, sseph.t, sseph.x[:, indvec])
             jldopen(ss16ast_fname, "w") do file
+                addrequire(file, TaylorSeries)
+                addrequire(file, PlanetaryEphemeris)
                 write(file, "ss16ast_eph", ss16ast_eph)
             end
             #check that written output is equal to original variable `ss16ast_eph`
@@ -71,6 +73,8 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
         else
             println("Saving solution to file: $ephfile")
             jldopen(ephfile, "w") do file
+                addrequire(file, TaylorSeries)
+                addrequire(file, PlanetaryEphemeris)
                 # write variables to jld file
                 for ind in eachindex(sol)
                     varname = string(ind)
