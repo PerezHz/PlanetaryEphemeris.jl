@@ -40,13 +40,4 @@ include("plephinteg.jl")
 include("propagation.jl")
 include("osculating.jl")
 
-function __init__()
-    dms = (ex_dm, ex_dm_thrds, ex_dm_de430)
-    for dm in dms
-        nex_dm = TaylorIntegration._make_parsed_jetcoeffs(dm)
-        @eval $dm
-        @eval $nex_dm
-    end
-end
-
 end # module

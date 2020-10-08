@@ -9,7 +9,7 @@
 # - Kinematic model for the precession and nutation of the Earth's orientation (IAU 1976/1980 Earth orientation model)
 # - Kinematic model for the Moons's orientation (Seidelmann et al., 2006)
 # - tidal secular acceleration of Moon due to rides raised on Earth by both the Moon and the Sun
-ex_dm = :(function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
+@taylorize function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     # N: number of bodies
     # S: auxiliary variable =eltype(q0)
     # eulang_de430_: Taylor interpolant for DE430 lunar orientation Euler angles
@@ -528,9 +528,9 @@ ex_dm = :(function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     end
 
     nothing
-end)
+end
 
-ex_dm_thrds = :(function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
+@taylorize function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     # N: number of bodies
     # S: auxiliary variable =eltype(q0)
     # eulang_de430_: Taylor interpolant for DE430 lunar orientation Euler angles
@@ -1062,9 +1062,9 @@ ex_dm_thrds = :(function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     end
 
     nothing
-end)
+end
 
-ex_dm_de430 = :(function DE430!(dq, q, params, t)
+@taylorize function DE430!(dq, q, params, t)
     # N: number of bodies
     # S: auxiliary variable =eltype(q0)
     # eulang_de430_: Taylor interpolant for DE430 lunar orientation Euler angles
@@ -1819,4 +1819,4 @@ ex_dm_de430 = :(function DE430!(dq, q, params, t)
     end
 
     nothing
-end)
+end
