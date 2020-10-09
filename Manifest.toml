@@ -88,9 +88,9 @@ version = "0.8.3"
 
 [[Espresso]]
 deps = ["LinearAlgebra", "Statistics", "Test"]
-git-tree-sha1 = "cde61b7c72023d15e2aaae8d4eb3e2c94f5bdb7b"
+git-tree-sha1 = "c3f4470b5b1ae4a60598e8286e901b9604143d05"
 uuid = "6912e4f1-e036-58b0-9138-08d1e6358ea9"
-version = "0.6.0"
+version = "0.6.1"
 
 [[FileIO]]
 deps = ["Pkg"]
@@ -351,7 +351,7 @@ version = "1.0.0"
 
 [[TaylorIntegration]]
 deps = ["DataStructures", "DiffEqBase", "Espresso", "InteractiveUtils", "LinearAlgebra", "Markdown", "Reexport", "Requires", "TaylorSeries"]
-git-tree-sha1 = "4dcffbab81dc7612ee93c1e9f65adbc20182f322"
+git-tree-sha1 = "7ae980af94d678306a179151714b3881ab2b55a0"
 repo-rev = "jp/fix_iss106"
 repo-url = "https://github.com/PerezHz/TaylorIntegration.jl.git"
 uuid = "92b13dbe-c966-51a2-8445-caca9f8a7d42"
