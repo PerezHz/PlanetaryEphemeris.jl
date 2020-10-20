@@ -20,7 +20,7 @@ AutoHashEquals = "0.2.0"
 JLD = "0.10.0"
 Quadmath = "0.5.4"
 Revise = "2.6.6"
-TaylorIntegration = "0.8.3"
+TaylorIntegration = "0.8.4"
 TaylorSeries = "0.10.8"
 julia = "1"
 
