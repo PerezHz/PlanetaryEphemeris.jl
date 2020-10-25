@@ -60,12 +60,12 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
             sgn_yrs = sign(tspan) == 1.0 ? "p" : "m"
             nyrs_int = Int(abs(tspan))
             # write output to jld file
-            ss16ast_fname = "ss16ast343_eph_"*sgn_yrs*"$(nyrs_int)y_et.jld"
+            ss16ast_fname = "sseph$(lpad(nast,3,'0'))ast_"*sgn_yrs*"$(nyrs_int)y_et.jld"
             ss16ast_eph = TaylorInterpolant(sseph.t0, sseph.t, sseph.x[:, indvec])
             jldopen(ss16ast_fname, "w") do file
                 addrequire(file, TaylorSeries)
                 addrequire(file, PlanetaryEphemeris)
-                write(file, "sseph$(lpad(nast,3,'0'))ast_", ss16ast_eph)
+                write(file, "ss16ast_eph", ss16ast_eph)
             end
             #check that written output is equal to original variable `ss16ast_eph`
             recovered_sol_i = load(ss16ast_fname, "ss16ast_eph")
