@@ -65,7 +65,7 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
             jldopen(ss16ast_fname, "w") do file
                 addrequire(file, TaylorSeries)
                 addrequire(file, PlanetaryEphemeris)
-                write(file, "ss16ast_eph", ss16ast_eph)
+                write(file, "sseph$(lpad(nast,3,'0'))ast_", ss16ast_eph)
             end
             #check that written output is equal to original variable `ss16ast_eph`
             recovered_sol_i = load(ss16ast_fname, "ss16ast_eph")
