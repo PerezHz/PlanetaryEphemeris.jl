@@ -1,14 +1,26 @@
+nbodyind(N::Int, i::Int) = union(3i-2:3i, 3*(N+i)-2:3*(N+i))
+
+function nbodyind(N::Int, ivec::AbstractVector{Int})
+    a = Int[]
+    for i in ivec
+        i > N && continue
+        a = union(a, nbodyind(N,i))
+    end
+    return sort(a)
+end
+
 function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
         output::Bool=true, dense::Bool=false, ephfile::String="sseph.jld",
         dynamics::Function=NBP_pN_A_J23E_J23M_J2S!, nast::Int=343,
-        quadmath::Bool=false, ss16ast::Bool=true) where {T<:Real}
+        quadmath::Bool=false, ss16ast::Bool=true,
+        bodyind::AbstractVector{Int}=1:(11+nast)) where {T<:Real}
 
     # total number of bodies
     N = 11+nast
     # get initial conditions
     if quadmath
         # use quadruple precision
-        _q0 = Float128.( initialcond(11+nast) )
+        _q0 = Float128.( initialcond(N) )
         _t0 = Float128(zero(jd0))
         @show _tmax = zero(_t0)+tspan*yr #final time of integration
         _abstol = Float128(abstol)
@@ -16,7 +28,7 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
         __eulang_de430 = load(eulangfile, "eulang_de430")
         _eulang_de430 = TaylorInterpolant(Float128(__eulang_de430.t0), Float128.(__eulang_de430.t), map(x->Taylor1(Float128.(x.coeffs)), __eulang_de430.x))
     else
-        _q0 = initialcond(11+nast)
+        _q0 = initialcond(N)
         _t0 = zero(jd0)
         @show _tmax = zero(_t0)+tspan*yr #final time of integration
         _abstol = abstol
@@ -53,10 +65,10 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
     #write solution to .jld files
     if output
         if ss16ast
-            i1 = 1
-            i2 = 27 # 11 major bodies + 16 asteroids
-            i2 > N && (i2 = N)
-            indvec = union(3i1-2:3i2, 3*(N+i1)-2:3*(N+i2))
+            # i1 = 1
+            # i2 = 27 # 11 major bodies + 16 asteroids
+            # i2 > N && (i2 = N)
+            indvec = nbodyind(N, bodyind) # union(3i1-2:3i2, 3*(N+i1)-2:3*(N+i2))
             sgn_yrs = sign(tspan) == 1.0 ? "p" : "m"
             nyrs_int = Int(abs(tspan))
             # write output to jld file
