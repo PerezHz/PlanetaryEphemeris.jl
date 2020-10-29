@@ -2,7 +2,7 @@ const su = 1 #Sun's index
 const ea = 4 #Earth's index
 const mo = 5 #Moon's index
 
-# vector of G*m values
+# vector of G*m values in au^3/day^2
 GM1 = 0.491248045036476000E-10 # Mercury
 GM2 = 0.724345233264412000E-09 # Venus
 GM3 = 0.888769244512563400E-09 # Earth
