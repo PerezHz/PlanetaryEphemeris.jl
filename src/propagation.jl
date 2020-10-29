@@ -9,6 +9,28 @@ function nbodyind(N::Int, ivec::AbstractVector{Int})
     return sort(a)
 end
 
+function selecteph2jld(sseph::TaylorInterpolant, bodyind::AbstractVector{Int}, tspan::Number)
+    N = size(sseph.x)[2] ÷ 6 # total number of bodies (Sun+planets+Moon+Pluto+asts)
+    nast = N - 11 # number of asteroids in sseph
+    indvec = nbodyind(N, bodyind)
+    nastout = length(bodyind) - 11 # number of asteroids to be saved in file
+    @assert nastout <= nast
+    sgn_yrs = sign(tspan) == 1.0 ? "p" : "m"
+    nyrs_int = Int(abs(tspan))
+    # write output to jld file
+    ss16ast_fname = "sseph$(lpad(nast,3,'0'))ast_"*sgn_yrs*"$(nyrs_int)y_et.jld"
+    ss16ast_eph = TaylorInterpolant(sseph.t0, sseph.t, sseph.x[:, indvec])
+    jldopen(ss16ast_fname, "w") do file
+        addrequire(file, TaylorSeries)
+        addrequire(file, PlanetaryEphemeris)
+        write(file, "ss16ast_eph", ss16ast_eph)
+    end
+    #check that written output is equal to original variable `ss16ast_eph`
+    recovered_sol_i = load(ss16ast_fname, "ss16ast_eph")
+    @show recovered_sol_i == ss16ast_eph
+    return nothing
+end
+
 function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
         output::Bool=true, dense::Bool=false, ephfile::String="sseph.jld",
         dynamics::Function=NBP_pN_A_J23E_J23M_J2S!, nast::Int=343,
@@ -65,23 +87,7 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
     #write solution to .jld files
     if output
         if ss16ast
-            # i1 = 1
-            # i2 = 27 # 11 major bodies + 16 asteroids
-            # i2 > N && (i2 = N)
-            indvec = nbodyind(N, bodyind) # union(3i1-2:3i2, 3*(N+i1)-2:3*(N+i2))
-            sgn_yrs = sign(tspan) == 1.0 ? "p" : "m"
-            nyrs_int = Int(abs(tspan))
-            # write output to jld file
-            ss16ast_fname = "sseph$(lpad(nast,3,'0'))ast_"*sgn_yrs*"$(nyrs_int)y_et.jld"
-            ss16ast_eph = TaylorInterpolant(sseph.t0, sseph.t, sseph.x[:, indvec])
-            jldopen(ss16ast_fname, "w") do file
-                addrequire(file, TaylorSeries)
-                addrequire(file, PlanetaryEphemeris)
-                write(file, "ss16ast_eph", ss16ast_eph)
-            end
-            #check that written output is equal to original variable `ss16ast_eph`
-            recovered_sol_i = load(ss16ast_fname, "ss16ast_eph")
-            @show recovered_sol_i == ss16ast_eph
+            selecteph2jld(sseph, bodyind, tspan)
         else
             println("Saving solution to file: $ephfile")
             jldopen(ephfile, "w") do file
