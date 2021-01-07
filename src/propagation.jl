@@ -57,10 +57,8 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
         # load DE430 lunar Euler angles Taylor ephemeris
         _eulang_de430 = load(eulangfile, "eulang_de430")
     end
-    # auxiliary variable
-    S = eltype(_q0)
 
-    params = (N, S, _eulang_de430, jd0)
+    params = (N, _eulang_de430, jd0)
 
     # do integration
     if dense
