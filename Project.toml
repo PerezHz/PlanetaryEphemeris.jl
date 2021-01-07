@@ -16,10 +16,10 @@ TaylorSeries = "6aa5eb33-94cf-58f4-a9d0-e4b2c4fc25ea"
 
 [compat]
 AutoHashEquals = "0.2.0"
-JLD = "0.10.0"
+JLD = "0.12.0"
 Quadmath = "0.5.4"
-TaylorIntegration = "0.8.4"
-TaylorSeries = "0.10.8"
+TaylorIntegration = "0.8.5"
+TaylorSeries = "0.10.9"
 julia = "1"
 
 [extras]
