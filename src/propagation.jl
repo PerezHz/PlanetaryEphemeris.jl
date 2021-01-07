@@ -18,7 +18,7 @@ function selecteph2jld(sseph::TaylorInterpolant, bodyind::AbstractVector{Int}, t
     sgn_yrs = sign(tspan) == 1.0 ? "p" : "m"
     nyrs_int = Int(abs(tspan))
     # write output to jld file
-    ss16ast_fname = "sseph$(lpad(nast,3,'0'))ast_"*sgn_yrs*"$(nyrs_int)y_et.jld"
+    ss16ast_fname = "sseph$(lpad(nast,3,'0'))ast$(lpad(nastout,3,'0'))_"*sgn_yrs*"$(nyrs_int)y_et.jld"
     ss16ast_eph = TaylorInterpolant(sseph.t0, sseph.t, sseph.x[:, indvec])
     jldopen(ss16ast_fname, "w") do file
         addrequire(file, TaylorSeries)
