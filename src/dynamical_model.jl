@@ -156,7 +156,7 @@
     accZ = Array{S}(undef, N)
 
     # rotations to and from Earth, Sun and Moon pole-oriented frames
-    local dsj2k = t+(jd0-2.451545e6) # J2000.0 = 2.451545e6
+    local dsj2k = t+(jd0-J2000) # J2000.0 = 2.451545e6
     local αs = deg2rad(α_p_sun*one_t)
     local δs = deg2rad(δ_p_sun*one_t)
     local αm = eulang_t[1] - (pi/2)
@@ -679,7 +679,7 @@ end
     accZ = Array{S}(undef, N_ext)
 
     # rotations to and from Earth, Sun and Moon pole-oriented frames
-    local dsj2k = t+(jd0-2.451545e6) # J2000.0 = 2.451545e6
+    local dsj2k = t+(jd0-J2000) # J2000.0 = 2.451545e6
     local αs = deg2rad(α_p_sun*one_t)
     local δs = deg2rad(δ_p_sun*one_t)
     local αm = eulang_t[1] - (pi/2)
@@ -1088,7 +1088,7 @@ end
     local q_del_τ_1 = qq_(__t-τ_1p)
     local q_del_τ_2 = qq_(__t-τ_2p)
 
-    local dsj2k = t+(jd0-2.451545e6) # days since J2000.0 (TDB)
+    local dsj2k = t+(jd0-J2000) # days since J2000.0 (TDB)
     local eulang_t = eulang_de430_( dsj2k*daysec )
     local eulang_t_del = eulang_de430_( (dsj2k-τ_M)*daysec )
 

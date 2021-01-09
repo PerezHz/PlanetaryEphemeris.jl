@@ -40,30 +40,35 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
     # total number of bodies
     N = 11+nast
     # get initial conditions
+    _q0 = initialcond(N)
+    # initial time (Julian date)
+    _t0 = zero(jd0)
+    # final time (Julian date)
+    @show _tmax = zero(_t0)+tspan*yr
+    # load DE430 lunar Euler angles ephemeris (TaylorInterpolant)
+    _eulang_de430 = load(eulangfile, "eulang_de430")
+
     if quadmath
         # use quadruple precision
-        _q0 = Float128.( initialcond(N) )
-        _t0 = Float128(zero(jd0))
-        @show _tmax = zero(_t0)+tspan*yr #final time of integration
+        q0 = Float128.( _q0 )
+        t0 = Float128(_t0)
+        tmax = Float128(_tmax)
         _abstol = Float128(abstol)
-        # load DE430 lunar Euler angles Taylor ephemeris
-        __eulang_de430 = load(eulangfile, "eulang_de430")
-        _eulang_de430 = TaylorInterpolant(Float128(__eulang_de430.t0), Float128.(__eulang_de430.t), map(x->Taylor1(Float128.(x.coeffs)), __eulang_de430.x))
+        eulang_de430 = TaylorInterpolant(Float128(_eulang_de430.t0), Float128.(_eulang_de430.t), map(x->Taylor1(Float128.(x.coeffs)), _eulang_de430.x))
     else
-        _q0 = initialcond(N)
-        _t0 = zero(jd0)
-        @show _tmax = zero(_t0)+tspan*yr #final time of integration
+        q0 = _q0
+        t0 = _t0
+        tmax = _tmax
         _abstol = abstol
-        # load DE430 lunar Euler angles Taylor ephemeris
-        _eulang_de430 = load(eulangfile, "eulang_de430")
+        eulang_de430 = _eulang_de430
     end
 
-    params = (N, _eulang_de430, jd0)
+    params = (N, eulang_de430, jd0)
 
     # do integration
     if dense
-        # @time sol_ = taylorinteg(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
-        @time sol_ = taylorinteg_threads(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
+        # @time sol_ = taylorinteg(dynamics, q0, t0, tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
+        @time sol_ = taylorinteg_threads(dynamics, q0, t0, tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
         # transform Julian dates to TDB seconds since initial Julian date
         if quadmath
             et0 = (jd0-J2000)*daysec
@@ -77,8 +82,8 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
         sseph = TaylorInterpolant(et0, etv, sseph_x_et)
         sol = (sseph=sseph,)
     else
-        # @time sol_ = taylorinteg(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
-        @time sol_ = taylorinteg_threads(dynamics, _q0, _t0, _tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
+        # @time sol_ = taylorinteg(dynamics, q0, t0, tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
+        @time sol_ = taylorinteg_threads(dynamics, q0, t0, tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
         sol = (t=sol_[1][:], x=sol_[2][:,:])
     end
 
