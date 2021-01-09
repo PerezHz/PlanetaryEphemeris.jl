@@ -1070,7 +1070,7 @@ end
     # N: number of bodies
     # eulang_de430_: Taylor interpolant for DE430 lunar orientation Euler angles
     # jd0: initial Julian date
-    local N, eulang_de430_, jd0 = params
+    local N, eulang_de430_, jd0, ast343de430_eph = params
     local S = eltype(q)
     local N_ext = 11 # number of bodies in extended-body accelerations
     local N_back = 11 # number of bodies in backward integration
@@ -1089,8 +1089,11 @@ end
     local q_del_τ_2 = qq_(__t-τ_2p)
 
     local dsj2k = t+(jd0-J2000) # days since J2000.0 (TDB)
+    local ast343de430_t = ast343de430_eph( dsj2k*daysec )
     local eulang_t = eulang_de430_( dsj2k*daysec )
     local eulang_t_del = eulang_de430_( (dsj2k-τ_M)*daysec )
+    local brdcst_q_ast343de430 = (  q[union(3N_back+1:3N, 3N+3N_back+1:6N)] .= ast343de430_t  )
+    local brdcst_dq_ast343de430 = (  dq[union(3N_back+1:3N, 3N+3N_back+1:6N)] .= differentiate.(ast343de430_t)  )
 
     #TODO: handle appropiately @taylorize'd version with postnewton_iter>1
     local postnewton_iter = 1 # number of iterations of post-Newtonian subroutine
@@ -1815,11 +1818,11 @@ end
         dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1] + accY[i]
         dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1] + accZ[i]
     end
-    Threads.@threads for i in N_ext+1:N
-        dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1]
-        dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1]
-        dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1]
-    end
+    # Threads.@threads for i in N_ext+1:N
+    #     dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1]
+    #     dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1]
+    #     dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1]
+    # end
 
     nothing
 end

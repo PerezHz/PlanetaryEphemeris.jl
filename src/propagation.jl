@@ -31,7 +31,7 @@ function selecteph2jld(sseph::TaylorInterpolant, bodyind::AbstractVector{Int}, t
     return nothing
 end
 
-function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
+function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String, ast343eph::String="";
         output::Bool=true, dense::Bool=false, ephfile::String="sseph.jld",
         dynamics::Function=NBP_pN_A_J23E_J23M_J2S!, nast::Int=343,
         quadmath::Bool=false, ss16ast::Bool=true,
@@ -48,6 +48,8 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
     @show _tmax = zero(_t0)+tspan*yr
     # load DE430 lunar Euler angles ephemeris (TaylorInterpolant)
     _eulang_de430 = load(eulangfile, "eulang_de430")
+    # load DE430 asteroid ephemeris (TaylorInterpolant)
+    _ast343de430_eph = load(ast343eph, "ast343de430_eph")
 
     if quadmath
         # use quadruple precision
@@ -56,15 +58,17 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
         tmax = Float128(_tmax)
         _abstol = Float128(abstol)
         eulang_de430 = TaylorInterpolant(Float128(_eulang_de430.t0), Float128.(_eulang_de430.t), map(x->Taylor1(Float128.(x.coeffs)), _eulang_de430.x))
+        ast343de430_eph = TaylorInterpolant(Float128(_ast343de430_eph.t0), Float128.(_ast343de430_eph.t), map(x->Taylor1(Float128.(x.coeffs)), _ast343de430_eph.x))
     else
         q0 = _q0
         t0 = _t0
         tmax = _tmax
         _abstol = abstol
         eulang_de430 = _eulang_de430
+        ast343de430_eph = _ast343de430_eph
     end
 
-    params = (N, eulang_de430, jd0)
+    params = (N, eulang_de430, jd0, ast343de430_eph)
 
     # do integration
     if dense
