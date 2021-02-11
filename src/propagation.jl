@@ -35,7 +35,8 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
         output::Bool=true, dense::Bool=false, ephfile::String="sseph.jld",
         dynamics::Function=NBP_pN_A_J23E_J23M_J2S!, nast::Int=343,
         quadmath::Bool=false, ss16ast::Bool=true,
-        bodyind::AbstractVector{Int}=1:(11+nast)) where {T<:Real}
+        bodyind::AbstractVector{Int}=1:(11+nast), order::Int=order,
+        abstol::T=abstol) where {T<:Real}
 
     # total number of bodies
     N = 11+nast

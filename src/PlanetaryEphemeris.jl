@@ -28,8 +28,8 @@ using JLD
 using Quadmath
 
 # integration parameters
-const order = 30
-const abstol = 1.0E-30
+const order = 25
+const abstol = 1.0E-20
 
 include("constants.jl")
 include("jpl-de-430-431-earth-orientation-model.jl")
