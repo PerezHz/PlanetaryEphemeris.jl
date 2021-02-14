@@ -30,6 +30,36 @@ function stepsize_threads(q::AbstractArray{Taylor1{U},1}, epsilon::T) where
     return h::R
 end
 
+# first step-size control from Jorba & Zou, 2005
+function stepsize_jz05(q::AbstractArray{Taylor1{U}, N}, epsilon::T) where
+        {T<:Real, U<:Number, N}
+    q0_norminf = norm(constant_term.(q), Inf)
+    pred = epsilon*q0_norminf ≤ epsilon
+
+    if pred
+        p_jz05 = Int(ceil(-0.5log(epsilon)+1)) # atol
+    else
+        p_jz05 = Int(ceil(-0.5log(epsilon)+1)) # rtol
+    end
+
+    order = min(p_jz05, q[1].order) # q[1].order
+    ordm1 = order-1
+    invorder = 1/order
+    invordm1 = 1/ordm1
+    qordm1_norminf = norm(getcoeff.(q, ordm1), Inf)
+    qorder_norminf = norm(getcoeff.(q, order), Inf)
+
+    if pred
+        ρ_ordm1 = ( 1/qordm1_norminf )^invordm1
+        ρ_order = ( 1/qorder_norminf )^invorder
+    else
+        ρ_ordm1 = ( q0_norminf/qordm1_norminf )^invordm1
+        ρ_order = ( q0_norminf/qorder_norminf )^invorder
+    end
+    ρ = min(ρ_ordm1, ρ_order)
+    return ρ*exp(-2.0)
+end
+
 # ##### Constant timestep method: set timestep equal to 1 day
 # function stepsize_threads(q::AbstractArray{Taylor1{U},1}, epsilon::T) where
 #         {T<:Real, U<:Number}
@@ -44,13 +74,25 @@ function taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}},
         parse_eqs::Bool=true) where {T<:Real, U<:Number}
 
     # Compute the Taylor coefficients
+    N = params[1]
+    x_EMB = x[nbodyind(N, ea)]
+    x_ME = x[nbodyind(N, mo)]
+    x[nbodyind(N, ea)] .= x_EMB .- (μ[mo]*x_ME/GMB)
+    x[nbodyind(N, mo)] .= x_EMB .+ (μ[ea]*x_ME/GMB)
+
     TaylorIntegration.__jetcoeffs!(Val(parse_eqs), f!, t, x, dx, xaux, params)
     # @time TaylorIntegration.__jetcoeffs!(Val(parse_eqs), f!, t, x, dx, xaux, params)
     # @time TaylorIntegration.__jetcoeffs!(Val(false), f!, t, x, dx, xaux, params)
     # @time TaylorIntegration.__jetcoeffs!(Val(true), f!, t, x, dx, xaux, params)
 
+    x_EMB = ( μ[ea]*x[nbodyind(N, ea)] .+ μ[mo]*x[nbodyind(N, mo)] ) / GMB
+    x_ME = x[nbodyind(N, mo)] .- x[nbodyind(N, ea)]
+    x[nbodyind(N, ea)] .= x_EMB
+    x[nbodyind(N, mo)] .= x_ME
+
     # Compute the step-size of the integration using `abstol`
-    δt = stepsize_threads(x, abstol)
+    # δt = stepsize_threads(x, abstol)
+    δt = stepsize_jz05(x, abstol)
 
     return δt
 end

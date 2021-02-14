@@ -1272,10 +1272,16 @@ end
     J2_t[su] = J2S_t
     J2_t[ea] = J2E_t
     # Moon tidal acc: geocentric space-fixed -> rotational time-delay -> geocentric Earth true-equator-of-date frame
-    local R30 = c2t_jpl_de430(dsj2k-τ_0p) #M_[:,:,ea] # #Rz(-ω_E*τ_0) == Id(3x3), since τ_0=0
-    local R31 = Rz(-ω_E*τ_1)*c2t_jpl_de430(dsj2k-τ_1p) # *R30
-    local R32 = Rz(-ω_E*τ_2)*c2t_jpl_de430(dsj2k-τ_2p) # *R30
+    local R30 = one_t.*Array(I, 3, 3) #M_[:,:,ea] # #Rz(-ω_E*τ_0) == Id(3x3), since τ_0=0
+    local M_del_τ_1p = c2t_jpl_de430(dsj2k-τ_1p)
+    local M_del_τ_2p = c2t_jpl_de430(dsj2k-τ_2p)
+    local R31 = transpose(M_del_τ_1p)*Rz(-ω_E*τ_1)*M_del_τ_1p
+    local R32 = transpose(M_del_τ_2p)*Rz(-ω_E*τ_2)*M_del_τ_2p
     local tid_num_coeff = 1.5*(1.0 + μ[mo]/μ[ea])
+    # coordinates of terrestrial pole unit vector in inertial frame
+    local e_x = M_[1,:,ea]
+    local e_y = M_[2,:,ea]
+    local e_z = M_[3,:,ea]
 
     Threads.@threads for j in 1:N
         newtonX[j] = zero_q_1
@@ -1697,16 +1703,22 @@ end
 
     # X_bf[mo,ea] are geocentric, Earth-fixed "unprimed" position of perturbed body (Moon) in cylindrical coordinates
 
-    ρ0s2_M = (r_star_M_0[1]^2) + (r_star_M_0[2]^2)
+    x0s_M = ((r_star_M_0[1]*e_x[1]) + (r_star_M_0[2]*e_x[2])) + (r_star_M_0[3]*e_x[3])
+    y0s_M = ((r_star_M_0[1]*e_y[1]) + (r_star_M_0[2]*e_y[2])) + (r_star_M_0[3]*e_y[3])
+    z0s_M = ((r_star_M_0[1]*e_z[1]) + (r_star_M_0[2]*e_z[2])) + (r_star_M_0[3]*e_z[3])
+    ρ0s2_M = (x0s_M^2) + (y0s_M^2)
     ρ0s_M = sqrt(ρ0s2_M)
-    z0s2_M = r_star_M_0[3]^2
+    z0s2_M = z0s_M^2
     r0s2_M = ρ0s2_M + z0s2_M
     r0s_M = sqrt(r0s2_M)
     r0s5_M = r0s_M^5
 
-    ρ0s2_S = (r_star_S_0[1]^2) + (r_star_S_0[2]^2)
+    x0s_S = ((r_star_S_0[1]*e_x[1]) + (r_star_S_0[2]*e_x[2])) + (r_star_S_0[3]*e_x[3])
+    y0s_S = ((r_star_S_0[1]*e_y[1]) + (r_star_S_0[2]*e_y[2])) + (r_star_S_0[3]*e_y[3])
+    z0s_S = ((r_star_S_0[1]*e_z[1]) + (r_star_S_0[2]*e_z[2])) + (r_star_S_0[3]*e_z[3])
+    ρ0s2_S = (x0s_S^2) + (y0s_S^2)
     ρ0s_S = sqrt(ρ0s2_S)
-    z0s2_S = r_star_S_0[3]^2
+    z0s2_S = z0s_S^2
     r0s2_S = ρ0s2_S + z0s2_S
     r0s_S = sqrt(r0s2_S)
     r0s5_S = r0s_S^5
@@ -1724,16 +1736,22 @@ end
     aux0_S_y = k_20E_div_r0s5_S*((ρ0s2_S + coeff0_S)*Y_bf[mo,ea])
     aux0_S_z = k_20E_div_r0s5_S*(((2z0s2_S) + coeff0_S)*Z_bf[mo,ea])
 
-    ρ1s2_M = (r_star_M_1[1]^2) + (r_star_M_1[2]^2)
+    x1s_M = ((r_star_M_1[1]*e_x[1]) + (r_star_M_1[2]*e_x[2])) + (r_star_M_1[3]*e_x[3])
+    y1s_M = ((r_star_M_1[1]*e_y[1]) + (r_star_M_1[2]*e_y[2])) + (r_star_M_1[3]*e_y[3])
+    z1s_M = ((r_star_M_1[1]*e_z[1]) + (r_star_M_1[2]*e_z[2])) + (r_star_M_1[3]*e_z[3])
+    ρ1s2_M = (x1s_M^2) + (y1s_M^2)
     ρ1s_M = sqrt(ρ1s2_M)
-    z1s2_M = r_star_M_1[3]^2
+    z1s2_M = z1s_M^2
     r1s2_M = ρ1s2_M + z1s2_M
     r1s_M = sqrt(r1s2_M)
     r1s5_M = r1s_M^5
 
-    ρ1s2_S = (r_star_S_1[1]^2) + (r_star_S_1[2]^2)
+    x1s_S = ((r_star_S_1[1]*e_x[1]) + (r_star_S_1[2]*e_x[2])) + (r_star_S_1[3]*e_x[3])
+    y1s_S = ((r_star_S_1[1]*e_y[1]) + (r_star_S_1[2]*e_y[2])) + (r_star_S_1[3]*e_y[3])
+    z1s_S = ((r_star_S_1[1]*e_z[1]) + (r_star_S_1[2]*e_z[2])) + (r_star_S_1[3]*e_z[3])
+    ρ1s2_S = (x1s_S^2) + (y1s_S^2)
     ρ1s_S = sqrt(ρ1s2_S)
-    z1s2_S = r_star_S_1[3]^2
+    z1s2_S = z1s_S^2
     r1s2_S = ρ1s2_S + z1s2_S
     r1s_S = sqrt(r1s2_S)
     r1s5_S = r1s_S^5
@@ -1756,16 +1774,22 @@ end
     aux1_S_y = k_21E_div_r1s5_S*((2coeff2_1_S*r_star_S_1[2]) - (coeff3_1_S*Y_bf[mo,ea]))
     aux1_S_z = k_21E_div_r1s5_S*((2coeff1_1_S*r_star_S_1[3]) - (coeff3_1_S*Z_bf[mo,ea]))
 
-    ρ2s2_M = (r_star_M_2[1]^2) + (r_star_M_2[2]^2)
+    x2s_M = ((r_star_M_2[1]*e_x[1]) + (r_star_M_2[2]*e_x[2])) + (r_star_M_2[3]*e_x[3])
+    y2s_M = ((r_star_M_2[1]*e_y[1]) + (r_star_M_2[2]*e_y[2])) + (r_star_M_2[3]*e_y[3])
+    z2s_M = ((r_star_M_2[1]*e_z[1]) + (r_star_M_2[2]*e_z[2])) + (r_star_M_2[3]*e_z[3])
+    ρ2s2_M = (x2s_M^2) + (y2s_M^2)
     ρ2s_M = sqrt(ρ2s2_M)
-    z2s2_M = r_star_M_2[3]^2
+    z2s2_M = z2s_M^2
     r2s2_M = ρ2s2_M + z2s2_M
     r2s_M = sqrt(r2s2_M)
     r2s5_M = r2s_M^5
 
-    ρ2s2_S = (r_star_S_2[1]^2) + (r_star_S_2[2]^2)
+    x2s_S = ((r_star_S_2[1]*e_x[1]) + (r_star_S_2[2]*e_x[2])) + (r_star_S_2[3]*e_x[3])
+    y2s_S = ((r_star_S_2[1]*e_y[1]) + (r_star_S_2[2]*e_y[2])) + (r_star_S_2[3]*e_y[3])
+    z2s_S = ((r_star_S_2[1]*e_z[1]) + (r_star_S_2[2]*e_z[2])) + (r_star_S_2[3]*e_z[3])
+    ρ2s2_S = (x2s_S^2) + (y2s_S^2)
     ρ2s_S = sqrt(ρ2s2_S)
-    z2s2_S = r_star_S_2[3]^2
+    z2s2_S = z2s_S^2
     r2s2_S = ρ2s2_S + z2s2_S
     r2s_S = sqrt(r2s2_S)
     r2s5_S = r2s_S^5
