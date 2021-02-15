@@ -28,7 +28,7 @@ using JLD
 using Quadmath
 
 # integration parameters
-const order = 25
+const order = 30
 const abstol = 1.0E-20
 
 include("constants.jl")

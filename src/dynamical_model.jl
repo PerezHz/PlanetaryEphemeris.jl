@@ -162,10 +162,10 @@
     local αm = eulang_t[1] - (pi/2)
     local δm = (pi/2) - eulang_t[2]
     local Wm = eulang_t[3]
-    local M_ = Array{S}(undef, 3, 3, N)
-    local M_[:,:,ea] = c2t_jpl_de430(dsj2k)
-    local M_[:,:,su] = pole_rotation(αs, δs)
-    local M_[:,:,mo] = pole_rotation(αm, δm, Wm)
+    local RotM = Array{S}(undef, 3, 3, N)
+    local RotM[:,:,ea] = c2t_jpl_de430(dsj2k) # nutation-precession matrix (with corrections)
+    local RotM[:,:,su] = pole_rotation(αs, δs)
+    local RotM[:,:,mo] = pole_rotation(αm, δm, Wm)
     local ITM_t = ITM_und.*one_t #+ ITM2(eulang_t_del[1], eulang_t_del[2], eulang_t_del[3])
     local fact_num = -4.5257273867882326e-36 # == -k_2M*μ[ea]*(R_moon^5)
     local fact1_jsem = [(2n-1)/n for n in 1:maximum(n1SEM)]
@@ -277,15 +277,15 @@
                 #Jn, Cnm, Snm accelerations, if j-th body is flattened
                 if UJ_interaction[i,j]
                     # # rotate from inertial frame to extended-body frame
-                    X_bf_1[i,j] = X[i,j]*M_[1,1,j]
-                    X_bf_2[i,j] = Y[i,j]*M_[1,2,j]
-                    X_bf_3[i,j] = Z[i,j]*M_[1,3,j]
-                    Y_bf_1[i,j] = X[i,j]*M_[2,1,j]
-                    Y_bf_2[i,j] = Y[i,j]*M_[2,2,j]
-                    Y_bf_3[i,j] = Z[i,j]*M_[2,3,j]
-                    Z_bf_1[i,j] = X[i,j]*M_[3,1,j]
-                    Z_bf_2[i,j] = Y[i,j]*M_[3,2,j]
-                    Z_bf_3[i,j] = Z[i,j]*M_[3,3,j]
+                    X_bf_1[i,j] = X[i,j]*RotM[1,1,j]
+                    X_bf_2[i,j] = Y[i,j]*RotM[1,2,j]
+                    X_bf_3[i,j] = Z[i,j]*RotM[1,3,j]
+                    Y_bf_1[i,j] = X[i,j]*RotM[2,1,j]
+                    Y_bf_2[i,j] = Y[i,j]*RotM[2,2,j]
+                    Y_bf_3[i,j] = Z[i,j]*RotM[2,3,j]
+                    Z_bf_1[i,j] = X[i,j]*RotM[3,1,j]
+                    Z_bf_2[i,j] = Y[i,j]*RotM[3,2,j]
+                    Z_bf_3[i,j] = Z[i,j]*RotM[3,3,j]
                     X_bf[i,j] = (X_bf_1[i,j] + X_bf_2[i,j]) + (X_bf_3[i,j]) # x-coordinate in body-fixed frame
                     Y_bf[i,j] = (Y_bf_1[i,j] + Y_bf_2[i,j]) + (Y_bf_3[i,j]) # y-coordinate in body-fixed frame
                     Z_bf[i,j] = (Z_bf_1[i,j] + Z_bf_2[i,j]) + (Z_bf_3[i,j]) # z-coordinate in body-fixed frame
@@ -390,16 +390,16 @@
                     Rb2p[i,j,2,3] = zero_q_1
                     Rb2p[i,j,3,3] = cos_ϕ[i,j]
                     # G matrix: space-fixed -> body-fixed -> "primed" ξηζ system
-                    # G_{i,j} = \sum_k R_{i,k} M_{k,j}
-                    Gc2p[i,j,1,1] = ((Rb2p[i,j,1,1]*M_[1,1,j]) + (Rb2p[i,j,1,2]*M_[2,1,j])) + (Rb2p[i,j,1,3]*M_[3,1,j])
-                    Gc2p[i,j,2,1] = ((Rb2p[i,j,2,1]*M_[1,1,j]) + (Rb2p[i,j,2,2]*M_[2,1,j])) + (Rb2p[i,j,2,3]*M_[3,1,j])
-                    Gc2p[i,j,3,1] = ((Rb2p[i,j,3,1]*M_[1,1,j]) + (Rb2p[i,j,3,2]*M_[2,1,j])) + (Rb2p[i,j,3,3]*M_[3,1,j])
-                    Gc2p[i,j,1,2] = ((Rb2p[i,j,1,1]*M_[1,2,j]) + (Rb2p[i,j,1,2]*M_[2,2,j])) + (Rb2p[i,j,1,3]*M_[3,2,j])
-                    Gc2p[i,j,2,2] = ((Rb2p[i,j,2,1]*M_[1,2,j]) + (Rb2p[i,j,2,2]*M_[2,2,j])) + (Rb2p[i,j,2,3]*M_[3,2,j])
-                    Gc2p[i,j,3,2] = ((Rb2p[i,j,3,1]*M_[1,2,j]) + (Rb2p[i,j,3,2]*M_[2,2,j])) + (Rb2p[i,j,3,3]*M_[3,2,j])
-                    Gc2p[i,j,1,3] = ((Rb2p[i,j,1,1]*M_[1,3,j]) + (Rb2p[i,j,1,2]*M_[2,3,j])) + (Rb2p[i,j,1,3]*M_[3,3,j])
-                    Gc2p[i,j,2,3] = ((Rb2p[i,j,2,1]*M_[1,3,j]) + (Rb2p[i,j,2,2]*M_[2,3,j])) + (Rb2p[i,j,2,3]*M_[3,3,j])
-                    Gc2p[i,j,3,3] = ((Rb2p[i,j,3,1]*M_[1,3,j]) + (Rb2p[i,j,3,2]*M_[2,3,j])) + (Rb2p[i,j,3,3]*M_[3,3,j])
+                    # G_{i,j} = \sum_k R_{i,k} RotM{k,j}
+                    Gc2p[i,j,1,1] = ((Rb2p[i,j,1,1]*RotM[1,1,j]) + (Rb2p[i,j,1,2]*RotM[2,1,j])) + (Rb2p[i,j,1,3]*RotM[3,1,j])
+                    Gc2p[i,j,2,1] = ((Rb2p[i,j,2,1]*RotM[1,1,j]) + (Rb2p[i,j,2,2]*RotM[2,1,j])) + (Rb2p[i,j,2,3]*RotM[3,1,j])
+                    Gc2p[i,j,3,1] = ((Rb2p[i,j,3,1]*RotM[1,1,j]) + (Rb2p[i,j,3,2]*RotM[2,1,j])) + (Rb2p[i,j,3,3]*RotM[3,1,j])
+                    Gc2p[i,j,1,2] = ((Rb2p[i,j,1,1]*RotM[1,2,j]) + (Rb2p[i,j,1,2]*RotM[2,2,j])) + (Rb2p[i,j,1,3]*RotM[3,2,j])
+                    Gc2p[i,j,2,2] = ((Rb2p[i,j,2,1]*RotM[1,2,j]) + (Rb2p[i,j,2,2]*RotM[2,2,j])) + (Rb2p[i,j,2,3]*RotM[3,2,j])
+                    Gc2p[i,j,3,2] = ((Rb2p[i,j,3,1]*RotM[1,2,j]) + (Rb2p[i,j,3,2]*RotM[2,2,j])) + (Rb2p[i,j,3,3]*RotM[3,2,j])
+                    Gc2p[i,j,1,3] = ((Rb2p[i,j,1,1]*RotM[1,3,j]) + (Rb2p[i,j,1,2]*RotM[2,3,j])) + (Rb2p[i,j,1,3]*RotM[3,3,j])
+                    Gc2p[i,j,2,3] = ((Rb2p[i,j,2,1]*RotM[1,3,j]) + (Rb2p[i,j,2,2]*RotM[2,3,j])) + (Rb2p[i,j,2,3]*RotM[3,3,j])
+                    Gc2p[i,j,3,3] = ((Rb2p[i,j,3,1]*RotM[1,3,j]) + (Rb2p[i,j,3,2]*RotM[2,3,j])) + (Rb2p[i,j,3,3]*RotM[3,3,j])
                     # compute cartesian coordinates of acceleration due to body figure in inertial frame
                     F_JCS_x[i,j] = ((F_JCS_ξ[i,j]*Gc2p[i,j,1,1]) + (F_JCS_η[i,j]*Gc2p[i,j,2,1])) + (F_JCS_ζ[i,j]*Gc2p[i,j,3,1])
                     F_JCS_y[i,j] = ((F_JCS_ξ[i,j]*Gc2p[i,j,1,2]) + (F_JCS_η[i,j]*Gc2p[i,j,2,2])) + (F_JCS_ζ[i,j]*Gc2p[i,j,3,2])
@@ -685,10 +685,10 @@ end
     local αm = eulang_t[1] - (pi/2)
     local δm = (pi/2) - eulang_t[2]
     local Wm = eulang_t[3]
-    local M_ = Array{S}(undef, 3, 3, 5)
-    local M_[:,:,ea] = c2t_jpl_de430(dsj2k)
-    local M_[:,:,su] = pole_rotation(αs, δs)
-    local M_[:,:,mo] = pole_rotation(αm, δm, Wm)
+    local RotM = Array{S}(undef, 3, 3, 5)
+    local RotM[:,:,ea] = c2t_jpl_de430(dsj2k)
+    local RotM[:,:,su] = pole_rotation(αs, δs)
+    local RotM[:,:,mo] = pole_rotation(αm, δm, Wm)
     local ITM_t = ITM_und.*one_t #+ ITM2(eulang_t_del[1], eulang_t_del[2], eulang_t_del[3])
     local fact_num = -4.5257273867882326e-36 # == -k_2M*μ[ea]*(R_moon^5)
     local fact1_jsem = [(2n-1)/n for n in 1:maximum(n1SEM)]
@@ -805,15 +805,15 @@ end
                 #Jn, Cnm, Snm accelerations, if j-th body is flattened
                 if UJ_interaction[i,j]
                     # rotate from inertial frame to extended-body frame
-                    X_bf_1[i,j] = X[i,j]*M_[1,1,j]
-                    X_bf_2[i,j] = Y[i,j]*M_[1,2,j]
-                    X_bf_3[i,j] = Z[i,j]*M_[1,3,j]
-                    Y_bf_1[i,j] = X[i,j]*M_[2,1,j]
-                    Y_bf_2[i,j] = Y[i,j]*M_[2,2,j]
-                    Y_bf_3[i,j] = Z[i,j]*M_[2,3,j]
-                    Z_bf_1[i,j] = X[i,j]*M_[3,1,j]
-                    Z_bf_2[i,j] = Y[i,j]*M_[3,2,j]
-                    Z_bf_3[i,j] = Z[i,j]*M_[3,3,j]
+                    X_bf_1[i,j] = X[i,j]*RotM[1,1,j]
+                    X_bf_2[i,j] = Y[i,j]*RotM[1,2,j]
+                    X_bf_3[i,j] = Z[i,j]*RotM[1,3,j]
+                    Y_bf_1[i,j] = X[i,j]*RotM[2,1,j]
+                    Y_bf_2[i,j] = Y[i,j]*RotM[2,2,j]
+                    Y_bf_3[i,j] = Z[i,j]*RotM[2,3,j]
+                    Z_bf_1[i,j] = X[i,j]*RotM[3,1,j]
+                    Z_bf_2[i,j] = Y[i,j]*RotM[3,2,j]
+                    Z_bf_3[i,j] = Z[i,j]*RotM[3,3,j]
                     X_bf[i,j] = (X_bf_1[i,j] + X_bf_2[i,j]) + (X_bf_3[i,j]) # x-coordinate in body-fixed frame
                     Y_bf[i,j] = (Y_bf_1[i,j] + Y_bf_2[i,j]) + (Y_bf_3[i,j]) # y-coordinate in body-fixed frame
                     Z_bf[i,j] = (Z_bf_1[i,j] + Z_bf_2[i,j]) + (Z_bf_3[i,j]) # z-coordinate in body-fixed frame
@@ -920,16 +920,16 @@ end
                     Rb2p[i,j,2,3] = zero_q_1
                     Rb2p[i,j,3,3] = cos_ϕ[i,j]
                     # G matrix: space-fixed -> body-fixed -> "primed" ξηζ system
-                    # G_{i,j} = \sum_k R_{i,k} M_{k,j}
-                    Gc2p[i,j,1,1] = ((Rb2p[i,j,1,1]*M_[1,1,j]) + (Rb2p[i,j,1,2]*M_[2,1,j])) + (Rb2p[i,j,1,3]*M_[3,1,j])
-                    Gc2p[i,j,2,1] = ((Rb2p[i,j,2,1]*M_[1,1,j]) + (Rb2p[i,j,2,2]*M_[2,1,j])) + (Rb2p[i,j,2,3]*M_[3,1,j])
-                    Gc2p[i,j,3,1] = ((Rb2p[i,j,3,1]*M_[1,1,j]) + (Rb2p[i,j,3,2]*M_[2,1,j])) + (Rb2p[i,j,3,3]*M_[3,1,j])
-                    Gc2p[i,j,1,2] = ((Rb2p[i,j,1,1]*M_[1,2,j]) + (Rb2p[i,j,1,2]*M_[2,2,j])) + (Rb2p[i,j,1,3]*M_[3,2,j])
-                    Gc2p[i,j,2,2] = ((Rb2p[i,j,2,1]*M_[1,2,j]) + (Rb2p[i,j,2,2]*M_[2,2,j])) + (Rb2p[i,j,2,3]*M_[3,2,j])
-                    Gc2p[i,j,3,2] = ((Rb2p[i,j,3,1]*M_[1,2,j]) + (Rb2p[i,j,3,2]*M_[2,2,j])) + (Rb2p[i,j,3,3]*M_[3,2,j])
-                    Gc2p[i,j,1,3] = ((Rb2p[i,j,1,1]*M_[1,3,j]) + (Rb2p[i,j,1,2]*M_[2,3,j])) + (Rb2p[i,j,1,3]*M_[3,3,j])
-                    Gc2p[i,j,2,3] = ((Rb2p[i,j,2,1]*M_[1,3,j]) + (Rb2p[i,j,2,2]*M_[2,3,j])) + (Rb2p[i,j,2,3]*M_[3,3,j])
-                    Gc2p[i,j,3,3] = ((Rb2p[i,j,3,1]*M_[1,3,j]) + (Rb2p[i,j,3,2]*M_[2,3,j])) + (Rb2p[i,j,3,3]*M_[3,3,j])
+                    # G_{i,j} = \sum_k R_{i,k} RotM{k,j}
+                    Gc2p[i,j,1,1] = ((Rb2p[i,j,1,1]*RotM[1,1,j]) + (Rb2p[i,j,1,2]*RotM[2,1,j])) + (Rb2p[i,j,1,3]*RotM[3,1,j])
+                    Gc2p[i,j,2,1] = ((Rb2p[i,j,2,1]*RotM[1,1,j]) + (Rb2p[i,j,2,2]*RotM[2,1,j])) + (Rb2p[i,j,2,3]*RotM[3,1,j])
+                    Gc2p[i,j,3,1] = ((Rb2p[i,j,3,1]*RotM[1,1,j]) + (Rb2p[i,j,3,2]*RotM[2,1,j])) + (Rb2p[i,j,3,3]*RotM[3,1,j])
+                    Gc2p[i,j,1,2] = ((Rb2p[i,j,1,1]*RotM[1,2,j]) + (Rb2p[i,j,1,2]*RotM[2,2,j])) + (Rb2p[i,j,1,3]*RotM[3,2,j])
+                    Gc2p[i,j,2,2] = ((Rb2p[i,j,2,1]*RotM[1,2,j]) + (Rb2p[i,j,2,2]*RotM[2,2,j])) + (Rb2p[i,j,2,3]*RotM[3,2,j])
+                    Gc2p[i,j,3,2] = ((Rb2p[i,j,3,1]*RotM[1,2,j]) + (Rb2p[i,j,3,2]*RotM[2,2,j])) + (Rb2p[i,j,3,3]*RotM[3,2,j])
+                    Gc2p[i,j,1,3] = ((Rb2p[i,j,1,1]*RotM[1,3,j]) + (Rb2p[i,j,1,2]*RotM[2,3,j])) + (Rb2p[i,j,1,3]*RotM[3,3,j])
+                    Gc2p[i,j,2,3] = ((Rb2p[i,j,2,1]*RotM[1,3,j]) + (Rb2p[i,j,2,2]*RotM[2,3,j])) + (Rb2p[i,j,2,3]*RotM[3,3,j])
+                    Gc2p[i,j,3,3] = ((Rb2p[i,j,3,1]*RotM[1,3,j]) + (Rb2p[i,j,3,2]*RotM[2,3,j])) + (Rb2p[i,j,3,3]*RotM[3,3,j])
                     # compute cartesian coordinates of acceleration due to body figure in inertial frame
                     F_JCS_x[i,j] = ((F_JCS_ξ[i,j]*Gc2p[i,j,1,1]) + (F_JCS_η[i,j]*Gc2p[i,j,2,1])) + (F_JCS_ζ[i,j]*Gc2p[i,j,3,1])
                     F_JCS_y[i,j] = ((F_JCS_ξ[i,j]*Gc2p[i,j,1,2]) + (F_JCS_η[i,j]*Gc2p[i,j,2,2])) + (F_JCS_ζ[i,j]*Gc2p[i,j,3,2])
@@ -1243,10 +1243,10 @@ end
     local αm = eulang_t[1] - (pi/2)
     local δm = (pi/2) - eulang_t[2]
     local Wm = eulang_t[3]
-    local M_ = Array{S}(undef, 3, 3, 5)
-    local M_[:,:,ea] = c2t_jpl_de430(dsj2k)
-    local M_[:,:,su] = pole_rotation(αs, δs)
-    local M_[:,:,mo] = pole_rotation(αm, δm, Wm)
+    local RotM = Array{S}(undef, 3, 3, 5)
+    local RotM[:,:,ea] = c2t_jpl_de430(dsj2k)
+    local RotM[:,:,su] = pole_rotation(αs, δs)
+    local RotM[:,:,mo] = pole_rotation(αm, δm, Wm)
     local M_del_mo = pole_rotation(eulang_t_del[1] - (pi/2), (pi/2) - eulang_t_del[2], eulang_t_del[3])
     ITM_t = Array{S}(undef, 3, 3)
     ITM2_t = Array{S}(undef, 3, 3)
@@ -1272,16 +1272,16 @@ end
     J2_t[su] = J2S_t
     J2_t[ea] = J2E_t
     # Moon tidal acc: geocentric space-fixed -> rotational time-delay -> geocentric Earth true-equator-of-date frame
-    local R30 = one_t.*Array(I, 3, 3) #M_[:,:,ea] # #Rz(-ω_E*τ_0) == Id(3x3), since τ_0=0
-    local M_del_τ_1p = c2t_jpl_de430(dsj2k-τ_1p)
-    local M_del_τ_2p = c2t_jpl_de430(dsj2k-τ_2p)
-    local R31 = transpose(M_del_τ_1p)*Rz(-ω_E*τ_1)*M_del_τ_1p
-    local R32 = transpose(M_del_τ_2p)*Rz(-ω_E*τ_2)*M_del_τ_2p
+    local R30 = one_t.*Array(I, 3, 3) #RotM[:,:,ea] # #Rz(-ω_E*τ_0) == Id(3x3), since τ_0=0
+    local NP_t1p = c2t_jpl_de430(dsj2k-τ_1p) # nutation-precession matrix at time t-τ_1p
+    local NP_t2p = c2t_jpl_de430(dsj2k-τ_2p) # nutation-precession matrix at time t-τ_1p
+    local R31 = transpose(NP_t1p)*Rz(-ω_E*τ_1)*NP_t1p
+    local R32 = transpose(NP_t2p)*Rz(-ω_E*τ_2)*NP_t2p
     local tid_num_coeff = 1.5*(1.0 + μ[mo]/μ[ea])
     # coordinates of terrestrial pole unit vector in inertial frame
-    local e_x = M_[1,:,ea]
-    local e_y = M_[2,:,ea]
-    local e_z = M_[3,:,ea]
+    # local e_x = RotM[1,:,ea]
+    # local e_y = RotM[2,:,ea]
+    # local e_z = RotM[3,:,ea]
 
     Threads.@threads for j in 1:N
         newtonX[j] = zero_q_1
@@ -1396,15 +1396,15 @@ end
                 #Jn, Cnm, Snm accelerations, if j-th body is flattened
                 if UJ_interaction[i,j]
                     # rotate from inertial frame to extended-body frame
-                    X_bf_1[i,j] = X[i,j]*M_[1,1,j]
-                    X_bf_2[i,j] = Y[i,j]*M_[1,2,j]
-                    X_bf_3[i,j] = Z[i,j]*M_[1,3,j]
-                    Y_bf_1[i,j] = X[i,j]*M_[2,1,j]
-                    Y_bf_2[i,j] = Y[i,j]*M_[2,2,j]
-                    Y_bf_3[i,j] = Z[i,j]*M_[2,3,j]
-                    Z_bf_1[i,j] = X[i,j]*M_[3,1,j]
-                    Z_bf_2[i,j] = Y[i,j]*M_[3,2,j]
-                    Z_bf_3[i,j] = Z[i,j]*M_[3,3,j]
+                    X_bf_1[i,j] = X[i,j]*RotM[1,1,j]
+                    X_bf_2[i,j] = Y[i,j]*RotM[1,2,j]
+                    X_bf_3[i,j] = Z[i,j]*RotM[1,3,j]
+                    Y_bf_1[i,j] = X[i,j]*RotM[2,1,j]
+                    Y_bf_2[i,j] = Y[i,j]*RotM[2,2,j]
+                    Y_bf_3[i,j] = Z[i,j]*RotM[2,3,j]
+                    Z_bf_1[i,j] = X[i,j]*RotM[3,1,j]
+                    Z_bf_2[i,j] = Y[i,j]*RotM[3,2,j]
+                    Z_bf_3[i,j] = Z[i,j]*RotM[3,3,j]
                     X_bf[i,j] = (X_bf_1[i,j] + X_bf_2[i,j]) + (X_bf_3[i,j]) # x-coordinate in body-fixed frame
                     Y_bf[i,j] = (Y_bf_1[i,j] + Y_bf_2[i,j]) + (Y_bf_3[i,j]) # y-coordinate in body-fixed frame
                     Z_bf[i,j] = (Z_bf_1[i,j] + Z_bf_2[i,j]) + (Z_bf_3[i,j]) # z-coordinate in body-fixed frame
@@ -1511,16 +1511,16 @@ end
                     Rb2p[i,j,2,3] = zero_q_1
                     Rb2p[i,j,3,3] = cos_ϕ[i,j]
                     # G matrix: space-fixed -> body-fixed -> "primed" ξηζ system
-                    # G_{i,j} = \sum_k R_{i,k} M_{k,j}
-                    Gc2p[i,j,1,1] = ((Rb2p[i,j,1,1]*M_[1,1,j]) + (Rb2p[i,j,1,2]*M_[2,1,j])) + (Rb2p[i,j,1,3]*M_[3,1,j])
-                    Gc2p[i,j,2,1] = ((Rb2p[i,j,2,1]*M_[1,1,j]) + (Rb2p[i,j,2,2]*M_[2,1,j])) + (Rb2p[i,j,2,3]*M_[3,1,j])
-                    Gc2p[i,j,3,1] = ((Rb2p[i,j,3,1]*M_[1,1,j]) + (Rb2p[i,j,3,2]*M_[2,1,j])) + (Rb2p[i,j,3,3]*M_[3,1,j])
-                    Gc2p[i,j,1,2] = ((Rb2p[i,j,1,1]*M_[1,2,j]) + (Rb2p[i,j,1,2]*M_[2,2,j])) + (Rb2p[i,j,1,3]*M_[3,2,j])
-                    Gc2p[i,j,2,2] = ((Rb2p[i,j,2,1]*M_[1,2,j]) + (Rb2p[i,j,2,2]*M_[2,2,j])) + (Rb2p[i,j,2,3]*M_[3,2,j])
-                    Gc2p[i,j,3,2] = ((Rb2p[i,j,3,1]*M_[1,2,j]) + (Rb2p[i,j,3,2]*M_[2,2,j])) + (Rb2p[i,j,3,3]*M_[3,2,j])
-                    Gc2p[i,j,1,3] = ((Rb2p[i,j,1,1]*M_[1,3,j]) + (Rb2p[i,j,1,2]*M_[2,3,j])) + (Rb2p[i,j,1,3]*M_[3,3,j])
-                    Gc2p[i,j,2,3] = ((Rb2p[i,j,2,1]*M_[1,3,j]) + (Rb2p[i,j,2,2]*M_[2,3,j])) + (Rb2p[i,j,2,3]*M_[3,3,j])
-                    Gc2p[i,j,3,3] = ((Rb2p[i,j,3,1]*M_[1,3,j]) + (Rb2p[i,j,3,2]*M_[2,3,j])) + (Rb2p[i,j,3,3]*M_[3,3,j])
+                    # G_{i,j} = \sum_k R_{i,k} RotM{k,j}
+                    Gc2p[i,j,1,1] = ((Rb2p[i,j,1,1]*RotM[1,1,j]) + (Rb2p[i,j,1,2]*RotM[2,1,j])) + (Rb2p[i,j,1,3]*RotM[3,1,j])
+                    Gc2p[i,j,2,1] = ((Rb2p[i,j,2,1]*RotM[1,1,j]) + (Rb2p[i,j,2,2]*RotM[2,1,j])) + (Rb2p[i,j,2,3]*RotM[3,1,j])
+                    Gc2p[i,j,3,1] = ((Rb2p[i,j,3,1]*RotM[1,1,j]) + (Rb2p[i,j,3,2]*RotM[2,1,j])) + (Rb2p[i,j,3,3]*RotM[3,1,j])
+                    Gc2p[i,j,1,2] = ((Rb2p[i,j,1,1]*RotM[1,2,j]) + (Rb2p[i,j,1,2]*RotM[2,2,j])) + (Rb2p[i,j,1,3]*RotM[3,2,j])
+                    Gc2p[i,j,2,2] = ((Rb2p[i,j,2,1]*RotM[1,2,j]) + (Rb2p[i,j,2,2]*RotM[2,2,j])) + (Rb2p[i,j,2,3]*RotM[3,2,j])
+                    Gc2p[i,j,3,2] = ((Rb2p[i,j,3,1]*RotM[1,2,j]) + (Rb2p[i,j,3,2]*RotM[2,2,j])) + (Rb2p[i,j,3,3]*RotM[3,2,j])
+                    Gc2p[i,j,1,3] = ((Rb2p[i,j,1,1]*RotM[1,3,j]) + (Rb2p[i,j,1,2]*RotM[2,3,j])) + (Rb2p[i,j,1,3]*RotM[3,3,j])
+                    Gc2p[i,j,2,3] = ((Rb2p[i,j,2,1]*RotM[1,3,j]) + (Rb2p[i,j,2,2]*RotM[2,3,j])) + (Rb2p[i,j,2,3]*RotM[3,3,j])
+                    Gc2p[i,j,3,3] = ((Rb2p[i,j,3,1]*RotM[1,3,j]) + (Rb2p[i,j,3,2]*RotM[2,3,j])) + (Rb2p[i,j,3,3]*RotM[3,3,j])
                     # compute cartesian coordinates of acceleration due to body figure in inertial frame
                     F_JCS_x[i,j] = ((F_JCS_ξ[i,j]*Gc2p[i,j,1,1]) + (F_JCS_η[i,j]*Gc2p[i,j,2,1])) + (F_JCS_ζ[i,j]*Gc2p[i,j,3,1])
                     F_JCS_y[i,j] = ((F_JCS_ξ[i,j]*Gc2p[i,j,1,2]) + (F_JCS_η[i,j]*Gc2p[i,j,2,2])) + (F_JCS_ζ[i,j]*Gc2p[i,j,3,2])
@@ -1703,9 +1703,9 @@ end
 
     # X_bf[mo,ea] are geocentric, Earth-fixed "unprimed" position of perturbed body (Moon) in cylindrical coordinates
 
-    x0s_M = ((r_star_M_0[1]*e_x[1]) + (r_star_M_0[2]*e_x[2])) + (r_star_M_0[3]*e_x[3])
-    y0s_M = ((r_star_M_0[1]*e_y[1]) + (r_star_M_0[2]*e_y[2])) + (r_star_M_0[3]*e_y[3])
-    z0s_M = ((r_star_M_0[1]*e_z[1]) + (r_star_M_0[2]*e_z[2])) + (r_star_M_0[3]*e_z[3])
+    x0s_M = r_star_M_0[1] #((r_star_M_0[1]*e_x[1]) + (r_star_M_0[2]*e_x[2])) + (r_star_M_0[3]*e_x[3])
+    y0s_M = r_star_M_0[2] #((r_star_M_0[1]*e_y[1]) + (r_star_M_0[2]*e_y[2])) + (r_star_M_0[3]*e_y[3])
+    z0s_M = r_star_M_0[3] #((r_star_M_0[1]*e_z[1]) + (r_star_M_0[2]*e_z[2])) + (r_star_M_0[3]*e_z[3])
     ρ0s2_M = (x0s_M^2) + (y0s_M^2)
     ρ0s_M = sqrt(ρ0s2_M)
     z0s2_M = z0s_M^2
@@ -1713,9 +1713,9 @@ end
     r0s_M = sqrt(r0s2_M)
     r0s5_M = r0s_M^5
 
-    x0s_S = ((r_star_S_0[1]*e_x[1]) + (r_star_S_0[2]*e_x[2])) + (r_star_S_0[3]*e_x[3])
-    y0s_S = ((r_star_S_0[1]*e_y[1]) + (r_star_S_0[2]*e_y[2])) + (r_star_S_0[3]*e_y[3])
-    z0s_S = ((r_star_S_0[1]*e_z[1]) + (r_star_S_0[2]*e_z[2])) + (r_star_S_0[3]*e_z[3])
+    x0s_S = r_star_S_0[1] # ((r_star_S_0[1]*e_x[1]) + (r_star_S_0[2]*e_x[2])) + (r_star_S_0[3]*e_x[3])
+    y0s_S = r_star_S_0[2] # ((r_star_S_0[1]*e_y[1]) + (r_star_S_0[2]*e_y[2])) + (r_star_S_0[3]*e_y[3])
+    z0s_S = r_star_S_0[3] # ((r_star_S_0[1]*e_z[1]) + (r_star_S_0[2]*e_z[2])) + (r_star_S_0[3]*e_z[3])
     ρ0s2_S = (x0s_S^2) + (y0s_S^2)
     ρ0s_S = sqrt(ρ0s2_S)
     z0s2_S = z0s_S^2
@@ -1736,9 +1736,9 @@ end
     aux0_S_y = k_20E_div_r0s5_S*((ρ0s2_S + coeff0_S)*Y_bf[mo,ea])
     aux0_S_z = k_20E_div_r0s5_S*(((2z0s2_S) + coeff0_S)*Z_bf[mo,ea])
 
-    x1s_M = ((r_star_M_1[1]*e_x[1]) + (r_star_M_1[2]*e_x[2])) + (r_star_M_1[3]*e_x[3])
-    y1s_M = ((r_star_M_1[1]*e_y[1]) + (r_star_M_1[2]*e_y[2])) + (r_star_M_1[3]*e_y[3])
-    z1s_M = ((r_star_M_1[1]*e_z[1]) + (r_star_M_1[2]*e_z[2])) + (r_star_M_1[3]*e_z[3])
+    x1s_M = r_star_M_1[1] # ((r_star_M_1[1]*e_x[1]) + (r_star_M_1[2]*e_x[2])) + (r_star_M_1[3]*e_x[3])
+    y1s_M = r_star_M_1[2] # ((r_star_M_1[1]*e_y[1]) + (r_star_M_1[2]*e_y[2])) + (r_star_M_1[3]*e_y[3])
+    z1s_M = r_star_M_1[3] # ((r_star_M_1[1]*e_z[1]) + (r_star_M_1[2]*e_z[2])) + (r_star_M_1[3]*e_z[3])
     ρ1s2_M = (x1s_M^2) + (y1s_M^2)
     ρ1s_M = sqrt(ρ1s2_M)
     z1s2_M = z1s_M^2
@@ -1746,9 +1746,9 @@ end
     r1s_M = sqrt(r1s2_M)
     r1s5_M = r1s_M^5
 
-    x1s_S = ((r_star_S_1[1]*e_x[1]) + (r_star_S_1[2]*e_x[2])) + (r_star_S_1[3]*e_x[3])
-    y1s_S = ((r_star_S_1[1]*e_y[1]) + (r_star_S_1[2]*e_y[2])) + (r_star_S_1[3]*e_y[3])
-    z1s_S = ((r_star_S_1[1]*e_z[1]) + (r_star_S_1[2]*e_z[2])) + (r_star_S_1[3]*e_z[3])
+    x1s_S = r_star_S_1[1] # ((r_star_S_1[1]*e_x[1]) + (r_star_S_1[2]*e_x[2])) + (r_star_S_1[3]*e_x[3])
+    y1s_S = r_star_S_1[2] # ((r_star_S_1[1]*e_y[1]) + (r_star_S_1[2]*e_y[2])) + (r_star_S_1[3]*e_y[3])
+    z1s_S = r_star_S_1[3] # ((r_star_S_1[1]*e_z[1]) + (r_star_S_1[2]*e_z[2])) + (r_star_S_1[3]*e_z[3])
     ρ1s2_S = (x1s_S^2) + (y1s_S^2)
     ρ1s_S = sqrt(ρ1s2_S)
     z1s2_S = z1s_S^2
@@ -1774,9 +1774,9 @@ end
     aux1_S_y = k_21E_div_r1s5_S*((2coeff2_1_S*r_star_S_1[2]) - (coeff3_1_S*Y_bf[mo,ea]))
     aux1_S_z = k_21E_div_r1s5_S*((2coeff1_1_S*r_star_S_1[3]) - (coeff3_1_S*Z_bf[mo,ea]))
 
-    x2s_M = ((r_star_M_2[1]*e_x[1]) + (r_star_M_2[2]*e_x[2])) + (r_star_M_2[3]*e_x[3])
-    y2s_M = ((r_star_M_2[1]*e_y[1]) + (r_star_M_2[2]*e_y[2])) + (r_star_M_2[3]*e_y[3])
-    z2s_M = ((r_star_M_2[1]*e_z[1]) + (r_star_M_2[2]*e_z[2])) + (r_star_M_2[3]*e_z[3])
+    x2s_M = r_star_M_2[1] # ((r_star_M_2[1]*e_x[1]) + (r_star_M_2[2]*e_x[2])) + (r_star_M_2[3]*e_x[3])
+    y2s_M = r_star_M_2[2] # ((r_star_M_2[1]*e_y[1]) + (r_star_M_2[2]*e_y[2])) + (r_star_M_2[3]*e_y[3])
+    z2s_M = r_star_M_2[3] # ((r_star_M_2[1]*e_z[1]) + (r_star_M_2[2]*e_z[2])) + (r_star_M_2[3]*e_z[3])
     ρ2s2_M = (x2s_M^2) + (y2s_M^2)
     ρ2s_M = sqrt(ρ2s2_M)
     z2s2_M = z2s_M^2
@@ -1784,9 +1784,9 @@ end
     r2s_M = sqrt(r2s2_M)
     r2s5_M = r2s_M^5
 
-    x2s_S = ((r_star_S_2[1]*e_x[1]) + (r_star_S_2[2]*e_x[2])) + (r_star_S_2[3]*e_x[3])
-    y2s_S = ((r_star_S_2[1]*e_y[1]) + (r_star_S_2[2]*e_y[2])) + (r_star_S_2[3]*e_y[3])
-    z2s_S = ((r_star_S_2[1]*e_z[1]) + (r_star_S_2[2]*e_z[2])) + (r_star_S_2[3]*e_z[3])
+    x2s_S = r_star_S_2[1] # ((r_star_S_2[1]*e_x[1]) + (r_star_S_2[2]*e_x[2])) + (r_star_S_2[3]*e_x[3])
+    y2s_S = r_star_S_2[2] # ((r_star_S_2[1]*e_y[1]) + (r_star_S_2[2]*e_y[2])) + (r_star_S_2[3]*e_y[3])
+    z2s_S = r_star_S_2[3] # ((r_star_S_2[1]*e_z[1]) + (r_star_S_2[2]*e_z[2])) + (r_star_S_2[3]*e_z[3])
     ρ2s2_S = (x2s_S^2) + (y2s_S^2)
     ρ2s_S = sqrt(ρ2s2_S)
     z2s2_S = z2s_S^2
@@ -1821,9 +1821,9 @@ end
     tidal_bf_z = (tide_acc_coeff_M*((aux0_M_z+aux1_M_z)+aux2_M_z)) + (tide_acc_coeff_S*((aux0_S_z+aux1_S_z)+aux2_S_z))
 
     # transform from geocentric Earth-true-equator-of-date coordinates to geocentric mean equator of J2000.0 coordinates
-    tidal_x = ((M_[1,1,ea]*tidal_bf_x)+(M_[2,1,ea]*tidal_bf_y)) + (M_[3,1,ea]*tidal_bf_z)
-    tidal_y = ((M_[1,2,ea]*tidal_bf_x)+(M_[2,2,ea]*tidal_bf_y)) + (M_[3,2,ea]*tidal_bf_z)
-    tidal_z = ((M_[1,3,ea]*tidal_bf_x)+(M_[2,3,ea]*tidal_bf_y)) + (M_[3,3,ea]*tidal_bf_z)
+    tidal_x = ((RotM[1,1,ea]*tidal_bf_x)+(RotM[2,1,ea]*tidal_bf_y)) + (RotM[3,1,ea]*tidal_bf_z) # tidal_bf_x
+    tidal_y = ((RotM[1,2,ea]*tidal_bf_x)+(RotM[2,2,ea]*tidal_bf_y)) + (RotM[3,2,ea]*tidal_bf_z) # tidal_bf_y
+    tidal_z = ((RotM[1,3,ea]*tidal_bf_x)+(RotM[2,3,ea]*tidal_bf_y)) + (RotM[3,3,ea]*tidal_bf_z) # tidal_bf_z
 
     # add tidal acceleration to Moon's acceleration due to extended-body effects
     accX_mo_tides = accX[mo] + tidal_x
