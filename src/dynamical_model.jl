@@ -1264,9 +1264,9 @@ end
     J2_t[su] = J2S_t
     J2_t[ea] = J2E_t
     # Moon tidal acc: geocentric space-fixed -> rotational time-delay -> geocentric Earth true-equator-of-date frame
-    local R30 = RotM[:,:,ea] #one_t.*Array(I, 3, 3) #RotM[:,:,ea] # #Rz(-ω_E*τ_0) == Id(3x3), since τ_0=0
+    local R30 = RotM[:,:,ea] #one_t.*Array(I, 3, 3)    ###*Rz(-ω_E*τ_0) == Id(3x3), since τ_0=0
     local NP_t1p = c2t_jpl_de430(dsj2k-τ_1p) # nutation-precession matrix at time t-τ_1p
-    local NP_t2p = c2t_jpl_de430(dsj2k-τ_2p) # nutation-precession matrix at time t-τ_1p
+    local NP_t2p = c2t_jpl_de430(dsj2k-τ_2p) # nutation-precession matrix at time t-τ_2p
     local R31 = R30*transpose(NP_t1p)*Rz(-ω_E*τ_1)*NP_t1p
     local R32 = R30*transpose(NP_t2p)*Rz(-ω_E*τ_2)*NP_t2p
     local tid_num_coeff = 1.5*(1.0 + μ[mo]/μ[ea])
