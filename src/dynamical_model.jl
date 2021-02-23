@@ -538,8 +538,9 @@ end
     local N, eulang_de430_, jd0 = params
     local S = eltype(q)
     local N_ext = 11 # number of bodies in extended-body accelerations
-    local eulang_t = eulang_de430_( (t+(jd0-J2000))*daysec )
-    #local eulang_t_del = eulang_de430_( ((t-τ_M)+(jd0-J2000))*daysec )
+    local dsj2k = t+(jd0-J2000) # days since J2000.0 (TDB)
+    local eulang_t = eulang_de430_( dsj2k*daysec )
+    # local eulang_t_del = eulang_de430_( (dsj2k-τ_M)*daysec )
 
     #TODO: handle appropiately @taylorize'd version with postnewton_iter>1
     local postnewton_iter = 1 # number of iterations of post-Newtonian subroutine
@@ -679,7 +680,6 @@ end
     accZ = Array{S}(undef, N_ext)
 
     # rotations to and from Earth, Sun and Moon pole-oriented frames
-    local dsj2k = t+(jd0-J2000) # J2000.0 = 2.451545e6
     local αs = deg2rad(α_p_sun*one_t)
     local δs = deg2rad(δ_p_sun*one_t)
     local αm = eulang_t[1] - (pi/2)
@@ -836,16 +836,6 @@ end
                         temp_rn[i,j,n] = r_p1d2[i,j]^fact5_jsem[n]
                     end
                     r_p4[i,j] = r_p2[i,j]^2
-                    # if j == mo
-                    #     F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2M_t)/r_p4[i,j]
-                    #     F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2M_t)/r_p4[i,j]
-                    # elseif j == ea
-                    #     F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2E_t)/r_p4[i,j]
-                    #     F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2E_t)/r_p4[i,j]
-                    # elseif j == su
-                    #     F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2S_t)/r_p4[i,j]
-                    #     F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2S_t)/r_p4[i,j]
-                    # end
                     F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2_t[j])/r_p4[i,j]
                     F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2_t[j])/r_p4[i,j]
                     F_J_ξ_36[i,j] = zero_q_1
@@ -865,6 +855,8 @@ end
                                 sin_mλ[i,j,1] = sin_λ[i,j] # Moyer (1971), eq. (167)
                                 cos_mλ[i,j,1] = cos_λ[i,j] # Moyer (1971), eq. (168)
                                 secϕ_P_nm[i,j,1,1] = one_t
+                                P_nm[i,j,1,1] = cos_ϕ[i,j]
+                                cosϕ_dP_nm[i,j,1,1] = sin_ϕ[i,j]*lnm3[1] #+0 (second term in Eq. 183 from Moyer, 1971, vanishes when n=m)
                             else
                                 sin_mλ[i,j,m] = (sin_mλ[i,j,1]*cos_mλ[i,j,m-1]) + (cos_mλ[i,j,1]*sin_mλ[i,j,m-1])
                                 cos_mλ[i,j,m] = (cos_mλ[i,j,1]*cos_mλ[i,j,m-1]) - (sin_mλ[i,j,1]*sin_mλ[i,j,m-1])
@@ -930,7 +922,7 @@ end
                     Gc2p[i,j,1,3] = ((Rb2p[i,j,1,1]*RotM[1,3,j]) + (Rb2p[i,j,1,2]*RotM[2,3,j])) + (Rb2p[i,j,1,3]*RotM[3,3,j])
                     Gc2p[i,j,2,3] = ((Rb2p[i,j,2,1]*RotM[1,3,j]) + (Rb2p[i,j,2,2]*RotM[2,3,j])) + (Rb2p[i,j,2,3]*RotM[3,3,j])
                     Gc2p[i,j,3,3] = ((Rb2p[i,j,3,1]*RotM[1,3,j]) + (Rb2p[i,j,3,2]*RotM[2,3,j])) + (Rb2p[i,j,3,3]*RotM[3,3,j])
-                    # compute cartesian coordinates of acceleration due to body figure in inertial frame
+                    # compute cartesian coordinates of acceleration due to body figure in inertial frame (Moyer, 1971, eq. (169))
                     F_JCS_x[i,j] = ((F_JCS_ξ[i,j]*Gc2p[i,j,1,1]) + (F_JCS_η[i,j]*Gc2p[i,j,2,1])) + (F_JCS_ζ[i,j]*Gc2p[i,j,3,1])
                     F_JCS_y[i,j] = ((F_JCS_ξ[i,j]*Gc2p[i,j,1,2]) + (F_JCS_η[i,j]*Gc2p[i,j,2,2])) + (F_JCS_ζ[i,j]*Gc2p[i,j,3,2])
                     F_JCS_z[i,j] = ((F_JCS_ξ[i,j]*Gc2p[i,j,1,3]) + (F_JCS_η[i,j]*Gc2p[i,j,2,3])) + (F_JCS_ζ[i,j]*Gc2p[i,j,3,3])
@@ -1272,16 +1264,12 @@ end
     J2_t[su] = J2S_t
     J2_t[ea] = J2E_t
     # Moon tidal acc: geocentric space-fixed -> rotational time-delay -> geocentric Earth true-equator-of-date frame
-    local R30 = one_t.*Array(I, 3, 3) #RotM[:,:,ea] # #Rz(-ω_E*τ_0) == Id(3x3), since τ_0=0
+    local R30 = RotM[:,:,ea] #one_t.*Array(I, 3, 3) #RotM[:,:,ea] # #Rz(-ω_E*τ_0) == Id(3x3), since τ_0=0
     local NP_t1p = c2t_jpl_de430(dsj2k-τ_1p) # nutation-precession matrix at time t-τ_1p
     local NP_t2p = c2t_jpl_de430(dsj2k-τ_2p) # nutation-precession matrix at time t-τ_1p
-    local R31 = transpose(NP_t1p)*Rz(-ω_E*τ_1)*NP_t1p
-    local R32 = transpose(NP_t2p)*Rz(-ω_E*τ_2)*NP_t2p
+    local R31 = R30*transpose(NP_t1p)*Rz(-ω_E*τ_1)*NP_t1p
+    local R32 = R30*transpose(NP_t2p)*Rz(-ω_E*τ_2)*NP_t2p
     local tid_num_coeff = 1.5*(1.0 + μ[mo]/μ[ea])
-    # coordinates of terrestrial pole unit vector in inertial frame
-    # local e_x = RotM[1,:,ea]
-    # local e_y = RotM[2,:,ea]
-    # local e_z = RotM[3,:,ea]
 
     Threads.@threads for j in 1:N
         newtonX[j] = zero_q_1
@@ -1427,16 +1415,6 @@ end
                         temp_rn[i,j,n] = r_p1d2[i,j]^fact5_jsem[n]
                     end
                     r_p4[i,j] = r_p2[i,j]^2
-                    # if j == mo
-                    #     F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2M_t)/r_p4[i,j]
-                    #     F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2M_t)/r_p4[i,j]
-                    # elseif j == ea
-                    #     F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2E_t)/r_p4[i,j]
-                    #     F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2E_t)/r_p4[i,j]
-                    # elseif j == su
-                    #     F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2S_t)/r_p4[i,j]
-                    #     F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2S_t)/r_p4[i,j]
-                    # end
                     F_J_ξ[i,j] = ((P_n[i,j,3]*fact4_jsem[2])*J2_t[j])/r_p4[i,j]
                     F_J_ζ[i,j] = (((-dP_n[i,j,3])*cos_ϕ[i,j])*J2_t[j])/r_p4[i,j]
                     F_J_ξ_36[i,j] = zero_q_1
@@ -1456,6 +1434,8 @@ end
                                 sin_mλ[i,j,1] = sin_λ[i,j] # Moyer (1971), eq. (167)
                                 cos_mλ[i,j,1] = cos_λ[i,j] # Moyer (1971), eq. (168)
                                 secϕ_P_nm[i,j,1,1] = one_t
+                                P_nm[i,j,1,1] = cos_ϕ[i,j]
+                                cosϕ_dP_nm[i,j,1,1] = sin_ϕ[i,j]*lnm3[1] #+0 (second term in Eq. 183 from Moyer, 1971, vanishes when n=m)
                             else
                                 sin_mλ[i,j,m] = (sin_mλ[i,j,1]*cos_mλ[i,j,m-1]) + (cos_mλ[i,j,1]*sin_mλ[i,j,m-1])
                                 cos_mλ[i,j,m] = (cos_mλ[i,j,1]*cos_mλ[i,j,m-1]) - (sin_mλ[i,j,1]*sin_mλ[i,j,m-1])
@@ -1521,7 +1501,7 @@ end
                     Gc2p[i,j,1,3] = ((Rb2p[i,j,1,1]*RotM[1,3,j]) + (Rb2p[i,j,1,2]*RotM[2,3,j])) + (Rb2p[i,j,1,3]*RotM[3,3,j])
                     Gc2p[i,j,2,3] = ((Rb2p[i,j,2,1]*RotM[1,3,j]) + (Rb2p[i,j,2,2]*RotM[2,3,j])) + (Rb2p[i,j,2,3]*RotM[3,3,j])
                     Gc2p[i,j,3,3] = ((Rb2p[i,j,3,1]*RotM[1,3,j]) + (Rb2p[i,j,3,2]*RotM[2,3,j])) + (Rb2p[i,j,3,3]*RotM[3,3,j])
-                    # compute cartesian coordinates of acceleration due to body figure in inertial frame
+                    # compute cartesian coordinates of acceleration due to body figure in inertial frame (Moyer, 1971, eq. (169))
                     F_JCS_x[i,j] = ((F_JCS_ξ[i,j]*Gc2p[i,j,1,1]) + (F_JCS_η[i,j]*Gc2p[i,j,2,1])) + (F_JCS_ζ[i,j]*Gc2p[i,j,3,1])
                     F_JCS_y[i,j] = ((F_JCS_ξ[i,j]*Gc2p[i,j,1,2]) + (F_JCS_η[i,j]*Gc2p[i,j,2,2])) + (F_JCS_ζ[i,j]*Gc2p[i,j,3,2])
                     F_JCS_z[i,j] = ((F_JCS_ξ[i,j]*Gc2p[i,j,1,3]) + (F_JCS_η[i,j]*Gc2p[i,j,2,3])) + (F_JCS_ζ[i,j]*Gc2p[i,j,3,3])
@@ -1703,9 +1683,9 @@ end
 
     # X_bf[mo,ea] are geocentric, Earth-fixed "unprimed" position of perturbed body (Moon) in cylindrical coordinates
 
-    x0s_M = r_star_M_0[1] #((r_star_M_0[1]*e_x[1]) + (r_star_M_0[2]*e_x[2])) + (r_star_M_0[3]*e_x[3])
-    y0s_M = r_star_M_0[2] #((r_star_M_0[1]*e_y[1]) + (r_star_M_0[2]*e_y[2])) + (r_star_M_0[3]*e_y[3])
-    z0s_M = r_star_M_0[3] #((r_star_M_0[1]*e_z[1]) + (r_star_M_0[2]*e_z[2])) + (r_star_M_0[3]*e_z[3])
+    x0s_M = r_star_M_0[1]
+    y0s_M = r_star_M_0[2]
+    z0s_M = r_star_M_0[3]
     ρ0s2_M = (x0s_M^2) + (y0s_M^2)
     ρ0s_M = sqrt(ρ0s2_M)
     z0s2_M = z0s_M^2
@@ -1713,9 +1693,9 @@ end
     r0s_M = sqrt(r0s2_M)
     r0s5_M = r0s_M^5
 
-    x0s_S = r_star_S_0[1] # ((r_star_S_0[1]*e_x[1]) + (r_star_S_0[2]*e_x[2])) + (r_star_S_0[3]*e_x[3])
-    y0s_S = r_star_S_0[2] # ((r_star_S_0[1]*e_y[1]) + (r_star_S_0[2]*e_y[2])) + (r_star_S_0[3]*e_y[3])
-    z0s_S = r_star_S_0[3] # ((r_star_S_0[1]*e_z[1]) + (r_star_S_0[2]*e_z[2])) + (r_star_S_0[3]*e_z[3])
+    x0s_S = r_star_S_0[1]
+    y0s_S = r_star_S_0[2]
+    z0s_S = r_star_S_0[3]
     ρ0s2_S = (x0s_S^2) + (y0s_S^2)
     ρ0s_S = sqrt(ρ0s2_S)
     z0s2_S = z0s_S^2
@@ -1736,9 +1716,9 @@ end
     aux0_S_y = k_20E_div_r0s5_S*((ρ0s2_S + coeff0_S)*Y_bf[mo,ea])
     aux0_S_z = k_20E_div_r0s5_S*(((2z0s2_S) + coeff0_S)*Z_bf[mo,ea])
 
-    x1s_M = r_star_M_1[1] # ((r_star_M_1[1]*e_x[1]) + (r_star_M_1[2]*e_x[2])) + (r_star_M_1[3]*e_x[3])
-    y1s_M = r_star_M_1[2] # ((r_star_M_1[1]*e_y[1]) + (r_star_M_1[2]*e_y[2])) + (r_star_M_1[3]*e_y[3])
-    z1s_M = r_star_M_1[3] # ((r_star_M_1[1]*e_z[1]) + (r_star_M_1[2]*e_z[2])) + (r_star_M_1[3]*e_z[3])
+    x1s_M = r_star_M_1[1]
+    y1s_M = r_star_M_1[2]
+    z1s_M = r_star_M_1[3]
     ρ1s2_M = (x1s_M^2) + (y1s_M^2)
     ρ1s_M = sqrt(ρ1s2_M)
     z1s2_M = z1s_M^2
@@ -1746,9 +1726,9 @@ end
     r1s_M = sqrt(r1s2_M)
     r1s5_M = r1s_M^5
 
-    x1s_S = r_star_S_1[1] # ((r_star_S_1[1]*e_x[1]) + (r_star_S_1[2]*e_x[2])) + (r_star_S_1[3]*e_x[3])
-    y1s_S = r_star_S_1[2] # ((r_star_S_1[1]*e_y[1]) + (r_star_S_1[2]*e_y[2])) + (r_star_S_1[3]*e_y[3])
-    z1s_S = r_star_S_1[3] # ((r_star_S_1[1]*e_z[1]) + (r_star_S_1[2]*e_z[2])) + (r_star_S_1[3]*e_z[3])
+    x1s_S = r_star_S_1[1]
+    y1s_S = r_star_S_1[2]
+    z1s_S = r_star_S_1[3]
     ρ1s2_S = (x1s_S^2) + (y1s_S^2)
     ρ1s_S = sqrt(ρ1s2_S)
     z1s2_S = z1s_S^2
@@ -1774,9 +1754,9 @@ end
     aux1_S_y = k_21E_div_r1s5_S*((2coeff2_1_S*r_star_S_1[2]) - (coeff3_1_S*Y_bf[mo,ea]))
     aux1_S_z = k_21E_div_r1s5_S*((2coeff1_1_S*r_star_S_1[3]) - (coeff3_1_S*Z_bf[mo,ea]))
 
-    x2s_M = r_star_M_2[1] # ((r_star_M_2[1]*e_x[1]) + (r_star_M_2[2]*e_x[2])) + (r_star_M_2[3]*e_x[3])
-    y2s_M = r_star_M_2[2] # ((r_star_M_2[1]*e_y[1]) + (r_star_M_2[2]*e_y[2])) + (r_star_M_2[3]*e_y[3])
-    z2s_M = r_star_M_2[3] # ((r_star_M_2[1]*e_z[1]) + (r_star_M_2[2]*e_z[2])) + (r_star_M_2[3]*e_z[3])
+    x2s_M = r_star_M_2[1]
+    y2s_M = r_star_M_2[2]
+    z2s_M = r_star_M_2[3]
     ρ2s2_M = (x2s_M^2) + (y2s_M^2)
     ρ2s_M = sqrt(ρ2s2_M)
     z2s2_M = z2s_M^2
@@ -1784,9 +1764,9 @@ end
     r2s_M = sqrt(r2s2_M)
     r2s5_M = r2s_M^5
 
-    x2s_S = r_star_S_2[1] # ((r_star_S_2[1]*e_x[1]) + (r_star_S_2[2]*e_x[2])) + (r_star_S_2[3]*e_x[3])
-    y2s_S = r_star_S_2[2] # ((r_star_S_2[1]*e_y[1]) + (r_star_S_2[2]*e_y[2])) + (r_star_S_2[3]*e_y[3])
-    z2s_S = r_star_S_2[3] # ((r_star_S_2[1]*e_z[1]) + (r_star_S_2[2]*e_z[2])) + (r_star_S_2[3]*e_z[3])
+    x2s_S = r_star_S_2[1]
+    y2s_S = r_star_S_2[2]
+    z2s_S = r_star_S_2[3]
     ρ2s2_S = (x2s_S^2) + (y2s_S^2)
     ρ2s_S = sqrt(ρ2s2_S)
     z2s2_S = z2s_S^2
