@@ -1264,11 +1264,11 @@ end
     J2_t[su] = J2S_t
     J2_t[ea] = J2E_t
     # Moon tidal acc: geocentric space-fixed -> rotational time-delay -> geocentric Earth true-equator-of-date frame
-    local R30 = one_t.*Array(I, 3, 3) # RotM[:,:,ea]   ###*Rz(-ω_E*τ_0) == Id(3x3), since τ_0=0
+    local R30 = RotM[:,:,ea] # one_t.*Array(I, 3, 3) # RotM[:,:,ea]   ###*Rz(-ω_E*τ_0) == Id(3x3), since τ_0=0
     # local NP_t1p = c2t_jpl_de430(dsj2k-τ_1p) # nutation-precession matrix at time t-τ_1p
     # local NP_t2p = c2t_jpl_de430(dsj2k-τ_2p) # nutation-precession matrix at time t-τ_2p
-    local R31 = transpose(RotM[:,:,ea])*Rz(-ω_E*τ_1)*RotM[:,:,ea]
-    local R32 = transpose(RotM[:,:,ea])*Rz(-ω_E*τ_2)*RotM[:,:,ea]
+    local R31 = Rz(-ω_E*τ_1)*RotM[:,:,ea] # transpose(RotM[:,:,ea])*Rz(-ω_E*τ_1)*RotM[:,:,ea]
+    local R32 = Rz(-ω_E*τ_2)*RotM[:,:,ea] # transpose(RotM[:,:,ea])*Rz(-ω_E*τ_2)*RotM[:,:,ea]
     local μ_mo_div_μ_ea = μ[mo]/μ[ea]
     local tid_num_coeff = 1.5*(1.0 + μ_mo_div_μ_ea)
 
@@ -1802,9 +1802,9 @@ end
     tidal_bf_z = (tide_acc_coeff_M*((aux0_M_z+aux1_M_z)+aux2_M_z)) + (tide_acc_coeff_S*((aux0_S_z+aux1_S_z)+aux2_S_z))
 
     # transform from geocentric Earth-true-equator-of-date coordinates to geocentric mean equator of J2000.0 coordinates
-    tidal_x = tidal_bf_x # ((R30[1,1]*tidal_bf_x)+(R30[2,1]*tidal_bf_y)) + (R30[3,1]*tidal_bf_z)
-    tidal_y = tidal_bf_y # ((R30[1,2]*tidal_bf_x)+(R30[2,2]*tidal_bf_y)) + (R30[3,2]*tidal_bf_z)
-    tidal_z = tidal_bf_z # ((R30[1,3]*tidal_bf_x)+(R30[2,3]*tidal_bf_y)) + (R30[3,3]*tidal_bf_z)
+    tidal_x = ((RotM[1,1,ea]*tidal_bf_x)+(RotM[2,1,ea]*tidal_bf_y)) + (RotM[3,1,ea]*tidal_bf_z) # tidal_bf_x
+    tidal_y = ((RotM[1,2,ea]*tidal_bf_x)+(RotM[2,2,ea]*tidal_bf_y)) + (RotM[3,2,ea]*tidal_bf_z) # tidal_bf_y
+    tidal_z = ((RotM[1,3,ea]*tidal_bf_x)+(RotM[2,3,ea]*tidal_bf_y)) + (RotM[3,3,ea]*tidal_bf_z) # tidal_bf_z
 
     # add tidal acceleration to Moon's acceleration due to extended-body effects
     accX_mo_tides = accX[mo] + tidal_x
@@ -1813,13 +1813,6 @@ end
     accX[mo] = accX_mo_tides
     accY[mo] = accY_mo_tides
     accZ[mo] = accZ_mo_tides
-
-    accX_ea_tides = accX[ea] - (μ_mo_div_μ_ea*tidal_x)
-    accY_ea_tides = accY[ea] - (μ_mo_div_μ_ea*tidal_y)
-    accZ_ea_tides = accZ[ea] - (μ_mo_div_μ_ea*tidal_z)
-    accX[ea] = accX_ea_tides
-    accY[ea] = accY_ea_tides
-    accZ[ea] = accZ_ea_tides
 
     #fill accelerations (post-Newtonian and extended body accelerations)
     Threads.@threads for i in 1:N_ext
