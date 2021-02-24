@@ -73,22 +73,24 @@ function taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}},
         dx::Vector{Taylor1{U}}, xaux::Vector{Taylor1{U}}, abstol::T, params,
         parse_eqs::Bool=true) where {T<:Real, U<:Number}
 
-    # Compute the Taylor coefficients
-    N = params[1]
-    x_EMB = x[nbodyind(N, ea)]
-    x_ME = x[nbodyind(N, mo)]
-    x[nbodyind(N, ea)] .= x_EMB .- (μ[mo]*x_ME/GMB)
-    x[nbodyind(N, mo)] .= x_EMB .+ (μ[ea]*x_ME/GMB)
+    # # compute Earth-Moon barycenter and Moon-Earth line pos/vel
+    # N = params[1]
+    # x_EMB = x[nbodyind(N, ea)]
+    # x_ME = x[nbodyind(N, mo)]
+    # x[nbodyind(N, ea)] .= x_EMB .- (μ[mo]*x_ME/GMB)
+    # x[nbodyind(N, mo)] .= x_EMB .+ (μ[ea]*x_ME/GMB)
 
+    # Compute the Taylor coefficients
     TaylorIntegration.__jetcoeffs!(Val(parse_eqs), f!, t, x, dx, xaux, params)
     # @time TaylorIntegration.__jetcoeffs!(Val(parse_eqs), f!, t, x, dx, xaux, params)
     # @time TaylorIntegration.__jetcoeffs!(Val(false), f!, t, x, dx, xaux, params)
     # @time TaylorIntegration.__jetcoeffs!(Val(true), f!, t, x, dx, xaux, params)
 
-    x_EMB = ( μ[ea]*x[nbodyind(N, ea)] .+ μ[mo]*x[nbodyind(N, mo)] ) / GMB
-    x_ME = x[nbodyind(N, mo)] .- x[nbodyind(N, ea)]
-    x[nbodyind(N, ea)] .= x_EMB
-    x[nbodyind(N, mo)] .= x_ME
+    # # compute Earth, Moon barycentric state from EMB and ME state
+    # x_EMB = ( μ[ea]*x[nbodyind(N, ea)] .+ μ[mo]*x[nbodyind(N, mo)] ) / GMB
+    # x_ME = x[nbodyind(N, mo)] .- x[nbodyind(N, ea)]
+    # x[nbodyind(N, ea)] .= x_EMB
+    # x[nbodyind(N, mo)] .= x_ME
 
     # Compute the step-size of the integration using `abstol`
     # δt = stepsize_threads(x, abstol)
@@ -134,21 +136,9 @@ function taylorinteg_threads(f!, q0::Array{U,1}, t0::T, tmax::T, order::Int, abs
         δt = taylorstep_threads!(f!, t, x, dx, xaux, abstol, params, parse_eqs) # δt is positive!
         # δt = TaylorIntegration.taylorstep!(f!, t, x, dx, xaux, abstol, params, parse_eqs) # δt is positive!
         # Below, δt has the proper sign according to the direction of the integration
-        # δt = sign_tstep * min(δt, sign_tstep*(tmax-t0))
         δt = sign_tstep * min(δt, sign_tstep*(tmax-t0))
         evaluate_threads!(x, δt, x0) # new initial condition
         # evaluate!(x, δt, x0) # new initial condition
-        if dense
-            # @inbounds xv_interp[:,nsteps] .= deepcopy(x)
-            Threads.@threads for i in eachindex(x0)
-                @inbounds xv_interp[i,nsteps] = deepcopy(x[i])
-            end
-        else
-            # @inbounds xv[:,nsteps] .= x0
-            Threads.@threads for i in eachindex(x0)
-                @inbounds xv[i,nsteps] = x0[i]
-            end
-        end
         Threads.@threads for i in eachindex(x0)
             @inbounds x[i][0] = x0[i]
             @inbounds dx[i] = Taylor1( zero(x0[i]), order )
@@ -157,6 +147,17 @@ function taylorinteg_threads(f!, q0::Array{U,1}, t0::T, tmax::T, order::Int, abs
         @inbounds t[0] = t0
         nsteps += 1
         @inbounds tv[nsteps] = t0
+        if dense
+            # @inbounds xv_interp[:,nsteps-1] .= deepcopy(x)
+            Threads.@threads for i in eachindex(x0)
+                @inbounds xv_interp[i,nsteps-1] = deepcopy(x[i])
+            end
+        else
+            # @inbounds xv[:,nsteps] .= x0
+            Threads.@threads for i in eachindex(x0)
+                @inbounds xv[i,nsteps] = x0[i]
+            end
+        end
         if nsteps > maxsteps
             @warn("""
             Maximum number of integration steps reached; exiting.

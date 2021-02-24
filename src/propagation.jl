@@ -70,7 +70,6 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
     if dense
         # @time sol_ = taylorinteg(dynamics, q0, t0, tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
         @time sol_ = taylorinteg_threads(dynamics, q0, t0, tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
-        # transform Julian dates to TDB seconds since initial Julian date
         if quadmath
             et0 = (jd0-J2000)*daysec
             etv = Float64.( sol_.t[:]*daysec )
@@ -90,7 +89,7 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
 
     #write solution to .jld files
     if output
-        if ss16ast
+        if dense && ss16ast
             selecteph2jld(sseph, bodyind, tspan)
         else
             println("Saving solution to file: $ephfile")
