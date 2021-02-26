@@ -1221,21 +1221,13 @@ end
     accY = Array{S}(undef, N_ext)
     accZ = Array{S}(undef, N_ext)
 
-    # tidal accelerations
-    r_star_M_0 = Array{S}(undef, 3)
-    r_star_S_0 = Array{S}(undef, 3)
-    r_star_M_1 = Array{S}(undef, 3)
-    r_star_S_1 = Array{S}(undef, 3)
-    r_star_M_2 = Array{S}(undef, 3)
-    r_star_S_2 = Array{S}(undef, 3)
-
     # rotations to and from Earth, Sun and Moon pole-oriented frames
     local αs = deg2rad(α_p_sun*one_t)
     local δs = deg2rad(δ_p_sun*one_t)
     local αm = eulang_t[1] - (pi/2)
     local δm = (pi/2) - eulang_t[2]
     local Wm = eulang_t[3]
-    local RotM = Array{S}(undef, 3, 3, 5)
+    RotM = Array{S}(undef, 3, 3, 5)
     local RotM[:,:,ea] = c2t_jpl_de430(dsj2k)
     local RotM[:,:,su] = pole_rotation(αs, δs)
     local RotM[:,:,mo] = pole_rotation(αm, δm, Wm)
@@ -1260,17 +1252,32 @@ end
     local RE_au = (RE/au)
     local J2E_t = (J2E + J2EDOT*(dsj2k/yr))*(RE_au^2)
     local J2S_t = JSEM[su,2]*one_t
-    local J2_t = Array{S}(undef, 5)
+    J2_t = Array{S}(undef, 5)
     J2_t[su] = J2S_t
     J2_t[ea] = J2E_t
-    # Moon tidal acc: geocentric space-fixed -> rotational time-delay -> geocentric Earth true-equator-of-date frame
-    local R30 = RotM[:,:,ea] # one_t.*Array(I, 3, 3) # RotM[:,:,ea]   ###*Rz(-ω_E*τ_0) == Id(3x3), since τ_0=0
-    # local NP_t1p = c2t_jpl_de430(dsj2k-τ_1p) # nutation-precession matrix at time t-τ_1p
-    # local NP_t2p = c2t_jpl_de430(dsj2k-τ_2p) # nutation-precession matrix at time t-τ_2p
-    local R31 = Rz(-ω_E*τ_1)*RotM[:,:,ea] # transpose(RotM[:,:,ea])*Rz(-ω_E*τ_1)*RotM[:,:,ea]
-    local R32 = Rz(-ω_E*τ_2)*RotM[:,:,ea] # transpose(RotM[:,:,ea])*Rz(-ω_E*τ_2)*RotM[:,:,ea]
+    # tidal acceleration auxiliaries
     local μ_mo_div_μ_ea = μ[mo]/μ[ea]
     local tid_num_coeff = 1.5*(1.0 + μ_mo_div_μ_ea)
+    # Folkner et al. (2014), Eq. (31)
+    # time-delayed geocentric Moon position
+    local q_ME_τ_0 = q_del_τ_0[3mo-2:3mo] .- q_del_τ_0[3ea-2:3ea]
+    local q_ME_τ_1 = q_del_τ_1[3mo-2:3mo] .- q_del_τ_1[3ea-2:3ea]
+    local q_ME_τ_2 = q_del_τ_2[3mo-2:3mo] .- q_del_τ_2[3ea-2:3ea]
+    # time-delayed geocentric Sun position
+    local q_SE_τ_0 = q_del_τ_0[3su-2:3su] .- q_del_τ_0[3ea-2:3ea]
+    local q_SE_τ_1 = q_del_τ_1[3su-2:3su] .- q_del_τ_1[3ea-2:3ea]
+    local q_SE_τ_2 = q_del_τ_2[3su-2:3su] .- q_del_τ_2[3ea-2:3ea]
+    # R3X: geocentric space-fixed -> rotational time-delay -> geocentric Earth true-equator-of-date frame
+    local R30 = RotM[:,:,ea] # ###*Rz(-ω_E*τ_0) == Id(3x3), since τ_0=0
+    local R31 = Rz(-ω_E*τ_1)*RotM[:,:,ea]
+    local R32 = Rz(-ω_E*τ_2)*RotM[:,:,ea]
+    # tidal accelerations
+    local r_star_M_0 = R30*q_ME_τ_0 # r-star 0, Moon
+    local r_star_M_1 = R31*q_ME_τ_1 # r-star 1, Moon
+    local r_star_M_2 = R32*q_ME_τ_2 # r-star 2, Moon
+    local r_star_S_0 = R30*q_SE_τ_0 # r-star 0, Sun
+    local r_star_S_1 = R31*q_SE_τ_1 # r-star 1, Sun
+    local r_star_S_2 = R32*q_SE_τ_2 # r-star 2, Sun
 
     Threads.@threads for j in 1:N
         newtonX[j] = zero_q_1
@@ -1623,67 +1630,9 @@ end
         end
     end #for k in 1:postnewton_iter # (post-Newtonian iterations)
 
-    # compute acceleration of the Moon due to tides raised on Earth by the Sun and Moon
-    # time-delayed barycentric Earth position
-    X_E_τ_0 = q_del_τ_0[3ea-2]
-    Y_E_τ_0 = q_del_τ_0[3ea-1]
-    Z_E_τ_0 = q_del_τ_0[3ea  ]
-    X_E_τ_1 = q_del_τ_1[3ea-2]
-    Y_E_τ_1 = q_del_τ_1[3ea-1]
-    Z_E_τ_1 = q_del_τ_1[3ea  ]
-    X_E_τ_2 = q_del_τ_2[3ea-2]
-    Y_E_τ_2 = q_del_τ_2[3ea-1]
-    Z_E_τ_2 = q_del_τ_2[3ea  ]
-    # time-delayed geocentric Moon position
-    X_ME_τ_0 = q_del_τ_0[3mo-2] - X_E_τ_0
-    Y_ME_τ_0 = q_del_τ_0[3mo-1] - Y_E_τ_0
-    Z_ME_τ_0 = q_del_τ_0[3mo  ] - Z_E_τ_0
-    X_ME_τ_1 = q_del_τ_1[3mo-2] - X_E_τ_1
-    Y_ME_τ_1 = q_del_τ_1[3mo-1] - Y_E_τ_1
-    Z_ME_τ_1 = q_del_τ_1[3mo  ] - Z_E_τ_1
-    X_ME_τ_2 = q_del_τ_2[3mo-2] - X_E_τ_2
-    Y_ME_τ_2 = q_del_τ_2[3mo-1] - Y_E_τ_2
-    Z_ME_τ_2 = q_del_τ_2[3mo  ] - Z_E_τ_2
-    # time-delayed geocentric Sun position
-    X_SE_τ_0 = q_del_τ_0[3su-2] - X_E_τ_0
-    Y_SE_τ_0 = q_del_τ_0[3su-1] - Y_E_τ_0
-    Z_SE_τ_0 = q_del_τ_0[3su  ] - Z_E_τ_0
-    X_SE_τ_1 = q_del_τ_1[3su-2] - X_E_τ_1
-    Y_SE_τ_1 = q_del_τ_1[3su-1] - Y_E_τ_1
-    Z_SE_τ_1 = q_del_τ_1[3su  ] - Z_E_τ_1
-    X_SE_τ_2 = q_del_τ_2[3su-2] - X_E_τ_2
-    Y_SE_τ_2 = q_del_τ_2[3su-1] - Y_E_τ_2
-    Z_SE_τ_2 = q_del_τ_2[3su  ] - Z_E_τ_2
-
-    # Folkner et al. (2014), Eq. (31)
-    # note: "starred" vectors should be initialized to zero
-    # r-star 0, Moon
-    r_star_M_0[1] = ((R30[1,1]*X_ME_τ_0) + (R30[1,2]*Y_ME_τ_0)) + (R30[1,3]*Z_ME_τ_0)
-    r_star_M_0[2] = ((R30[2,1]*X_ME_τ_0) + (R30[2,2]*Y_ME_τ_0)) + (R30[2,3]*Z_ME_τ_0)
-    r_star_M_0[3] = ((R30[3,1]*X_ME_τ_0) + (R30[3,2]*Y_ME_τ_0)) + (R30[3,3]*Z_ME_τ_0)
-    # r-star 1, Moon
-    r_star_M_1[1] = ((R31[1,1]*X_ME_τ_1) + (R31[1,2]*Y_ME_τ_1)) + (R31[1,3]*Z_ME_τ_1)
-    r_star_M_1[2] = ((R31[2,1]*X_ME_τ_1) + (R31[2,2]*Y_ME_τ_1)) + (R31[2,3]*Z_ME_τ_1)
-    r_star_M_1[3] = ((R31[3,1]*X_ME_τ_1) + (R31[3,2]*Y_ME_τ_1)) + (R31[3,3]*Z_ME_τ_1)
-    # r-star 2, Moon
-    r_star_M_2[1] = ((R32[1,1]*X_ME_τ_2) + (R32[1,2]*Y_ME_τ_2)) + (R32[1,3]*Z_ME_τ_2)
-    r_star_M_2[2] = ((R32[2,1]*X_ME_τ_2) + (R32[2,2]*Y_ME_τ_2)) + (R32[2,3]*Z_ME_τ_2)
-    r_star_M_2[3] = ((R32[3,1]*X_ME_τ_2) + (R32[3,2]*Y_ME_τ_2)) + (R32[3,3]*Z_ME_τ_2)
-    # r-star 0, Sun
-    r_star_S_0[1] = ((R30[1,1]*X_SE_τ_0) + (R30[1,2]*Y_SE_τ_0)) + (R30[1,3]*Z_SE_τ_0)
-    r_star_S_0[2] = ((R30[2,1]*X_SE_τ_0) + (R30[2,2]*Y_SE_τ_0)) + (R30[2,3]*Z_SE_τ_0)
-    r_star_S_0[3] = ((R30[3,1]*X_SE_τ_0) + (R30[3,2]*Y_SE_τ_0)) + (R30[3,3]*Z_SE_τ_0)
-    # r-star 1, Sun
-    r_star_S_1[1] = ((R31[1,1]*X_SE_τ_1) + (R31[1,2]*Y_SE_τ_1)) + (R31[1,3]*Z_SE_τ_1)
-    r_star_S_1[2] = ((R31[2,1]*X_SE_τ_1) + (R31[2,2]*Y_SE_τ_1)) + (R31[2,3]*Z_SE_τ_1)
-    r_star_S_1[3] = ((R31[3,1]*X_SE_τ_1) + (R31[3,2]*Y_SE_τ_1)) + (R31[3,3]*Z_SE_τ_1)
-    # r-star 2, Sun
-    r_star_S_2[1] = ((R32[1,1]*X_SE_τ_2) + (R32[1,2]*Y_SE_τ_2)) + (R32[1,3]*Z_SE_τ_2)
-    r_star_S_2[2] = ((R32[2,1]*X_SE_τ_2) + (R32[2,2]*Y_SE_τ_2)) + (R32[2,3]*Z_SE_τ_2)
-    r_star_S_2[3] = ((R32[3,1]*X_SE_τ_2) + (R32[3,2]*Y_SE_τ_2)) + (R32[3,3]*Z_SE_τ_2)
-
-    # X_bf[mo,ea] are geocentric, Earth-fixed "unprimed" position of perturbed body (Moon) in cylindrical coordinates
-
+    # compute tidal acceleration of the Moon due to tides raised on Earth by the Sun and Moon
+    # Folkner et al. (2014) Eq. (32)
+    # X_bf[mo,ea] are geocentric, Earth-fixed position coordinates in "unprimed" (inertial) frame of perturbed body (Moon)
     x0s_M = r_star_M_0[1]
     y0s_M = r_star_M_0[2]
     z0s_M = r_star_M_0[3]
@@ -1710,12 +1659,12 @@ end
     k_20E_div_r0s5_M = k_20E/r0s5_M
     k_20E_div_r0s5_S = k_20E/r0s5_S
 
-    aux0_M_x = k_20E_div_r0s5_M*((ρ0s2_M + coeff0_M)*X_bf[mo,ea])
-    aux0_M_y = k_20E_div_r0s5_M*((ρ0s2_M + coeff0_M)*Y_bf[mo,ea])
-    aux0_M_z = k_20E_div_r0s5_M*(((2z0s2_M) + coeff0_M)*Z_bf[mo,ea])
-    aux0_S_x = k_20E_div_r0s5_S*((ρ0s2_S + coeff0_S)*X_bf[mo,ea])
-    aux0_S_y = k_20E_div_r0s5_S*((ρ0s2_S + coeff0_S)*Y_bf[mo,ea])
-    aux0_S_z = k_20E_div_r0s5_S*(((2z0s2_S) + coeff0_S)*Z_bf[mo,ea])
+    a_tid_0_M_x = k_20E_div_r0s5_M*((ρ0s2_M + coeff0_M)*X_bf[mo,ea])
+    a_tid_0_M_y = k_20E_div_r0s5_M*((ρ0s2_M + coeff0_M)*Y_bf[mo,ea])
+    a_tid_0_M_z = k_20E_div_r0s5_M*(((2z0s2_M) + coeff0_M)*Z_bf[mo,ea])
+    a_tid_0_S_x = k_20E_div_r0s5_S*((ρ0s2_S + coeff0_S)*X_bf[mo,ea])
+    a_tid_0_S_y = k_20E_div_r0s5_S*((ρ0s2_S + coeff0_S)*Y_bf[mo,ea])
+    a_tid_0_S_z = k_20E_div_r0s5_S*(((2z0s2_S) + coeff0_S)*Z_bf[mo,ea])
 
     x1s_M = r_star_M_1[1]
     y1s_M = r_star_M_1[2]
@@ -1748,12 +1697,12 @@ end
     k_21E_div_r1s5_M = k_21E/r1s5_M
     k_21E_div_r1s5_S = k_21E/r1s5_S
 
-    aux1_M_x = k_21E_div_r1s5_M*((2coeff2_1_M*r_star_M_1[1]) - (coeff3_1_M*X_bf[mo,ea]))
-    aux1_M_y = k_21E_div_r1s5_M*((2coeff2_1_M*r_star_M_1[2]) - (coeff3_1_M*Y_bf[mo,ea]))
-    aux1_M_z = k_21E_div_r1s5_M*((2coeff1_1_M*r_star_M_1[3]) - (coeff3_1_M*Z_bf[mo,ea]))
-    aux1_S_x = k_21E_div_r1s5_S*((2coeff2_1_S*r_star_S_1[1]) - (coeff3_1_S*X_bf[mo,ea]))
-    aux1_S_y = k_21E_div_r1s5_S*((2coeff2_1_S*r_star_S_1[2]) - (coeff3_1_S*Y_bf[mo,ea]))
-    aux1_S_z = k_21E_div_r1s5_S*((2coeff1_1_S*r_star_S_1[3]) - (coeff3_1_S*Z_bf[mo,ea]))
+    a_tid_1_M_x = k_21E_div_r1s5_M*((2coeff2_1_M*r_star_M_1[1]) - (coeff3_1_M*X_bf[mo,ea]))
+    a_tid_1_M_y = k_21E_div_r1s5_M*((2coeff2_1_M*r_star_M_1[2]) - (coeff3_1_M*Y_bf[mo,ea]))
+    a_tid_1_M_z = k_21E_div_r1s5_M*((2coeff1_1_M*r_star_M_1[3]) - (coeff3_1_M*Z_bf[mo,ea]))
+    a_tid_1_S_x = k_21E_div_r1s5_S*((2coeff2_1_S*r_star_S_1[1]) - (coeff3_1_S*X_bf[mo,ea]))
+    a_tid_1_S_y = k_21E_div_r1s5_S*((2coeff2_1_S*r_star_S_1[2]) - (coeff3_1_S*Y_bf[mo,ea]))
+    a_tid_1_S_z = k_21E_div_r1s5_S*((2coeff1_1_S*r_star_S_1[3]) - (coeff3_1_S*Z_bf[mo,ea]))
 
     x2s_M = r_star_M_2[1]
     y2s_M = r_star_M_2[2]
@@ -1784,32 +1733,32 @@ end
     k_22E_div_r2s5_M = k_22E/r2s5_M
     k_22E_div_r2s5_S = k_22E/r2s5_S
 
-    aux2_M_x = k_22E_div_r2s5_M*(  (2coeff1_2_M*r_star_M_2[1])-(ρ2s2_M+coeff3_2_M)*X_bf[mo,ea]  )
-    aux2_M_y = k_22E_div_r2s5_M*(  (2coeff1_2_M*r_star_M_2[2])-(ρ2s2_M+coeff3_2_M)*Y_bf[mo,ea]  )
-    aux2_M_z = k_22E_div_r2s5_M*(  -coeff3_2_M*Z_bf[mo,ea]  )
-    aux2_S_x = k_22E_div_r2s5_S*(  (2coeff1_2_S*r_star_S_2[1])-(ρ2s2_S+coeff3_2_S)*X_bf[mo,ea]  )
-    aux2_S_y = k_22E_div_r2s5_S*(  (2coeff1_2_S*r_star_S_2[2])-(ρ2s2_S+coeff3_2_S)*Y_bf[mo,ea]  )
-    aux2_S_z = k_22E_div_r2s5_S*(  -coeff3_2_S*Z_bf[mo,ea]  )
+    a_tid_2_M_x = k_22E_div_r2s5_M*(  (2coeff1_2_M*r_star_M_2[1])-(ρ2s2_M+coeff3_2_M)*X_bf[mo,ea]  )
+    a_tid_2_M_y = k_22E_div_r2s5_M*(  (2coeff1_2_M*r_star_M_2[2])-(ρ2s2_M+coeff3_2_M)*Y_bf[mo,ea]  )
+    a_tid_2_M_z = k_22E_div_r2s5_M*(  -coeff3_2_M*Z_bf[mo,ea]  )
+    a_tid_2_S_x = k_22E_div_r2s5_S*(  (2coeff1_2_S*r_star_S_2[1])-(ρ2s2_S+coeff3_2_S)*X_bf[mo,ea]  )
+    a_tid_2_S_y = k_22E_div_r2s5_S*(  (2coeff1_2_S*r_star_S_2[2])-(ρ2s2_S+coeff3_2_S)*Y_bf[mo,ea]  )
+    a_tid_2_S_z = k_22E_div_r2s5_S*(  -coeff3_2_S*Z_bf[mo,ea]  )
 
     RE_div_r_p5 = (RE_au/r_p1d2[mo,ea])^5
     aux_tidacc = tid_num_coeff*RE_div_r_p5
-    tide_acc_coeff_M = μ[mo]*aux_tidacc
-    tide_acc_coeff_S = μ[su]*aux_tidacc
+    a_tidal_coeff_M = μ[mo]*aux_tidacc
+    a_tidal_coeff_S = μ[su]*aux_tidacc
 
-    # add contributions from long-period, diurnal and semi-diurnal tides
-    tidal_bf_x = (tide_acc_coeff_M*((aux0_M_x+aux1_M_x)+aux2_M_x)) + (tide_acc_coeff_S*((aux0_S_x+aux1_S_x)+aux2_S_x))
-    tidal_bf_y = (tide_acc_coeff_M*((aux0_M_y+aux1_M_y)+aux2_M_y)) + (tide_acc_coeff_S*((aux0_S_y+aux1_S_y)+aux2_S_y))
-    tidal_bf_z = (tide_acc_coeff_M*((aux0_M_z+aux1_M_z)+aux2_M_z)) + (tide_acc_coeff_S*((aux0_S_z+aux1_S_z)+aux2_S_z))
+    # add contributions from long-period, diurnal and semi-diurnal tides (true-of-date coordinates)
+    a_tidal_tod_x = (a_tidal_coeff_M*((a_tid_0_M_x+a_tid_1_M_x)+a_tid_2_M_x)) + (a_tidal_coeff_S*((a_tid_0_S_x+a_tid_1_S_x)+a_tid_2_S_x))
+    a_tidal_tod_y = (a_tidal_coeff_M*((a_tid_0_M_y+a_tid_1_M_y)+a_tid_2_M_y)) + (a_tidal_coeff_S*((a_tid_0_S_y+a_tid_1_S_y)+a_tid_2_S_y))
+    a_tidal_tod_z = (a_tidal_coeff_M*((a_tid_0_M_z+a_tid_1_M_z)+a_tid_2_M_z)) + (a_tidal_coeff_S*((a_tid_0_S_z+a_tid_1_S_z)+a_tid_2_S_z))
 
     # transform from geocentric Earth-true-equator-of-date coordinates to geocentric mean equator of J2000.0 coordinates
-    tidal_x = ((RotM[1,1,ea]*tidal_bf_x)+(RotM[2,1,ea]*tidal_bf_y)) + (RotM[3,1,ea]*tidal_bf_z) # tidal_bf_x
-    tidal_y = ((RotM[1,2,ea]*tidal_bf_x)+(RotM[2,2,ea]*tidal_bf_y)) + (RotM[3,2,ea]*tidal_bf_z) # tidal_bf_y
-    tidal_z = ((RotM[1,3,ea]*tidal_bf_x)+(RotM[2,3,ea]*tidal_bf_y)) + (RotM[3,3,ea]*tidal_bf_z) # tidal_bf_z
+    a_tidal_x = ((RotM[1,1,ea]*a_tidal_tod_x)+(RotM[2,1,ea]*a_tidal_tod_y)) + (RotM[3,1,ea]*a_tidal_tod_z)
+    a_tidal_y = ((RotM[1,2,ea]*a_tidal_tod_x)+(RotM[2,2,ea]*a_tidal_tod_y)) + (RotM[3,2,ea]*a_tidal_tod_z)
+    a_tidal_z = ((RotM[1,3,ea]*a_tidal_tod_x)+(RotM[2,3,ea]*a_tidal_tod_y)) + (RotM[3,3,ea]*a_tidal_tod_z)
 
     # add tidal acceleration to Moon's acceleration due to extended-body effects
-    accX_mo_tides = accX[mo] + tidal_x
-    accY_mo_tides = accY[mo] + tidal_y
-    accZ_mo_tides = accZ[mo] + tidal_z
+    accX_mo_tides = accX[mo] + a_tidal_x
+    accY_mo_tides = accY[mo] + a_tidal_y
+    accZ_mo_tides = accZ[mo] + a_tidal_z
     accX[mo] = accX_mo_tides
     accY[mo] = accY_mo_tides
     accZ[mo] = accZ_mo_tides
