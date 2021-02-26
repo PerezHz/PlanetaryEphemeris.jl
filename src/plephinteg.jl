@@ -139,10 +139,6 @@ function taylorinteg_threads(f!, q0::Array{U,1}, t0::T, tmax::T, order::Int, abs
         δt = sign_tstep * min(δt, sign_tstep*(tmax-t0))
         evaluate_threads!(x, δt, x0) # new initial condition
         # evaluate!(x, δt, x0) # new initial condition
-        Threads.@threads for i in eachindex(x0)
-            @inbounds x[i][0] = x0[i]
-            @inbounds dx[i] = Taylor1( zero(x0[i]), order )
-        end
         t0 += δt
         @inbounds t[0] = t0
         nsteps += 1
@@ -157,6 +153,10 @@ function taylorinteg_threads(f!, q0::Array{U,1}, t0::T, tmax::T, order::Int, abs
             Threads.@threads for i in eachindex(x0)
                 @inbounds xv[i,nsteps] = x0[i]
             end
+        end
+        Threads.@threads for i in eachindex(x0)
+            @inbounds x[i][0] = x0[i]
+            @inbounds dx[i] = Taylor1( zero(x0[i]), order )
         end
         if nsteps > maxsteps
             @warn("""
