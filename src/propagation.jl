@@ -9,8 +9,8 @@ function nbodyind(N::Int, ivec::AbstractVector{Int})
     return sort(a)
 end
 
-function selecteph2jld(sseph::TaylorInterpolant, bodyind::AbstractVector{Int}, tspan::Number)
-    N = size(sseph.x)[2] ÷ 6 # total number of bodies (Sun+planets+Moon+Pluto+asts)
+function selecteph2jld(sseph::TaylorInterpolant, bodyind::AbstractVector{Int}, tspan::Number, N::Int)
+    # N = ( size(sseph.x)[2] - 6 ) ÷ 6 # total number of bodies (Sun+planets+Moon+Pluto+asts)
     nast = N - 11 # number of asteroids in sseph
     indvec = nbodyind(N, bodyind)
     nastout = length(bodyind) - 11 # number of asteroids to be saved in file
@@ -40,7 +40,7 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
 
     # total number of bodies
     N = 11+nast
-    # get initial conditions
+    # get initial conditions (6N translational + 6 lunar physical librations)
     _q0 = initialcond(N)
     # initial time (Julian date)
     _t0 = zero(jd0)
@@ -90,7 +90,7 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
     #write solution to .jld files
     if output
         if dense && ss16ast
-            selecteph2jld(sseph, bodyind, tspan)
+            selecteph2jld(sseph, bodyind, tspan, N)
         else
             println("Saving solution to file: $ephfile")
             jldopen(ephfile, "w") do file
