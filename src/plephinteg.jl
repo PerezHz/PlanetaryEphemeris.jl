@@ -73,24 +73,11 @@ function taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}},
         dx::Vector{Taylor1{U}}, xaux::Vector{Taylor1{U}}, abstol::T, params,
         parse_eqs::Bool=true) where {T<:Real, U<:Number}
 
-    # # compute Earth-Moon barycenter and Moon-Earth line pos/vel
-    # N = params[1]
-    # x_EMB = x[nbodyind(N, ea)]
-    # x_ME = x[nbodyind(N, mo)]
-    # x[nbodyind(N, ea)] .= x_EMB .- (μ[mo]*x_ME/GMB)
-    # x[nbodyind(N, mo)] .= x_EMB .+ (μ[ea]*x_ME/GMB)
-
     # Compute the Taylor coefficients
     TaylorIntegration.__jetcoeffs!(Val(parse_eqs), f!, t, x, dx, xaux, params)
     # @time TaylorIntegration.__jetcoeffs!(Val(parse_eqs), f!, t, x, dx, xaux, params)
     # @time TaylorIntegration.__jetcoeffs!(Val(false), f!, t, x, dx, xaux, params)
     # @time TaylorIntegration.__jetcoeffs!(Val(true), f!, t, x, dx, xaux, params)
-
-    # # compute Earth, Moon barycentric state from EMB and ME state
-    # x_EMB = ( μ[ea]*x[nbodyind(N, ea)] .+ μ[mo]*x[nbodyind(N, mo)] ) / GMB
-    # x_ME = x[nbodyind(N, mo)] .- x[nbodyind(N, ea)]
-    # x[nbodyind(N, ea)] .= x_EMB
-    # x[nbodyind(N, mo)] .= x_ME
 
     # Compute the step-size of the integration using `abstol`
     # δt = stepsize_threads(x, abstol)
