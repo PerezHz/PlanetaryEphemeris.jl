@@ -216,25 +216,21 @@ function moon_omega(ϕ::Taylor1, θ::Taylor1, ψ::Taylor1)
 end
 
 #first term of time-dependent part of lunar total moment of inertia (Folkner et al., 2014, eq. 41, 1st term)
-function ITM1(x::T, dx::T, y::T, dy::T, z::T, dz::T) where {T <: Number}
-    # evaluate lunar geocentric position at time t-τ_M
-    xd = x-dx*τ_M # x(t-τ_M)
-    yd = y-dy*τ_M # y(t-τ_M)
-    zd = z-dz*τ_M # z(t-τ_M)
-    rd2 = xd^2+yd^2+zd^2 # r(t-τ_M)^2
-    rd5 = rd2^2.5 # r(t-τ_M)^5
+function ITM1(x::T, y::T, z::T) where {T <: Number}
+    r2 = x^2+y^2+z^2 # r^2
+    r5 = r2^2.5 # r^5
     # compute corresponding matrix elements
     m = Matrix{T}(undef, 3, 3)
-    m[1,1] = xd^2-rd2/3
-    m[2,2] = yd^2-rd2/3
-    m[3,3] = zd^2-rd2/3
-    m[1,2] = xd*yd
+    m[1,1] = x^2-r2/3
+    m[2,2] = y^2-r2/3
+    m[3,3] = z^2-r2/3
+    m[1,2] = x*y
     m[2,1] = m[1,2]
-    m[1,3] = xd*zd
+    m[1,3] = x*z
     m[3,1] = m[1,3]
-    m[2,3] = yd*zd
+    m[2,3] = y*z
     m[3,2] = m[2,3]
-    return (-(k_2M*μ[ea]*R_moon^5)/rd5)*m
+    return (-(k_2M*μ[ea]*R_moon^5)/r5)*m
 end
 
 #second term of time-dependent part of lunar total moment of inertia (Folkner et al., 2014, eq. 41, 2nd term)
@@ -257,4 +253,16 @@ function ITM2(ϕ::T, θ::T, ψ::T) where {T <: Number}
     m[2,3] = ω[2]*ω[3]
     m[3,2] = m[2,3]
     return ((k_2M*R_moon^5)/3)*m
+end
+
+# lunar mantle inertia tensor (Folkner et al., 2014, eq. 41)
+function ITM(q_del_τ_M::Vector{T}, eulang_t_del::Vector{T}) where {T <: Number}
+    # coordinate transformation matrix: inertial frame -> lunar mantle frame
+    M_del_mo = pole_rotation(eulang_t_del[1] - (pi/2), (pi/2) - eulang_t_del[2], eulang_t_del[3])
+    # transform delayed geocentric position of Moon (space-fixed->lunar mantle frame)
+    X_me_del_τ_M = q_del_τ_M[3mo-2:3mo] .- q_del_τ_M[3ea-2:3ea]
+    X_me_del_τ_M_lm = M_del_mo*X_me_del_τ_M
+    itm1 = ITM1(X_me_del_τ_M_lm[1], X_me_del_τ_M_lm[2], X_me_del_τ_M_lm[3])
+    itm2 = ITM2(eulang_t_del[1], eulang_t_del[2], eulang_t_del[3])
+    return ITM_und*one(q_del_τ_M[1]) + itm1 + itm2
 end
