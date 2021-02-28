@@ -36,7 +36,7 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
         dynamics::Function=NBP_pN_A_J23E_J23M_J2S!, nast::Int=343,
         quadmath::Bool=false, ss16ast::Bool=true,
         bodyind::AbstractVector{Int}=1:(11+nast), order::Int=order,
-        abstol::T=abstol) where {T<:Real}
+        abstol::T=abstol, parse_eqs::Bool=true) where {T<:Real}
 
     # total number of bodies
     N = 11+nast
@@ -71,7 +71,7 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
     # do integration
     if dense
         # @time sol_ = taylorinteg(dynamics, q0, t0, tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
-        @time sol_ = taylorinteg_threads(dynamics, q0, t0, tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
+        @time sol_ = taylorinteg_threads(dynamics, q0, t0, tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense, parse_eqs=parse_eqs)
         if quadmath
             et0 = (jd0-J2000)*daysec
             etv = Float64.( sol_.t[:]*daysec )
@@ -85,7 +85,7 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
         sol = (sseph=sseph,)
     else
         # @time sol_ = taylorinteg(dynamics, q0, t0, tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
-        @time sol_ = taylorinteg_threads(dynamics, q0, t0, tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
+        @time sol_ = taylorinteg_threads(dynamics, q0, t0, tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense, parse_eqs=parse_eqs)
         sol = (t=sol_[1][:], x=sol_[2][:,:])
     end
 
