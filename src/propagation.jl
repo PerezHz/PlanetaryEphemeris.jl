@@ -56,15 +56,17 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
         tmax = Float128(_tmax)
         _abstol = Float128(abstol)
         eulang_de430 = TaylorInterpolant(Float128(_eulang_de430.t0), Float128.(_eulang_de430.t), map(x->Taylor1(Float128.(x.coeffs)), _eulang_de430.x))
+        _jd0 = Float128(jd0)
     else
         q0 = _q0
         t0 = _t0
         tmax = _tmax
         _abstol = abstol
         eulang_de430 = _eulang_de430
+        _jd0 = jd0
     end
 
-    params = (N, eulang_de430, jd0)
+    params = (N, eulang_de430, _jd0)
 
     # do integration
     if dense

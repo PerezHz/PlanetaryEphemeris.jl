@@ -24,9 +24,6 @@
     # local eulang_t_del = eulang_de430_( (dsj2k-τ_M)*daysec )
     local I_m_t = ITM_und.*one_t # ITM(q_del_τ_M, eulang_t_del) # matrix elements of lunar moment of inertia (Folkner et al. 2014, eq. 41)
 
-    #TODO: handle appropiately @taylorize'd version with postnewton_iter>1
-    local postnewton_iter = 1 # number of iterations of post-Newtonian subroutine
-
     # parameters related to speed of light, c
     local c_p2 = 29979.063823897606 # c^2 = 29979.063823897606 au^2/d^2
     local c_m2 = 3.3356611996764786e-5 # c^-2 = 3.3356611996764786e-5 d^2/au^2
@@ -81,22 +78,22 @@
     W_t_pn2 = Array{S}(undef, N, N)
     pn1t1_7 = Array{S}(undef, N, N)
 
-    pntempX = Array{S}(undef, N, postnewton_iter)
-    pntempY = Array{S}(undef, N, postnewton_iter)
-    pntempZ = Array{S}(undef, N, postnewton_iter)
-    pn1 = Array{S}(undef, N, N, postnewton_iter)
-    X_t_pn1 = Array{S}(undef, N, N, postnewton_iter)
-    Y_t_pn1 = Array{S}(undef, N, N, postnewton_iter)
-    Z_t_pn1 = Array{S}(undef, N, N, postnewton_iter)
-    pNX_t_pn3 = Array{S}(undef, N, N, postnewton_iter)
-    pNY_t_pn3 = Array{S}(undef, N, N, postnewton_iter)
-    pNZ_t_pn3 = Array{S}(undef, N, N, postnewton_iter)
-    pNX_t_X = Array{S}(undef, N, N, postnewton_iter)
-    pNY_t_Y = Array{S}(undef, N, N, postnewton_iter)
-    pNZ_t_Z = Array{S}(undef, N, N, postnewton_iter)
-    postNewtonX = Array{S}(undef, N, postnewton_iter+1)
-    postNewtonY = Array{S}(undef, N, postnewton_iter+1)
-    postNewtonZ = Array{S}(undef, N, postnewton_iter+1)
+    pntempX = Array{S}(undef, N)
+    pntempY = Array{S}(undef, N)
+    pntempZ = Array{S}(undef, N)
+    pn1 = Array{S}(undef, N, N)
+    X_t_pn1 = Array{S}(undef, N, N)
+    Y_t_pn1 = Array{S}(undef, N, N)
+    Z_t_pn1 = Array{S}(undef, N, N)
+    pNX_t_pn3 = Array{S}(undef, N, N)
+    pNY_t_pn3 = Array{S}(undef, N, N)
+    pNZ_t_pn3 = Array{S}(undef, N, N)
+    pNX_t_X = Array{S}(undef, N, N)
+    pNY_t_Y = Array{S}(undef, N, N)
+    pNZ_t_Z = Array{S}(undef, N, N)
+    postNewtonX = Array{S}(undef, N)
+    postNewtonY = Array{S}(undef, N)
+    postNewtonZ = Array{S}(undef, N)
 
     # (Jn, Cmn, Smn) acceleration auxiliaries
     X_bf_1 = Array{S}(undef, N_ext, N_ext)
@@ -164,7 +161,7 @@
     local αm = eulang_t[1] - (pi/2)
     local δm = (pi/2) - eulang_t[2]
     local Wm = eulang_t[3]
-    local RotM = Array{S}(undef, 3, 3, 5)
+    RotM = Array{S}(undef, 3, 3, 5)
     local RotM[:,:,ea] = c2t_jpl_de430(dsj2k)
     local RotM[:,:,su] = pole_rotation(αs, δs)
     local RotM[:,:,mo] = pole_rotation(αm, δm, Wm)
@@ -184,7 +181,7 @@
     local RE_au = (RE/au)
     local J2E_t = (J2E + J2EDOT*(dsj2k/yr))*(RE_au^2)
     local J2S_t = JSEM[su,2]*one_t
-    local J2_t = Array{S}(undef, 5)
+    J2_t = Array{S}(undef, 5)
     J2_t[su] = J2S_t
     J2_t[ea] = J2E_t
 
@@ -266,6 +263,7 @@
         v2[j] = ( (dq[3j-2]^2)+(dq[3j-1]^2) ) + (dq[3j]^2)
     end #for, j
 
+    # 2nd-order lunar zonal and tesseral harmonics
     J2M_t = ( I_m_t[3,3] - ((I_m_t[1,1]+I_m_t[2,2])/2) )/(μ[mo]) # J_{2,M}*R_M^2
     C22M_t = ((I_m_t[2,2] - I_m_t[1,1])/(μ[mo]))/4 # C_{22,M}*R_M^2
     C21M_t = (-I_m_t[1,3])/(μ[mo]) # C_{21,M}*R_M^2
@@ -458,78 +456,69 @@
                 pn1t7 = (Rij_dot_Vi^2)/r_p2[i,j]
                 pn1t2_7 = ϕs_and_vs[i,j] - (1.5pn1t7)
                 pn1t1_7[i,j] = c_p2+pn1t2_7
-                for k in 1:postnewton_iter
-                    pn1[i,j,k] = zero_q_1
-                    X_t_pn1[i,j,k] = zero_q_1
-                    Y_t_pn1[i,j,k] = zero_q_1
-                    Z_t_pn1[i,j,k] = zero_q_1
-                    pNX_t_pn3[i,j,k] = zero_q_1
-                    pNY_t_pn3[i,j,k] = zero_q_1
-                    pNZ_t_pn3[i,j,k] = zero_q_1
-                    pNX_t_X[i,j,k] = zero_q_1
-                    pNY_t_Y[i,j,k] = zero_q_1
-                    pNZ_t_Z[i,j,k] = zero_q_1
-                end
+                ###
+                pn1[i,j] = zero_q_1
+                X_t_pn1[i,j] = zero_q_1
+                Y_t_pn1[i,j] = zero_q_1
+                Z_t_pn1[i,j] = zero_q_1
+                pNX_t_pn3[i,j] = zero_q_1
+                pNY_t_pn3[i,j] = zero_q_1
+                pNZ_t_pn3[i,j] = zero_q_1
+                pNX_t_X[i,j] = zero_q_1
+                pNY_t_Y[i,j] = zero_q_1
+                pNZ_t_Z[i,j] = zero_q_1
             end # else (i != j)
         end
-        postNewtonX[j,1] = newtonX[j]
-        postNewtonY[j,1] = newtonY[j]
-        postNewtonZ[j,1] = newtonZ[j]
-        for k in 1:postnewton_iter
-            pntempX[j,k] = zero_q_1
-            pntempY[j,k] = zero_q_1
-            pntempZ[j,k] = zero_q_1
-        end
+        pntempX[j] = zero_q_1
+        pntempY[j] = zero_q_1
+        pntempZ[j] = zero_q_1
     end
 
-    # post-Newtonian iterations
-    for k in 1:postnewton_iter
-        for j in 1:N
-            for i in 1:N
-                # i == j && continue
-                if i == j
-                    continue
-                else
-                    pNX_t_X[i,j,k] = postNewtonX[i,k]*X[i,j]
-                    pNY_t_Y[i,j,k] = postNewtonY[i,k]*Y[i,j]
-                    pNZ_t_Z[i,j,k] = postNewtonZ[i,k]*Z[i,j]
-                    pn1[i,j,k] = (  pn1t1_7[i,j]  +  0.5*( (pNX_t_X[i,j,k]+pNY_t_Y[i,j,k]) + pNZ_t_Z[i,j,k] )  )
+    for j in 1:N
+        for i in 1:N
+            # i == j && continue
+            if i == j
+                continue
+            else
+                pNX_t_X[i,j] = newtonX[i]*X[i,j]
+                pNY_t_Y[i,j] = newtonY[i]*Y[i,j]
+                pNZ_t_Z[i,j] = newtonZ[i]*Z[i,j]
+                pn1[i,j] = (  pn1t1_7[i,j]  +  0.5*( (pNX_t_X[i,j]+pNY_t_Y[i,j]) + pNZ_t_Z[i,j] )  )
 
-                    X_t_pn1[i,j,k] = newton_acc_X[i,j]*pn1[i,j,k]
-                    Y_t_pn1[i,j,k] = newton_acc_Y[i,j]*pn1[i,j,k]
-                    Z_t_pn1[i,j,k] = newton_acc_Z[i,j]*pn1[i,j,k]
+                X_t_pn1[i,j] = newton_acc_X[i,j]*pn1[i,j]
+                Y_t_pn1[i,j] = newton_acc_Y[i,j]*pn1[i,j]
+                Z_t_pn1[i,j] = newton_acc_Z[i,j]*pn1[i,j]
 
-                    pNX_t_pn3[i,j,k] = postNewtonX[i,k]*pn3[i,j]
-                    pNY_t_pn3[i,j,k] = postNewtonY[i,k]*pn3[i,j]
-                    pNZ_t_pn3[i,j,k] = postNewtonZ[i,k]*pn3[i,j]
+                pNX_t_pn3[i,j] = newtonX[i]*pn3[i,j]
+                pNY_t_pn3[i,j] = newtonY[i]*pn3[i,j]
+                pNZ_t_pn3[i,j] = newtonZ[i]*pn3[i,j]
 
-                    termpnx = ( X_t_pn1[i,j,k] + (U_t_pn2[i,j]+pNX_t_pn3[i,j,k]) )
-                    sumpnx = pntempX[j,k] + termpnx
-                    pntempX[j,k] = sumpnx
-                    termpny = ( Y_t_pn1[i,j,k] + (V_t_pn2[i,j]+pNY_t_pn3[i,j,k]) )
-                    sumpny = pntempY[j,k] + termpny
-                    pntempY[j,k] = sumpny
-                    termpnz = ( Z_t_pn1[i,j,k] + (W_t_pn2[i,j]+pNZ_t_pn3[i,j,k]) )
-                    sumpnz = pntempZ[j,k] + termpnz
-                    pntempZ[j,k] = sumpnz
-                end # else (i != j)
-            end
-            postNewtonX[j,k+1] = pntempX[j,k]*c_m2
-            postNewtonY[j,k+1] = pntempY[j,k]*c_m2
-            postNewtonZ[j,k+1] = pntempZ[j,k]*c_m2
+                termpnx = ( X_t_pn1[i,j] + (U_t_pn2[i,j]+pNX_t_pn3[i,j]) )
+                sumpnx = pntempX[j] + termpnx
+                pntempX[j] = sumpnx
+                termpny = ( Y_t_pn1[i,j] + (V_t_pn2[i,j]+pNY_t_pn3[i,j]) )
+                sumpny = pntempY[j] + termpny
+                pntempY[j] = sumpny
+                termpnz = ( Z_t_pn1[i,j] + (W_t_pn2[i,j]+pNZ_t_pn3[i,j]) )
+                sumpnz = pntempZ[j] + termpnz
+                pntempZ[j] = sumpnz
+            end # else (i != j)
         end
-    end #for k in 1:postnewton_iter # (post-Newtonian iterations)
+        postNewtonX[j] = pntempX[j]*c_m2
+        postNewtonY[j] = pntempY[j]*c_m2
+        postNewtonZ[j] = pntempZ[j]*c_m2
+    end
 
     #fill accelerations (post-Newtonian and extended body accelerations)
     for i in 1:N_ext
-        dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1] + accX[i]
-        dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1] + accY[i]
-        dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1] + accZ[i]
+        dq[3(N+i)-2] = postNewtonX[i] + accX[i]
+        dq[3(N+i)-1] = postNewtonY[i] + accY[i]
+        dq[3(N+i)  ] = postNewtonZ[i] + accZ[i]
     end
     for i in N_ext+1:N
-        dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1]
-        dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1]
-        dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1]
+        dq[3(N+i)-2] = postNewtonX[i]
+        dq[3(N+i)-1] = postNewtonY[i]
+        dq[3(N+i)  ] = postNewtonZ[i]
     end
 
     nothing
@@ -549,9 +538,6 @@ end
     local eulang_t = eulang_de430_( dsj2k*daysec )
     # local eulang_t_del = eulang_de430_( (dsj2k-τ_M)*daysec )
     local I_m_t = ITM_und.*one_t # ITM(q_del_τ_M, eulang_t_del) # matrix elements of lunar moment of inertia (Folkner et al. 2014, eq. 41)
-
-    #TODO: handle appropiately @taylorize'd version with postnewton_iter>1
-    local postnewton_iter = 1 # number of iterations of post-Newtonian subroutine
 
     # parameters related to speed of light, c
     local c_p2 = 29979.063823897606 # c^2 = 29979.063823897606 au^2/d^2
@@ -607,22 +593,22 @@ end
     W_t_pn2 = Array{S}(undef, N, N)
     pn1t1_7 = Array{S}(undef, N, N)
 
-    pntempX = Array{S}(undef, N, postnewton_iter)
-    pntempY = Array{S}(undef, N, postnewton_iter)
-    pntempZ = Array{S}(undef, N, postnewton_iter)
-    pn1 = Array{S}(undef, N, N, postnewton_iter)
-    X_t_pn1 = Array{S}(undef, N, N, postnewton_iter)
-    Y_t_pn1 = Array{S}(undef, N, N, postnewton_iter)
-    Z_t_pn1 = Array{S}(undef, N, N, postnewton_iter)
-    pNX_t_pn3 = Array{S}(undef, N, N, postnewton_iter)
-    pNY_t_pn3 = Array{S}(undef, N, N, postnewton_iter)
-    pNZ_t_pn3 = Array{S}(undef, N, N, postnewton_iter)
-    pNX_t_X = Array{S}(undef, N, N, postnewton_iter)
-    pNY_t_Y = Array{S}(undef, N, N, postnewton_iter)
-    pNZ_t_Z = Array{S}(undef, N, N, postnewton_iter)
-    postNewtonX = Array{S}(undef, N, postnewton_iter+1)
-    postNewtonY = Array{S}(undef, N, postnewton_iter+1)
-    postNewtonZ = Array{S}(undef, N, postnewton_iter+1)
+    pntempX = Array{S}(undef, N)
+    pntempY = Array{S}(undef, N)
+    pntempZ = Array{S}(undef, N)
+    pn1 = Array{S}(undef, N, N)
+    X_t_pn1 = Array{S}(undef, N, N)
+    Y_t_pn1 = Array{S}(undef, N, N)
+    Z_t_pn1 = Array{S}(undef, N, N)
+    pNX_t_pn3 = Array{S}(undef, N, N)
+    pNY_t_pn3 = Array{S}(undef, N, N)
+    pNZ_t_pn3 = Array{S}(undef, N, N)
+    pNX_t_X = Array{S}(undef, N, N)
+    pNY_t_Y = Array{S}(undef, N, N)
+    pNZ_t_Z = Array{S}(undef, N, N)
+    postNewtonX = Array{S}(undef, N)
+    postNewtonY = Array{S}(undef, N)
+    postNewtonZ = Array{S}(undef, N)
 
     # (Jn, Cmn, Smn) acceleration auxiliaries
     X_bf_1 = Array{S}(undef, N_ext, N_ext)
@@ -985,78 +971,69 @@ end
                 pn1t7 = (Rij_dot_Vi^2)/r_p2[i,j]
                 pn1t2_7 = ϕs_and_vs[i,j] - (1.5pn1t7)
                 pn1t1_7[i,j] = c_p2+pn1t2_7
-                for k in 1:postnewton_iter
-                    pn1[i,j,k] = zero_q_1
-                    X_t_pn1[i,j,k] = zero_q_1
-                    Y_t_pn1[i,j,k] = zero_q_1
-                    Z_t_pn1[i,j,k] = zero_q_1
-                    pNX_t_pn3[i,j,k] = zero_q_1
-                    pNY_t_pn3[i,j,k] = zero_q_1
-                    pNZ_t_pn3[i,j,k] = zero_q_1
-                    pNX_t_X[i,j,k] = zero_q_1
-                    pNY_t_Y[i,j,k] = zero_q_1
-                    pNZ_t_Z[i,j,k] = zero_q_1
-                end
+                ###
+                pn1[i,j] = zero_q_1
+                X_t_pn1[i,j] = zero_q_1
+                Y_t_pn1[i,j] = zero_q_1
+                Z_t_pn1[i,j] = zero_q_1
+                pNX_t_pn3[i,j] = zero_q_1
+                pNY_t_pn3[i,j] = zero_q_1
+                pNZ_t_pn3[i,j] = zero_q_1
+                pNX_t_X[i,j] = zero_q_1
+                pNY_t_Y[i,j] = zero_q_1
+                pNZ_t_Z[i,j] = zero_q_1
             end # else (i != j)
         end
-        postNewtonX[j,1] = newtonX[j]
-        postNewtonY[j,1] = newtonY[j]
-        postNewtonZ[j,1] = newtonZ[j]
-        for k in 1:postnewton_iter
-            pntempX[j,k] = zero_q_1
-            pntempY[j,k] = zero_q_1
-            pntempZ[j,k] = zero_q_1
-        end
+        pntempX[j] = zero_q_1
+        pntempY[j] = zero_q_1
+        pntempZ[j] = zero_q_1
     end
 
-    # post-Newtonian iterations
-    for k in 1:postnewton_iter
-        Threads.@threads for j in 1:N
-            for i in 1:N
-                # i == j && continue
-                if i == j
-                    continue
-                else
-                    pNX_t_X[i,j,k] = postNewtonX[i,k]*X[i,j]
-                    pNY_t_Y[i,j,k] = postNewtonY[i,k]*Y[i,j]
-                    pNZ_t_Z[i,j,k] = postNewtonZ[i,k]*Z[i,j]
-                    pn1[i,j,k] = (  pn1t1_7[i,j]  +  0.5*( (pNX_t_X[i,j,k]+pNY_t_Y[i,j,k]) + pNZ_t_Z[i,j,k] )  )
+    Threads.@threads for j in 1:N
+        for i in 1:N
+            # i == j && continue
+            if i == j
+                continue
+            else
+                pNX_t_X[i,j] = newtonX[i]*X[i,j]
+                pNY_t_Y[i,j] = newtonY[i]*Y[i,j]
+                pNZ_t_Z[i,j] = newtonZ[i]*Z[i,j]
+                pn1[i,j] = (  pn1t1_7[i,j]  +  0.5*( (pNX_t_X[i,j]+pNY_t_Y[i,j]) + pNZ_t_Z[i,j] )  )
 
-                    X_t_pn1[i,j,k] = newton_acc_X[i,j]*pn1[i,j,k]
-                    Y_t_pn1[i,j,k] = newton_acc_Y[i,j]*pn1[i,j,k]
-                    Z_t_pn1[i,j,k] = newton_acc_Z[i,j]*pn1[i,j,k]
+                X_t_pn1[i,j] = newton_acc_X[i,j]*pn1[i,j]
+                Y_t_pn1[i,j] = newton_acc_Y[i,j]*pn1[i,j]
+                Z_t_pn1[i,j] = newton_acc_Z[i,j]*pn1[i,j]
 
-                    pNX_t_pn3[i,j,k] = postNewtonX[i,k]*pn3[i,j]
-                    pNY_t_pn3[i,j,k] = postNewtonY[i,k]*pn3[i,j]
-                    pNZ_t_pn3[i,j,k] = postNewtonZ[i,k]*pn3[i,j]
+                pNX_t_pn3[i,j] = newtonX[i]*pn3[i,j]
+                pNY_t_pn3[i,j] = newtonY[i]*pn3[i,j]
+                pNZ_t_pn3[i,j] = newtonZ[i]*pn3[i,j]
 
-                    termpnx = ( X_t_pn1[i,j,k] + (U_t_pn2[i,j]+pNX_t_pn3[i,j,k]) )
-                    sumpnx = pntempX[j,k] + termpnx
-                    pntempX[j,k] = sumpnx
-                    termpny = ( Y_t_pn1[i,j,k] + (V_t_pn2[i,j]+pNY_t_pn3[i,j,k]) )
-                    sumpny = pntempY[j,k] + termpny
-                    pntempY[j,k] = sumpny
-                    termpnz = ( Z_t_pn1[i,j,k] + (W_t_pn2[i,j]+pNZ_t_pn3[i,j,k]) )
-                    sumpnz = pntempZ[j,k] + termpnz
-                    pntempZ[j,k] = sumpnz
-                end # else (i != j)
-            end
-            postNewtonX[j,k+1] = pntempX[j,k]*c_m2
-            postNewtonY[j,k+1] = pntempY[j,k]*c_m2
-            postNewtonZ[j,k+1] = pntempZ[j,k]*c_m2
+                termpnx = ( X_t_pn1[i,j] + (U_t_pn2[i,j]+pNX_t_pn3[i,j]) )
+                sumpnx = pntempX[j] + termpnx
+                pntempX[j] = sumpnx
+                termpny = ( Y_t_pn1[i,j] + (V_t_pn2[i,j]+pNY_t_pn3[i,j]) )
+                sumpny = pntempY[j] + termpny
+                pntempY[j] = sumpny
+                termpnz = ( Z_t_pn1[i,j] + (W_t_pn2[i,j]+pNZ_t_pn3[i,j]) )
+                sumpnz = pntempZ[j] + termpnz
+                pntempZ[j] = sumpnz
+            end # else (i != j)
         end
-    end #for k in 1:postnewton_iter # (post-Newtonian iterations)
+        postNewtonX[j] = pntempX[j]*c_m2
+        postNewtonY[j] = pntempY[j]*c_m2
+        postNewtonZ[j] = pntempZ[j]*c_m2
+    end
 
     #fill accelerations (post-Newtonian and extended body accelerations)
     Threads.@threads for i in 1:N_ext
-        dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1] + accX[i]
-        dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1] + accY[i]
-        dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1] + accZ[i]
+        dq[3(N+i)-2] = postNewtonX[i] + accX[i]
+        dq[3(N+i)-1] = postNewtonY[i] + accY[i]
+        dq[3(N+i)  ] = postNewtonZ[i] + accZ[i]
     end
     Threads.@threads for i in N_ext+1:N
-        dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1]
-        dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1]
-        dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1]
+        dq[3(N+i)-2] = postNewtonX[i]
+        dq[3(N+i)-1] = postNewtonY[i]
+        dq[3(N+i)  ] = postNewtonZ[i]
     end
 
     nothing
@@ -1073,11 +1050,11 @@ end
     local params_bwd = (N_bwd, eulang_de430_, jd0)
     local qq_bwd = Taylor1.(constant_term.(q[nbodyind(N,1:N_bwd)]), t.order)
     local dqq_bwd = similar(qq_bwd)
-    local xaux_bwd = similar(qq_bwd)
+    # local xaux_bwd = similar(qq_bwd)
     # local jc = TaylorIntegration.__jetcoeffs!(Val(false), NBP_pN_A_J23E_J23M_J2S_threads!, t, qq_bwd, dqq_bwd, xaux_bwd, params_bwd)
     # local jc = TaylorIntegration.__jetcoeffs!(Val(true), NBP_pN_A_J23E_J23M_J2S_threads!, t, qq_bwd, dqq_bwd, xaux_bwd, params_bwd)
-    local jc = TaylorIntegration.jetcoeffs!(NBP_pN_A_J23E_J23M_J2S_threads!, t, qq_bwd, dqq_bwd, xaux_bwd, params_bwd)
-    # local jc = TaylorIntegration.jetcoeffs!(Val(NBP_pN_A_J23E_J23M_J2S_threads!), t, qq_bwd, dqq_bwd, params_bwd)
+    # local jc = TaylorIntegration.jetcoeffs!(NBP_pN_A_J23E_J23M_J2S_threads!, t, qq_bwd, dqq_bwd, xaux_bwd, params_bwd)
+    local jc = TaylorIntegration.jetcoeffs!(Val(NBP_pN_A_J23E_J23M_J2S_threads!), t, qq_bwd, dqq_bwd, params_bwd)
     local __t = Taylor1(t.order)
     local q_del_τ_M = qq_bwd(__t-τ_M)
     local q_del_τ_0 = qq_bwd(__t-τ_0p)
@@ -1095,9 +1072,6 @@ end
     # local ω_m = moon_omega(eulang_t[1], eulang_t[2], eulang_t[3])
     # local __mp1__ = map((x,y)->x[0]=y[0], q[6N+1:6N+3], eulang_t)
     # local __mp2__ = map((x,y)->x[0]=y[0], q[6N+4:6N+6], ω_m)
-
-    #TODO: handle appropiately @taylorize'd version with postnewton_iter>1
-    local postnewton_iter = 1 # number of iterations of post-Newtonian subroutine
 
     # parameters related to speed of light, c
     local c_p2 = 29979.063823897606 # c^2 = 29979.063823897606 au^2/d^2
@@ -1153,22 +1127,22 @@ end
     W_t_pn2 = Array{S}(undef, N, N)
     pn1t1_7 = Array{S}(undef, N, N)
 
-    pntempX = Array{S}(undef, N, postnewton_iter)
-    pntempY = Array{S}(undef, N, postnewton_iter)
-    pntempZ = Array{S}(undef, N, postnewton_iter)
-    pn1 = Array{S}(undef, N, N, postnewton_iter)
-    X_t_pn1 = Array{S}(undef, N, N, postnewton_iter)
-    Y_t_pn1 = Array{S}(undef, N, N, postnewton_iter)
-    Z_t_pn1 = Array{S}(undef, N, N, postnewton_iter)
-    pNX_t_pn3 = Array{S}(undef, N, N, postnewton_iter)
-    pNY_t_pn3 = Array{S}(undef, N, N, postnewton_iter)
-    pNZ_t_pn3 = Array{S}(undef, N, N, postnewton_iter)
-    pNX_t_X = Array{S}(undef, N, N, postnewton_iter)
-    pNY_t_Y = Array{S}(undef, N, N, postnewton_iter)
-    pNZ_t_Z = Array{S}(undef, N, N, postnewton_iter)
-    postNewtonX = Array{S}(undef, N, postnewton_iter+1)
-    postNewtonY = Array{S}(undef, N, postnewton_iter+1)
-    postNewtonZ = Array{S}(undef, N, postnewton_iter+1)
+    pntempX = Array{S}(undef, N)
+    pntempY = Array{S}(undef, N)
+    pntempZ = Array{S}(undef, N)
+    pn1 = Array{S}(undef, N, N)
+    X_t_pn1 = Array{S}(undef, N, N)
+    Y_t_pn1 = Array{S}(undef, N, N)
+    Z_t_pn1 = Array{S}(undef, N, N)
+    pNX_t_pn3 = Array{S}(undef, N, N)
+    pNY_t_pn3 = Array{S}(undef, N, N)
+    pNZ_t_pn3 = Array{S}(undef, N, N)
+    pNX_t_X = Array{S}(undef, N, N)
+    pNY_t_Y = Array{S}(undef, N, N)
+    pNZ_t_Z = Array{S}(undef, N, N)
+    postNewtonX = Array{S}(undef, N)
+    postNewtonY = Array{S}(undef, N)
+    postNewtonZ = Array{S}(undef, N)
 
     # (Jn, Cmn, Smn) acceleration auxiliaries
     X_bf_1 = Array{S}(undef, N_ext, N_ext)
@@ -1580,67 +1554,59 @@ end
                 pn1t7 = (Rij_dot_Vi^2)/r_p2[i,j]
                 pn1t2_7 = ϕs_and_vs[i,j] - (1.5pn1t7)
                 pn1t1_7[i,j] = c_p2+pn1t2_7
-                for k in 1:postnewton_iter
-                    pn1[i,j,k] = zero_q_1
-                    X_t_pn1[i,j,k] = zero_q_1
-                    Y_t_pn1[i,j,k] = zero_q_1
-                    Z_t_pn1[i,j,k] = zero_q_1
-                    pNX_t_pn3[i,j,k] = zero_q_1
-                    pNY_t_pn3[i,j,k] = zero_q_1
-                    pNZ_t_pn3[i,j,k] = zero_q_1
-                    pNX_t_X[i,j,k] = zero_q_1
-                    pNY_t_Y[i,j,k] = zero_q_1
-                    pNZ_t_Z[i,j,k] = zero_q_1
-                end
+                ###
+                pn1[i,j] = zero_q_1
+                X_t_pn1[i,j] = zero_q_1
+                Y_t_pn1[i,j] = zero_q_1
+                Z_t_pn1[i,j] = zero_q_1
+                pNX_t_pn3[i,j] = zero_q_1
+                pNY_t_pn3[i,j] = zero_q_1
+                pNZ_t_pn3[i,j] = zero_q_1
+                pNX_t_X[i,j] = zero_q_1
+                pNY_t_Y[i,j] = zero_q_1
+                pNZ_t_Z[i,j] = zero_q_1
             end # else (i != j)
         end
-        postNewtonX[j,1] = newtonX[j]
-        postNewtonY[j,1] = newtonY[j]
-        postNewtonZ[j,1] = newtonZ[j]
-        for k in 1:postnewton_iter
-            pntempX[j,k] = zero_q_1
-            pntempY[j,k] = zero_q_1
-            pntempZ[j,k] = zero_q_1
-        end
+        pntempX[j] = zero_q_1
+        pntempY[j] = zero_q_1
+        pntempZ[j] = zero_q_1
     end
 
     # post-Newtonian iterations
-    for k in 1:postnewton_iter
-        Threads.@threads for j in 1:N
-            for i in 1:N
-                # i == j && continue
-                if i == j
-                    continue
-                else
-                    pNX_t_X[i,j,k] = postNewtonX[i,k]*X[i,j]
-                    pNY_t_Y[i,j,k] = postNewtonY[i,k]*Y[i,j]
-                    pNZ_t_Z[i,j,k] = postNewtonZ[i,k]*Z[i,j]
-                    pn1[i,j,k] = (  pn1t1_7[i,j]  +  0.5*( (pNX_t_X[i,j,k]+pNY_t_Y[i,j,k]) + pNZ_t_Z[i,j,k] )  )
+    Threads.@threads for j in 1:N
+        for i in 1:N
+            # i == j && continue
+            if i == j
+                continue
+            else
+                pNX_t_X[i,j] = newtonX[i]*X[i,j]
+                pNY_t_Y[i,j] = newtonY[i]*Y[i,j]
+                pNZ_t_Z[i,j] = newtonZ[i]*Z[i,j]
+                pn1[i,j] = (  pn1t1_7[i,j]  +  0.5*( (pNX_t_X[i,j]+pNY_t_Y[i,j]) + pNZ_t_Z[i,j] )  )
 
-                    X_t_pn1[i,j,k] = newton_acc_X[i,j]*pn1[i,j,k]
-                    Y_t_pn1[i,j,k] = newton_acc_Y[i,j]*pn1[i,j,k]
-                    Z_t_pn1[i,j,k] = newton_acc_Z[i,j]*pn1[i,j,k]
+                X_t_pn1[i,j] = newton_acc_X[i,j]*pn1[i,j]
+                Y_t_pn1[i,j] = newton_acc_Y[i,j]*pn1[i,j]
+                Z_t_pn1[i,j] = newton_acc_Z[i,j]*pn1[i,j]
 
-                    pNX_t_pn3[i,j,k] = postNewtonX[i,k]*pn3[i,j]
-                    pNY_t_pn3[i,j,k] = postNewtonY[i,k]*pn3[i,j]
-                    pNZ_t_pn3[i,j,k] = postNewtonZ[i,k]*pn3[i,j]
+                pNX_t_pn3[i,j] = newtonX[i]*pn3[i,j]
+                pNY_t_pn3[i,j] = newtonY[i]*pn3[i,j]
+                pNZ_t_pn3[i,j] = newtonZ[i]*pn3[i,j]
 
-                    termpnx = ( X_t_pn1[i,j,k] + (U_t_pn2[i,j]+pNX_t_pn3[i,j,k]) )
-                    sumpnx = pntempX[j,k] + termpnx
-                    pntempX[j,k] = sumpnx
-                    termpny = ( Y_t_pn1[i,j,k] + (V_t_pn2[i,j]+pNY_t_pn3[i,j,k]) )
-                    sumpny = pntempY[j,k] + termpny
-                    pntempY[j,k] = sumpny
-                    termpnz = ( Z_t_pn1[i,j,k] + (W_t_pn2[i,j]+pNZ_t_pn3[i,j,k]) )
-                    sumpnz = pntempZ[j,k] + termpnz
-                    pntempZ[j,k] = sumpnz
-                end # else (i != j)
-            end
-            postNewtonX[j,k+1] = pntempX[j,k]*c_m2
-            postNewtonY[j,k+1] = pntempY[j,k]*c_m2
-            postNewtonZ[j,k+1] = pntempZ[j,k]*c_m2
+                termpnx = ( X_t_pn1[i,j] + (U_t_pn2[i,j]+pNX_t_pn3[i,j]) )
+                sumpnx = pntempX[j] + termpnx
+                pntempX[j] = sumpnx
+                termpny = ( Y_t_pn1[i,j] + (V_t_pn2[i,j]+pNY_t_pn3[i,j]) )
+                sumpny = pntempY[j] + termpny
+                pntempY[j] = sumpny
+                termpnz = ( Z_t_pn1[i,j] + (W_t_pn2[i,j]+pNZ_t_pn3[i,j]) )
+                sumpnz = pntempZ[j] + termpnz
+                pntempZ[j] = sumpnz
+            end # else (i != j)
         end
-    end #for k in 1:postnewton_iter # (post-Newtonian iterations)
+        postNewtonX[j] = pntempX[j]*c_m2
+        postNewtonY[j] = pntempY[j]*c_m2
+        postNewtonZ[j] = pntempZ[j]*c_m2
+    end
 
     # compute tidal acceleration of the Moon due to tides raised on Earth by the Sun and Moon
     # Folkner et al. (2014) Eq. (32)
@@ -1777,14 +1743,14 @@ end
 
     #fill accelerations (post-Newtonian and extended body accelerations)
     Threads.@threads for i in 1:N_ext
-        dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1] + accX[i]
-        dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1] + accY[i]
-        dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1] + accZ[i]
+        dq[3(N+i)-2] = postNewtonX[i] + accX[i]
+        dq[3(N+i)-1] = postNewtonY[i] + accY[i]
+        dq[3(N+i)  ] = postNewtonZ[i] + accZ[i]
     end
     Threads.@threads for i in N_ext+1:N
-        dq[3(N+i)-2] = postNewtonX[i,postnewton_iter+1]
-        dq[3(N+i)-1] = postNewtonY[i,postnewton_iter+1]
-        dq[3(N+i)  ] = postNewtonZ[i,postnewton_iter+1]
+        dq[3(N+i)-2] = postNewtonX[i]
+        dq[3(N+i)-1] = postNewtonY[i]
+        dq[3(N+i)  ] = postNewtonZ[i]
     end
 
     # # lunar physical librations: Folkner et al. (2014), Eq. (14)
