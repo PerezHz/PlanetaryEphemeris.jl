@@ -1,16 +1,4 @@
-nbodyind(N::Int, i::Int) = union(3i-2:3i, 3*(N+i)-2:3*(N+i))
-
-function nbodyind(N::Int, ivec::AbstractVector{Int})
-    a = Int[]
-    for i in ivec
-        i > N && continue
-        a = union(a, nbodyind(N,i))
-    end
-    return sort(a)
-end
-
 function selecteph2jld(sseph::TaylorInterpolant, bodyind::AbstractVector{Int}, tspan::Number, N::Int)
-    # N = ( size(sseph.x)[2] - 6 ) ÷ 6 # total number of bodies (Sun+planets+Moon+Pluto+asts)
     nast = N - 11 # number of asteroids in sseph
     indvec = nbodyind(N, bodyind)
     nastout = length(bodyind) - 11 # number of asteroids to be saved in file
@@ -19,7 +7,7 @@ function selecteph2jld(sseph::TaylorInterpolant, bodyind::AbstractVector{Int}, t
     nyrs_int = Int(abs(tspan))
     # write output to jld file
     ss16ast_fname = "sseph$(lpad(nast,3,'0'))ast$(lpad(nastout,3,'0'))_"*sgn_yrs*"$(nyrs_int)y_et.jld"
-    ss16ast_eph = TaylorInterpolant(sseph.t0, sseph.t, sseph.x[:, indvec])
+    ss16ast_eph = TaylorInterpolant(sseph.t0, sseph.t, sseph.x[:, union(indvec, 6N+1:6N+7)])
     jldopen(ss16ast_fname, "w") do file
         addrequire(file, TaylorSeries)
         addrequire(file, PlanetaryEphemeris)
@@ -31,7 +19,7 @@ function selecteph2jld(sseph::TaylorInterpolant, bodyind::AbstractVector{Int}, t
     return nothing
 end
 
-function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
+function propagate(maxsteps::Int, jd0::T, tspan::T;
         output::Bool=true, dense::Bool=false, ephfile::String="sseph.jld",
         dynamics::Function=NBP_pN_A_J23E_J23M_J2S!, nast::Int=343,
         quadmath::Bool=false, ss16ast::Bool=true,
@@ -40,14 +28,12 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
 
     # total number of bodies
     N = 11+nast
-    # get initial conditions (6N translational + 6 lunar physical librations)
-    _q0 = initialcond(N)
-    # initial time (Julian date)
+    # get initial conditions (6N translational + 6 lunar physical librations + TT-TDB)
+    _q0 = initialcond(N) ### <--- length(_q0) == 6N+7
+    # set initial time equal to zero (improves accuracy in data reductions)
     _t0 = zero(jd0)
-    # final time (Julian date)
+    # final time (years)
     @show _tmax = zero(_t0)+tspan*yr
-    # load DE430 lunar Euler angles ephemeris (TaylorInterpolant)
-    _eulang_de430 = load(eulangfile, "eulang_de430")
 
     if quadmath
         # use quadruple precision
@@ -55,18 +41,16 @@ function propagate(maxsteps::Int, jd0::T, tspan::T, eulangfile::String;
         t0 = Float128(_t0)
         tmax = Float128(_tmax)
         _abstol = Float128(abstol)
-        eulang_de430 = TaylorInterpolant(Float128(_eulang_de430.t0), Float128.(_eulang_de430.t), map(x->Taylor1(Float128.(x.coeffs)), _eulang_de430.x))
         _jd0 = Float128(jd0)
     else
         q0 = _q0
         t0 = _t0
         tmax = _tmax
         _abstol = abstol
-        eulang_de430 = _eulang_de430
         _jd0 = jd0
     end
 
-    params = (N, eulang_de430, _jd0)
+    params = (N, _jd0)
 
     # do integration
     if dense
