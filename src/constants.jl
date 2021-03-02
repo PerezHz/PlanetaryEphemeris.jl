@@ -401,10 +401,8 @@ const de430_343ast_ids =
     132, 585, 433
 ]
 
-const N = length(μ)
-
 # Matrix of J2 interactions included in DE430 ephemeris, according to Folkner et al., 2014
-const UJ_interaction = fill(false, N, N)
+const UJ_interaction = fill(false, length(μ), length(μ))
 UJ_interaction[2:11, su] .= true # per Folkner et al. (2014), Section III, 1st paragraph: Sun's J2 only interacts with the Moon and planets
 UJ_interaction[union(1:ea-1,ea+1:7), ea] .= true # Earth's grav potential interacts with Sun, Mercury, Venus, Moon, Mars and Jupiter
 UJ_interaction[union(1:mo-1,mo+1:7), mo] .= true # Moon's grav potential interacts with Sun, Mercury, Venus, Earth, Mars and Jupiter
@@ -417,8 +415,8 @@ const c_au_per_day = daysec*(clightkms/au) # speed of light in au per day
 const c_au_per_sec = clightkms/au # speed of light in au per sec
 const c_cm_per_sec = 100_000*clightkms # speed of light in cm per sec
 
-const sundofs = union(1:3, 3(N+su)-2:3(N+su))
-const earthdofs = union(3ea-2:3ea, 3(N+ea)-2:3(N+ea))
+const sundofs = nbodyind(length(μ), su)
+const earthdofs = nbodyind(length(μ), ea)
 
 const J2000 = 2.451545e6
 
