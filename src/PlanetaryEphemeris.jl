@@ -31,6 +31,17 @@ using Quadmath
 const order = 30
 const abstol = 1.0E-20
 
+nbodyind(N::Int, i::Int) = union(3i-2:3i, 3*(N+i)-2:3*(N+i))
+
+function nbodyind(N::Int, ivec::AbstractVector{Int})
+    a = Int[]
+    for i in ivec
+        i > N && continue
+        a = union(a, nbodyind(N,i))
+    end
+    return sort(a)
+end
+
 include("constants.jl")
 include("jpl-de-430-431-earth-orientation-model.jl")
 include("initial_conditions.jl")
