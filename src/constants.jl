@@ -543,7 +543,9 @@ const ITM_und = diagm([A_T, B_T, C_T]*μ[mo]*R_moon^2)
 const I_c = diagm([A_c, B_c, C_c]*μ[mo]*R_moon^2)
 
 const ld = 384402.0 # Lunar distance (km)
-const n_moon = sqrt((μ[ea]+μ[mo])/((ld/au)^3)) # lunar mean motion (rad/day)
+# 384399.014 km  mean semi-major axis value was retrieved from:
+# J. G. Williams, D. H. Boggs, and W. M. Folkner (2013). “DE430 Lunar Orbit, Physical Librations and Surface Coordinates,” JPL IOM 335-JW,DB,WF-20130722-016 (internal document)
+const n_moon = sqrt((μ[ea]+μ[mo])/((384399.014/au)^3)) # lunar mean motion (rad/day)
 
 const k_20E = 0.335 # Potential Love number for long-period deformation
 const k_21E = 0.32 # Potential Love number for diurnal deformation
