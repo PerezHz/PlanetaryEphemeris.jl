@@ -235,34 +235,33 @@ end
 
 #second term of time-dependent part of lunar total moment of inertia (Folkner et al., 2014, eq. 41, 2nd term)
 # note: Euler angles must be evaluated at time `t-τ_M`
-function ITM2(ϕ::T, θ::T, ψ::T) where {T <: Number}
+function ITM2(ωx::T, ωy::T, ωz::T) where {T <: Number}
     m = Matrix{T}(undef, 3, 3)
-    ω = moon_omega(ϕ, θ, ψ)
-    ωx2 = ω[1]*ω[1]
-    ωy2 = ω[2]*ω[2]
-    ωz2 = ω[3]*ω[3]
+    ωx2 = ωx*ωx
+    ωy2 = ωy*ωy
+    ωz2 = ωz*ωz
     ω2 = ωx2+ωy2+ωz2
     aux = (ω2-n_moon^2)/3
     m[1,1] = ωx2-aux
     m[2,2] = ωy2-aux
     m[3,3] = ωz2-(ω2+2n_moon^2)/3
-    m[1,2] = ω[1]*ω[2]
+    m[1,2] = ωx*ωy
     m[2,1] = m[1,2]
-    m[1,3] = ω[1]*ω[3]
+    m[1,3] = ωx*ωz
     m[3,1] = m[1,3]
-    m[2,3] = ω[2]*ω[3]
+    m[2,3] = ωy*ωz
     m[3,2] = m[2,3]
     return ((k_2M*R_moon^5)/3)*m
 end
 
 # lunar mantle inertia tensor (Folkner et al., 2014, eq. 41)
-function ITM(q_del_τ_M::Vector{T}, eulang_t_del::Vector{T}) where {T <: Number}
+function ITM(q::Vector{T}, eulang::Vector{T}, ω_m::Vector{T}) where {T <: Number}
     # coordinate transformation matrix: inertial frame -> lunar mantle frame
-    M_del_mo = pole_rotation(eulang_t_del[1] - (pi/2), (pi/2) - eulang_t_del[2], eulang_t_del[3])
+    M_del_mo = pole_rotation(eulang[1] - (pi/2), (pi/2) - eulang[2], eulang[3])
     # transform delayed geocentric position of Moon (space-fixed->lunar mantle frame)
-    X_me_del_τ_M = q_del_τ_M[3mo-2:3mo] .- q_del_τ_M[3ea-2:3ea]
+    X_me_del_τ_M = q[3mo-2:3mo] .- q[3ea-2:3ea]
     X_me_del_τ_M_lm = M_del_mo*X_me_del_τ_M
     itm1 = ITM1(X_me_del_τ_M_lm[1], X_me_del_τ_M_lm[2], X_me_del_τ_M_lm[3])
-    itm2 = ITM2(eulang_t_del[1], eulang_t_del[2], eulang_t_del[3])
-    return ITM_und*one(q_del_τ_M[1]) + itm1 + itm2
+    itm2 = ITM2(ω_m[1], ω_m[2], ω_m[3])
+    return (ITM_und-I_c)*one(q[1]) + itm1 + itm2
 end
