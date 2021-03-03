@@ -25,7 +25,7 @@
     local dψ0 = ωz0 - (dϕ0*cos(θ0))
     local __t = Taylor1(t.order)
     local eulang_t = [ϕ0 + __t*dϕ0, θ0 + __t*dθ0, ψ0 + __t*dψ0]
-    local I_m_t = ITM_und.*one_t # ITM(q_del_τ_M, eulang_t_del) # matrix elements of lunar moment of inertia (Folkner et al. 2014, eq. 41)
+    local I_m_t = (ITM_und-I_c).*one_t # ITM(q_del_τ_M, eulang_del_τ_M) # matrix elements of lunar moment of inertia (Folkner et al. 2014, eq. 41)
     local dI_m_t = derivative.(I_m_t) # time-derivative of lunar mantle I at time t
     local inv_I_m_t = inv(I_m_t) # inverse of lunar mantle I matrix at time t
 
@@ -71,11 +71,13 @@
     newton_acc_Z = Array{S}(undef, N, N)
 
     v2 = Array{S}(undef, N)
+    _2v2 = Array{S}(undef, N, N)
     vi_dot_vj = Array{S}(undef, N, N)
     pn2 = Array{S}(undef, N, N)
     pn3 = Array{S}(undef, N, N)
     _4ϕj = Array{S}(undef, N, N)
     ϕi_plus_4ϕj = Array{S}(undef, N, N)
+    sj2_plus_2si2 = Array{S}(undef, N, N)
     sj2_plus_2si2_minus_4vivj = Array{S}(undef, N, N)
     ϕs_and_vs = Array{S}(undef, N, N)
     U_t_pn2 = Array{S}(undef, N, N)
@@ -133,6 +135,9 @@
     temp_fjξ = Array{S}(undef, N_ext, N_ext, maximum(n1SEM)+1)
     temp_fjζ = Array{S}(undef, N_ext, N_ext, maximum(n1SEM)+1)
     temp_rn = Array{S}(undef, N_ext, N_ext, maximum(n1SEM)+1)
+    temp_CS_ξ = Array{S}(undef, N_ext, N_ext, n1SEM[mo], n1SEM[mo])
+    temp_CS_η = Array{S}(undef, N_ext, N_ext, n1SEM[mo], n1SEM[mo])
+    temp_CS_ζ = Array{S}(undef, N_ext, N_ext, n1SEM[mo], n1SEM[mo])
     F_CS_ξ_36 = Array{S}(undef, N_ext, N_ext)
     F_CS_η_36 = Array{S}(undef, N_ext, N_ext)
     F_CS_ζ_36 = Array{S}(undef, N_ext, N_ext)
@@ -140,6 +145,10 @@
     F_J_ζ_36 = Array{S}(undef, N_ext, N_ext)
     sin_mλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo])
     cos_mλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo])
+    Cnm_cosmλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
+    Cnm_sinmλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
+    Snm_cosmλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
+    Snm_sinmλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
     secϕ_P_nm = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
     P_nm = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
     cosϕ_dP_nm = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
@@ -352,8 +361,8 @@
                                 P_nm[i,j,1,1] = cos_ϕ[i,j]
                                 cosϕ_dP_nm[i,j,1,1] = sin_ϕ[i,j]*lnm3[1] #+0 (second term in Eq. 183 from Moyer, 1971, vanishes when n=m)
                             else
-                                sin_mλ[i,j,m] = (sin_mλ[i,j,1]*cos_mλ[i,j,m-1]) + (cos_mλ[i,j,1]*sin_mλ[i,j,m-1])
-                                cos_mλ[i,j,m] = (cos_mλ[i,j,1]*cos_mλ[i,j,m-1]) - (sin_mλ[i,j,1]*sin_mλ[i,j,m-1])
+                                sin_mλ[i,j,m] = (cos_mλ[i,j,m-1]*sin_mλ[i,j,1]) + (sin_mλ[i,j,m-1]*cos_mλ[i,j,1])
+                                cos_mλ[i,j,m] = (cos_mλ[i,j,m-1]*cos_mλ[i,j,1]) - (sin_mλ[i,j,m-1]*sin_mλ[i,j,1])
                                 secϕ_P_nm[i,j,m,m] = (secϕ_P_nm[i,j,m-1,m-1]*cos_ϕ[i,j])*lnm5[m]
                                 P_nm[i,j,m,m] = secϕ_P_nm[i,j,m,m]*cos_ϕ[i,j]
                                 cosϕ_dP_nm[i,j,m,m] = (secϕ_P_nm[i,j,m,m]*sin_ϕ[i,j])*lnm3[m] #+0 (second term in Eq. 183 from Moyer, 1971, vanishes when n=m)
@@ -369,21 +378,25 @@
                             end
                         end
 
-                        F_CS_ξ[i,j] = (((P_nm[i,j,2,1]*lnm6[2])*((C21M_t*cos_mλ[i,j,1])+(S21M_t*sin_mλ[i,j,1]))) + ((P_nm[i,j,2,2]*lnm6[2])*((C22M_t*cos_mλ[i,j,2])+(S22M_t*sin_mλ[i,j,2]))))/r_p4[i,j]
-                        F_CS_η[i,j] = (((secϕ_P_nm[i,j,2,1]*lnm7[1])*((S21M_t*cos_mλ[i,j,1])-(C21M_t*sin_mλ[i,j,1]))) + ((secϕ_P_nm[i,j,2,2]*lnm7[2])*((S22M_t*cos_mλ[i,j,2])-(C22M_t*sin_mλ[i,j,2]))))/r_p4[i,j]
-                        F_CS_ζ[i,j] = (((cosϕ_dP_nm[i,j,2,1])*((C21M_t*cos_mλ[i,j,1])+(S21M_t*sin_mλ[i,j,1]))) + ((cosϕ_dP_nm[i,j,2,2])*((C22M_t*cos_mλ[i,j,2])+(S22M_t*sin_mλ[i,j,2]))))/r_p4[i,j]
+                        F_CS_ξ[i,j] = (   (  (P_nm[i,j,2,1]*lnm6[2]     )*( (C21M_t*cos_mλ[i,j,1]) + (S21M_t*sin_mλ[i,j,1]) )  ) + (  (P_nm[i,j,2,2]*lnm6[2]     )*( (C22M_t*cos_mλ[i,j,2]) + (S22M_t*sin_mλ[i,j,2]) )  )   )/r_p4[i,j]
+                        F_CS_η[i,j] = (   (  (secϕ_P_nm[i,j,2,1]*lnm7[1])*( (S21M_t*cos_mλ[i,j,1]) - (C21M_t*sin_mλ[i,j,1]) )  ) + (  (secϕ_P_nm[i,j,2,2]*lnm7[2])*( (S22M_t*cos_mλ[i,j,2]) - (C22M_t*sin_mλ[i,j,2]) )  )   )/r_p4[i,j]
+                        F_CS_ζ[i,j] = (   (  (cosϕ_dP_nm[i,j,2,1]       )*( (C21M_t*cos_mλ[i,j,1]) + (S21M_t*sin_mλ[i,j,1]) )  ) + (  (cosϕ_dP_nm[i,j,2,2]       )*( (C22M_t*cos_mλ[i,j,2]) + (S22M_t*sin_mλ[i,j,2]) )  )   )/r_p4[i,j]
 
                         F_CS_ξ_36[i,j] = zero_q_1
                         F_CS_η_36[i,j] = zero_q_1
                         F_CS_ζ_36[i,j] = zero_q_1
-                        for n in 3:n1SEM[mo]
+                        for n in 3:n2M
                             for m in 1:n
-                                temp_CS_ξ = (((P_nm[i,j,n,m]*lnm6[n])*((cos_mλ[i,j,m]*CM[n,m])+(sin_mλ[i,j,m]*SM[n,m])))/temp_rn[i,j,n]) + F_CS_ξ_36[i,j]
-                                temp_CS_η = (((secϕ_P_nm[i,j,n,m]*lnm7[m])*((cos_mλ[i,j,m]*SM[n,m])-(sin_mλ[i,j,m]*CM[n,m])))/temp_rn[i,j,n]) + F_CS_η_36[i,j]
-                                temp_CS_ζ = (((cosϕ_dP_nm[i,j,n,m])*((cos_mλ[i,j,m]*CM[n,m])+(sin_mλ[i,j,m]*SM[n,m])))/temp_rn[i,j,n]) + F_CS_ζ_36[i,j]
-                                F_CS_ξ_36[i,j] = temp_CS_ξ
-                                F_CS_η_36[i,j] = temp_CS_η
-                                F_CS_ζ_36[i,j] = temp_CS_ζ
+                                Cnm_cosmλ[i,j,n,m] = CM[n,m]*cos_mλ[i,j,m]
+                                Cnm_sinmλ[i,j,n,m] = CM[n,m]*sin_mλ[i,j,m]
+                                Snm_cosmλ[i,j,n,m] = SM[n,m]*cos_mλ[i,j,m]
+                                Snm_sinmλ[i,j,n,m] = SM[n,m]*sin_mλ[i,j,m]
+                                temp_CS_ξ[i,j,n,m] = (   (  (P_nm[i,j,n,m]*lnm6[n]     )*( Cnm_cosmλ[i,j,n,m] + Snm_sinmλ[i,j,n,m] )  )/temp_rn[i,j,n]   ) + F_CS_ξ_36[i,j]
+                                temp_CS_η[i,j,n,m] = (   (  (secϕ_P_nm[i,j,n,m]*lnm7[m])*( Snm_cosmλ[i,j,n,m] - Cnm_sinmλ[i,j,n,m] )  )/temp_rn[i,j,n]   ) + F_CS_η_36[i,j]
+                                temp_CS_ζ[i,j,n,m] = (   (  (cosϕ_dP_nm[i,j,n,m]       )*( Cnm_cosmλ[i,j,n,m] + Snm_sinmλ[i,j,n,m] )  )/temp_rn[i,j,n]   ) + F_CS_ζ_36[i,j]
+                                F_CS_ξ_36[i,j] = temp_CS_ξ[i,j,n,m]
+                                F_CS_η_36[i,j] = temp_CS_η[i,j,n,m]
+                                F_CS_ζ_36[i,j] = temp_CS_ζ[i,j,n,m]
                             end
                         end
                         F_JCS_ξ[i,j] = (F_J_ξ[i,j] + F_J_ξ_36[i,j]) + (F_CS_ξ[i,j]+F_CS_ξ_36[i,j])
@@ -479,7 +492,9 @@
             else
                 _4ϕj[i,j] = 4newtonianNb_Potential[j]
                 ϕi_plus_4ϕj[i,j] = newtonianNb_Potential[i] + _4ϕj[i,j]
-                sj2_plus_2si2_minus_4vivj[i,j] = (v2[j] + (2v2[i])) - (4vi_dot_vj[i,j])
+                _2v2[i,j] = 2v2[i]
+                sj2_plus_2si2[i,j] = v2[j] + _2v2[i,j]
+                sj2_plus_2si2_minus_4vivj[i,j] = sj2_plus_2si2[i,j] - (4vi_dot_vj[i,j])
                 ϕs_and_vs[i,j] = sj2_plus_2si2_minus_4vivj[i,j] - ϕi_plus_4ϕj[i,j]
                 Xij_t_Ui = X[i,j]*dq[3i-2]
                 Yij_t_Vi = Y[i,j]*dq[3i-1]
@@ -490,17 +505,6 @@
                 pn1t7 = (Rij_dot_Vi^2)/r_p2[i,j]
                 pn1t2_7 = ϕs_and_vs[i,j] - (1.5pn1t7)
                 pn1t1_7[i,j] = c_p2+pn1t2_7
-                ###
-                pn1[i,j] = zero_q_1
-                X_t_pn1[i,j] = zero_q_1
-                Y_t_pn1[i,j] = zero_q_1
-                Z_t_pn1[i,j] = zero_q_1
-                pNX_t_pn3[i,j] = zero_q_1
-                pNY_t_pn3[i,j] = zero_q_1
-                pNZ_t_pn3[i,j] = zero_q_1
-                pNX_t_X[i,j] = zero_q_1
-                pNY_t_Y[i,j] = zero_q_1
-                pNZ_t_Z[i,j] = zero_q_1
             end # else (i != j)
         end
         pntempX[j] = zero_q_1
@@ -670,7 +674,7 @@ end
     local dψ0 = ωz0 - (dϕ0*cos(θ0))
     local __t = Taylor1(t.order)
     local eulang_t = [ϕ0 + __t*dϕ0, θ0 + __t*dθ0, ψ0 + __t*dψ0]
-    local I_m_t = ITM_und.*one_t # ITM(q_del_τ_M, eulang_t_del) # matrix elements of lunar moment of inertia (Folkner et al. 2014, eq. 41)
+    local I_m_t = (ITM_und-I_c).*one_t # ITM(q_del_τ_M, eulang_del_τ_M) # matrix elements of lunar moment of inertia (Folkner et al. 2014, eq. 41)
     local dI_m_t = derivative.(I_m_t) # time-derivative of lunar mantle I at time t
     local inv_I_m_t = inv(I_m_t) # inverse of lunar mantle I matrix at time t
 
@@ -716,11 +720,13 @@ end
     newton_acc_Z = Array{S}(undef, N, N)
 
     v2 = Array{S}(undef, N)
+    _2v2 = Array{S}(undef, N, N)
     vi_dot_vj = Array{S}(undef, N, N)
     pn2 = Array{S}(undef, N, N)
     pn3 = Array{S}(undef, N, N)
     _4ϕj = Array{S}(undef, N, N)
     ϕi_plus_4ϕj = Array{S}(undef, N, N)
+    sj2_plus_2si2 = Array{S}(undef, N, N)
     sj2_plus_2si2_minus_4vivj = Array{S}(undef, N, N)
     ϕs_and_vs = Array{S}(undef, N, N)
     U_t_pn2 = Array{S}(undef, N, N)
@@ -778,6 +784,9 @@ end
     temp_fjξ = Array{S}(undef, N_ext, N_ext, maximum(n1SEM)+1)
     temp_fjζ = Array{S}(undef, N_ext, N_ext, maximum(n1SEM)+1)
     temp_rn = Array{S}(undef, N_ext, N_ext, maximum(n1SEM)+1)
+    temp_CS_ξ = Array{S}(undef, N_ext, N_ext, n1SEM[mo], n1SEM[mo])
+    temp_CS_η = Array{S}(undef, N_ext, N_ext, n1SEM[mo], n1SEM[mo])
+    temp_CS_ζ = Array{S}(undef, N_ext, N_ext, n1SEM[mo], n1SEM[mo])
     F_CS_ξ_36 = Array{S}(undef, N_ext, N_ext)
     F_CS_η_36 = Array{S}(undef, N_ext, N_ext)
     F_CS_ζ_36 = Array{S}(undef, N_ext, N_ext)
@@ -785,6 +794,10 @@ end
     F_J_ζ_36 = Array{S}(undef, N_ext, N_ext)
     sin_mλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo])
     cos_mλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo])
+    Cnm_cosmλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
+    Cnm_sinmλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
+    Snm_cosmλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
+    Snm_sinmλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
     secϕ_P_nm = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
     P_nm = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
     cosϕ_dP_nm = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
@@ -997,8 +1010,8 @@ end
                                 P_nm[i,j,1,1] = cos_ϕ[i,j]
                                 cosϕ_dP_nm[i,j,1,1] = sin_ϕ[i,j]*lnm3[1] #+0 (second term in Eq. 183 from Moyer, 1971, vanishes when n=m)
                             else
-                                sin_mλ[i,j,m] = (sin_mλ[i,j,1]*cos_mλ[i,j,m-1]) + (cos_mλ[i,j,1]*sin_mλ[i,j,m-1])
-                                cos_mλ[i,j,m] = (cos_mλ[i,j,1]*cos_mλ[i,j,m-1]) - (sin_mλ[i,j,1]*sin_mλ[i,j,m-1])
+                                sin_mλ[i,j,m] = (cos_mλ[i,j,m-1]*sin_mλ[i,j,1]) + (sin_mλ[i,j,m-1]*cos_mλ[i,j,1])
+                                cos_mλ[i,j,m] = (cos_mλ[i,j,m-1]*cos_mλ[i,j,1]) - (sin_mλ[i,j,m-1]*sin_mλ[i,j,1])
                                 secϕ_P_nm[i,j,m,m] = (secϕ_P_nm[i,j,m-1,m-1]*cos_ϕ[i,j])*lnm5[m]
                                 P_nm[i,j,m,m] = secϕ_P_nm[i,j,m,m]*cos_ϕ[i,j]
                                 cosϕ_dP_nm[i,j,m,m] = (secϕ_P_nm[i,j,m,m]*sin_ϕ[i,j])*lnm3[m] #+0 (second term in Eq. 183 from Moyer, 1971, vanishes when n=m)
@@ -1014,21 +1027,25 @@ end
                             end
                         end
 
-                        F_CS_ξ[i,j] = (((P_nm[i,j,2,1]*lnm6[2])*((C21M_t*cos_mλ[i,j,1])+(S21M_t*sin_mλ[i,j,1]))) + ((P_nm[i,j,2,2]*lnm6[2])*((C22M_t*cos_mλ[i,j,2])+(S22M_t*sin_mλ[i,j,2]))))/r_p4[i,j]
-                        F_CS_η[i,j] = (((secϕ_P_nm[i,j,2,1]*lnm7[1])*((S21M_t*cos_mλ[i,j,1])-(C21M_t*sin_mλ[i,j,1]))) + ((secϕ_P_nm[i,j,2,2]*lnm7[2])*((S22M_t*cos_mλ[i,j,2])-(C22M_t*sin_mλ[i,j,2]))))/r_p4[i,j]
-                        F_CS_ζ[i,j] = (((cosϕ_dP_nm[i,j,2,1])*((C21M_t*cos_mλ[i,j,1])+(S21M_t*sin_mλ[i,j,1]))) + ((cosϕ_dP_nm[i,j,2,2])*((C22M_t*cos_mλ[i,j,2])+(S22M_t*sin_mλ[i,j,2]))))/r_p4[i,j]
+                        F_CS_ξ[i,j] = (   (  (P_nm[i,j,2,1]*lnm6[2]     )*( (C21M_t*cos_mλ[i,j,1]) + (S21M_t*sin_mλ[i,j,1]) )  ) + (  (P_nm[i,j,2,2]*lnm6[2]     )*( (C22M_t*cos_mλ[i,j,2]) + (S22M_t*sin_mλ[i,j,2]) )  )   )/r_p4[i,j]
+                        F_CS_η[i,j] = (   (  (secϕ_P_nm[i,j,2,1]*lnm7[1])*( (S21M_t*cos_mλ[i,j,1]) - (C21M_t*sin_mλ[i,j,1]) )  ) + (  (secϕ_P_nm[i,j,2,2]*lnm7[2])*( (S22M_t*cos_mλ[i,j,2]) - (C22M_t*sin_mλ[i,j,2]) )  )   )/r_p4[i,j]
+                        F_CS_ζ[i,j] = (   (  (cosϕ_dP_nm[i,j,2,1]       )*( (C21M_t*cos_mλ[i,j,1]) + (S21M_t*sin_mλ[i,j,1]) )  ) + (  (cosϕ_dP_nm[i,j,2,2]       )*( (C22M_t*cos_mλ[i,j,2]) + (S22M_t*sin_mλ[i,j,2]) )  )   )/r_p4[i,j]
 
                         F_CS_ξ_36[i,j] = zero_q_1
                         F_CS_η_36[i,j] = zero_q_1
                         F_CS_ζ_36[i,j] = zero_q_1
-                        for n in 3:n1SEM[mo]
+                        for n in 3:n2M
                             for m in 1:n
-                                temp_CS_ξ = (((P_nm[i,j,n,m]*lnm6[n])*((cos_mλ[i,j,m]*CM[n,m])+(sin_mλ[i,j,m]*SM[n,m])))/temp_rn[i,j,n]) + F_CS_ξ_36[i,j]
-                                temp_CS_η = (((secϕ_P_nm[i,j,n,m]*lnm7[m])*((cos_mλ[i,j,m]*SM[n,m])-(sin_mλ[i,j,m]*CM[n,m])))/temp_rn[i,j,n]) + F_CS_η_36[i,j]
-                                temp_CS_ζ = (((cosϕ_dP_nm[i,j,n,m])*((cos_mλ[i,j,m]*CM[n,m])+(sin_mλ[i,j,m]*SM[n,m])))/temp_rn[i,j,n]) + F_CS_ζ_36[i,j]
-                                F_CS_ξ_36[i,j] = temp_CS_ξ
-                                F_CS_η_36[i,j] = temp_CS_η
-                                F_CS_ζ_36[i,j] = temp_CS_ζ
+                                Cnm_cosmλ[i,j,n,m] = CM[n,m]*cos_mλ[i,j,m]
+                                Cnm_sinmλ[i,j,n,m] = CM[n,m]*sin_mλ[i,j,m]
+                                Snm_cosmλ[i,j,n,m] = SM[n,m]*cos_mλ[i,j,m]
+                                Snm_sinmλ[i,j,n,m] = SM[n,m]*sin_mλ[i,j,m]
+                                temp_CS_ξ[i,j,n,m] = (   (  (P_nm[i,j,n,m]*lnm6[n]     )*( Cnm_cosmλ[i,j,n,m] + Snm_sinmλ[i,j,n,m] )  )/temp_rn[i,j,n]   ) + F_CS_ξ_36[i,j]
+                                temp_CS_η[i,j,n,m] = (   (  (secϕ_P_nm[i,j,n,m]*lnm7[m])*( Snm_cosmλ[i,j,n,m] - Cnm_sinmλ[i,j,n,m] )  )/temp_rn[i,j,n]   ) + F_CS_η_36[i,j]
+                                temp_CS_ζ[i,j,n,m] = (   (  (cosϕ_dP_nm[i,j,n,m]       )*( Cnm_cosmλ[i,j,n,m] + Snm_sinmλ[i,j,n,m] )  )/temp_rn[i,j,n]   ) + F_CS_ζ_36[i,j]
+                                F_CS_ξ_36[i,j] = temp_CS_ξ[i,j,n,m]
+                                F_CS_η_36[i,j] = temp_CS_η[i,j,n,m]
+                                F_CS_ζ_36[i,j] = temp_CS_ζ[i,j,n,m]
                             end
                         end
                         F_JCS_ξ[i,j] = (F_J_ξ[i,j] + F_J_ξ_36[i,j]) + (F_CS_ξ[i,j]+F_CS_ξ_36[i,j])
@@ -1124,7 +1141,9 @@ end
             else
                 _4ϕj[i,j] = 4newtonianNb_Potential[j]
                 ϕi_plus_4ϕj[i,j] = newtonianNb_Potential[i] + _4ϕj[i,j]
-                sj2_plus_2si2_minus_4vivj[i,j] = (v2[j] + (2v2[i])) - (4vi_dot_vj[i,j])
+                _2v2[i,j] = 2v2[i]
+                sj2_plus_2si2[i,j] = v2[j] + _2v2[i,j]
+                sj2_plus_2si2_minus_4vivj[i,j] = sj2_plus_2si2[i,j] - (4vi_dot_vj[i,j])
                 ϕs_and_vs[i,j] = sj2_plus_2si2_minus_4vivj[i,j] - ϕi_plus_4ϕj[i,j]
                 Xij_t_Ui = X[i,j]*dq[3i-2]
                 Yij_t_Vi = Y[i,j]*dq[3i-1]
@@ -1135,17 +1154,6 @@ end
                 pn1t7 = (Rij_dot_Vi^2)/r_p2[i,j]
                 pn1t2_7 = ϕs_and_vs[i,j] - (1.5pn1t7)
                 pn1t1_7[i,j] = c_p2+pn1t2_7
-                ###
-                pn1[i,j] = zero_q_1
-                X_t_pn1[i,j] = zero_q_1
-                Y_t_pn1[i,j] = zero_q_1
-                Z_t_pn1[i,j] = zero_q_1
-                pNX_t_pn3[i,j] = zero_q_1
-                pNY_t_pn3[i,j] = zero_q_1
-                pNZ_t_pn3[i,j] = zero_q_1
-                pNX_t_X[i,j] = zero_q_1
-                pNY_t_Y[i,j] = zero_q_1
-                pNZ_t_Z[i,j] = zero_q_1
             end # else (i != j)
         end
         pntempX[j] = zero_q_1
@@ -1324,8 +1332,9 @@ end
     local one_t = one(t)
     local dsj2k = t+(jd0-J2000) # days since J2000.0 (TDB)
     local eulang_t = qq_bwd[6N_bwd+1:6N_bwd+3]
-    local eulang_t_del = q_del_τ_M[6N_bwd+1:6N_bwd+3]
-    local I_m_t = ITM(q_del_τ_M, eulang_t_del) # matrix elements of lunar moment of inertia (Folkner et al. 2014, eq. 41)
+    local eulang_del_τ_M = q_del_τ_M[6N_bwd+1:6N_bwd+3]
+    local ω_m_del_τ_M = q_del_τ_M[6N_bwd+4:6N_bwd+6]
+    local I_m_t = ITM(q_del_τ_M, eulang_del_τ_M, ω_m_del_τ_M) # matrix elements of lunar moment of inertia (Folkner et al. 2014, eq. 41)
     local dI_m_t = derivative.(I_m_t) # time-derivative of lunar mantle I at time t
     local inv_I_m_t = inv(I_m_t) # inverse of lunar mantle I matrix at time t
 
@@ -1371,11 +1380,13 @@ end
     newton_acc_Z = Array{S}(undef, N, N)
 
     v2 = Array{S}(undef, N)
+    _2v2 = Array{S}(undef, N, N)
     vi_dot_vj = Array{S}(undef, N, N)
     pn2 = Array{S}(undef, N, N)
     pn3 = Array{S}(undef, N, N)
     _4ϕj = Array{S}(undef, N, N)
     ϕi_plus_4ϕj = Array{S}(undef, N, N)
+    sj2_plus_2si2 = Array{S}(undef, N, N)
     sj2_plus_2si2_minus_4vivj = Array{S}(undef, N, N)
     ϕs_and_vs = Array{S}(undef, N, N)
     U_t_pn2 = Array{S}(undef, N, N)
@@ -1433,6 +1444,9 @@ end
     temp_fjξ = Array{S}(undef, N_ext, N_ext, maximum(n1SEM)+1)
     temp_fjζ = Array{S}(undef, N_ext, N_ext, maximum(n1SEM)+1)
     temp_rn = Array{S}(undef, N_ext, N_ext, maximum(n1SEM)+1)
+    temp_CS_ξ = Array{S}(undef, N_ext, N_ext, n1SEM[mo], n1SEM[mo])
+    temp_CS_η = Array{S}(undef, N_ext, N_ext, n1SEM[mo], n1SEM[mo])
+    temp_CS_ζ = Array{S}(undef, N_ext, N_ext, n1SEM[mo], n1SEM[mo])
     F_CS_ξ_36 = Array{S}(undef, N_ext, N_ext)
     F_CS_η_36 = Array{S}(undef, N_ext, N_ext)
     F_CS_ζ_36 = Array{S}(undef, N_ext, N_ext)
@@ -1440,6 +1454,10 @@ end
     F_J_ζ_36 = Array{S}(undef, N_ext, N_ext)
     sin_mλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo])
     cos_mλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo])
+    Cnm_cosmλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
+    Cnm_sinmλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
+    Snm_cosmλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
+    Snm_sinmλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
     secϕ_P_nm = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
     P_nm = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
     cosϕ_dP_nm = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
@@ -1675,8 +1693,8 @@ end
                                 P_nm[i,j,1,1] = cos_ϕ[i,j]
                                 cosϕ_dP_nm[i,j,1,1] = sin_ϕ[i,j]*lnm3[1] #+0 (second term in Eq. 183 from Moyer, 1971, vanishes when n=m)
                             else
-                                sin_mλ[i,j,m] = (sin_mλ[i,j,1]*cos_mλ[i,j,m-1]) + (cos_mλ[i,j,1]*sin_mλ[i,j,m-1])
-                                cos_mλ[i,j,m] = (cos_mλ[i,j,1]*cos_mλ[i,j,m-1]) - (sin_mλ[i,j,1]*sin_mλ[i,j,m-1])
+                                sin_mλ[i,j,m] = (cos_mλ[i,j,m-1]*sin_mλ[i,j,1]) + (sin_mλ[i,j,m-1]*cos_mλ[i,j,1])
+                                cos_mλ[i,j,m] = (cos_mλ[i,j,m-1]*cos_mλ[i,j,1]) - (sin_mλ[i,j,m-1]*sin_mλ[i,j,1])
                                 secϕ_P_nm[i,j,m,m] = (secϕ_P_nm[i,j,m-1,m-1]*cos_ϕ[i,j])*lnm5[m]
                                 P_nm[i,j,m,m] = secϕ_P_nm[i,j,m,m]*cos_ϕ[i,j]
                                 cosϕ_dP_nm[i,j,m,m] = (secϕ_P_nm[i,j,m,m]*sin_ϕ[i,j])*lnm3[m] #+0 (second term in Eq. 183 from Moyer, 1971, vanishes when n=m)
@@ -1692,21 +1710,25 @@ end
                             end
                         end
 
-                        F_CS_ξ[i,j] = (((P_nm[i,j,2,1]*lnm6[2])*((C21M_t*cos_mλ[i,j,1])+(S21M_t*sin_mλ[i,j,1]))) + ((P_nm[i,j,2,2]*lnm6[2])*((C22M_t*cos_mλ[i,j,2])+(S22M_t*sin_mλ[i,j,2]))))/r_p4[i,j]
-                        F_CS_η[i,j] = (((secϕ_P_nm[i,j,2,1]*lnm7[1])*((S21M_t*cos_mλ[i,j,1])-(C21M_t*sin_mλ[i,j,1]))) + ((secϕ_P_nm[i,j,2,2]*lnm7[2])*((S22M_t*cos_mλ[i,j,2])-(C22M_t*sin_mλ[i,j,2]))))/r_p4[i,j]
-                        F_CS_ζ[i,j] = (((cosϕ_dP_nm[i,j,2,1])*((C21M_t*cos_mλ[i,j,1])+(S21M_t*sin_mλ[i,j,1]))) + ((cosϕ_dP_nm[i,j,2,2])*((C22M_t*cos_mλ[i,j,2])+(S22M_t*sin_mλ[i,j,2]))))/r_p4[i,j]
+                        F_CS_ξ[i,j] = (   (  (P_nm[i,j,2,1]*lnm6[2]     )*( (C21M_t*cos_mλ[i,j,1]) + (S21M_t*sin_mλ[i,j,1]) )  ) + (  (P_nm[i,j,2,2]*lnm6[2]     )*( (C22M_t*cos_mλ[i,j,2]) + (S22M_t*sin_mλ[i,j,2]) )  )   )/r_p4[i,j]
+                        F_CS_η[i,j] = (   (  (secϕ_P_nm[i,j,2,1]*lnm7[1])*( (S21M_t*cos_mλ[i,j,1]) - (C21M_t*sin_mλ[i,j,1]) )  ) + (  (secϕ_P_nm[i,j,2,2]*lnm7[2])*( (S22M_t*cos_mλ[i,j,2]) - (C22M_t*sin_mλ[i,j,2]) )  )   )/r_p4[i,j]
+                        F_CS_ζ[i,j] = (   (  (cosϕ_dP_nm[i,j,2,1]       )*( (C21M_t*cos_mλ[i,j,1]) + (S21M_t*sin_mλ[i,j,1]) )  ) + (  (cosϕ_dP_nm[i,j,2,2]       )*( (C22M_t*cos_mλ[i,j,2]) + (S22M_t*sin_mλ[i,j,2]) )  )   )/r_p4[i,j]
 
                         F_CS_ξ_36[i,j] = zero_q_1
                         F_CS_η_36[i,j] = zero_q_1
                         F_CS_ζ_36[i,j] = zero_q_1
-                        for n in 3:n1SEM[mo]
+                        for n in 3:n2M
                             for m in 1:n
-                                temp_CS_ξ = (((P_nm[i,j,n,m]*lnm6[n])*((cos_mλ[i,j,m]*CM[n,m])+(sin_mλ[i,j,m]*SM[n,m])))/temp_rn[i,j,n]) + F_CS_ξ_36[i,j]
-                                temp_CS_η = (((secϕ_P_nm[i,j,n,m]*lnm7[m])*((cos_mλ[i,j,m]*SM[n,m])-(sin_mλ[i,j,m]*CM[n,m])))/temp_rn[i,j,n]) + F_CS_η_36[i,j]
-                                temp_CS_ζ = (((cosϕ_dP_nm[i,j,n,m])*((cos_mλ[i,j,m]*CM[n,m])+(sin_mλ[i,j,m]*SM[n,m])))/temp_rn[i,j,n]) + F_CS_ζ_36[i,j]
-                                F_CS_ξ_36[i,j] = temp_CS_ξ
-                                F_CS_η_36[i,j] = temp_CS_η
-                                F_CS_ζ_36[i,j] = temp_CS_ζ
+                                Cnm_cosmλ[i,j,n,m] = CM[n,m]*cos_mλ[i,j,m]
+                                Cnm_sinmλ[i,j,n,m] = CM[n,m]*sin_mλ[i,j,m]
+                                Snm_cosmλ[i,j,n,m] = SM[n,m]*cos_mλ[i,j,m]
+                                Snm_sinmλ[i,j,n,m] = SM[n,m]*sin_mλ[i,j,m]
+                                temp_CS_ξ[i,j,n,m] = (   (  (P_nm[i,j,n,m]*lnm6[n]     )*( Cnm_cosmλ[i,j,n,m] + Snm_sinmλ[i,j,n,m] )  )/temp_rn[i,j,n]   ) + F_CS_ξ_36[i,j]
+                                temp_CS_η[i,j,n,m] = (   (  (secϕ_P_nm[i,j,n,m]*lnm7[m])*( Snm_cosmλ[i,j,n,m] - Cnm_sinmλ[i,j,n,m] )  )/temp_rn[i,j,n]   ) + F_CS_η_36[i,j]
+                                temp_CS_ζ[i,j,n,m] = (   (  (cosϕ_dP_nm[i,j,n,m]       )*( Cnm_cosmλ[i,j,n,m] + Snm_sinmλ[i,j,n,m] )  )/temp_rn[i,j,n]   ) + F_CS_ζ_36[i,j]
+                                F_CS_ξ_36[i,j] = temp_CS_ξ[i,j,n,m]
+                                F_CS_η_36[i,j] = temp_CS_η[i,j,n,m]
+                                F_CS_ζ_36[i,j] = temp_CS_ζ[i,j,n,m]
                             end
                         end
                         F_JCS_ξ[i,j] = (F_J_ξ[i,j] + F_J_ξ_36[i,j]) + (F_CS_ξ[i,j]+F_CS_ξ_36[i,j])
@@ -1802,7 +1824,9 @@ end
             else
                 _4ϕj[i,j] = 4newtonianNb_Potential[j]
                 ϕi_plus_4ϕj[i,j] = newtonianNb_Potential[i] + _4ϕj[i,j]
-                sj2_plus_2si2_minus_4vivj[i,j] = (v2[j] + (2v2[i])) - (4vi_dot_vj[i,j])
+                _2v2[i,j] = 2v2[i]
+                sj2_plus_2si2[i,j] = v2[j] + _2v2[i,j]
+                sj2_plus_2si2_minus_4vivj[i,j] = sj2_plus_2si2[i,j] - (4vi_dot_vj[i,j])
                 ϕs_and_vs[i,j] = sj2_plus_2si2_minus_4vivj[i,j] - ϕi_plus_4ϕj[i,j]
                 Xij_t_Ui = X[i,j]*dq[3i-2]
                 Yij_t_Vi = Y[i,j]*dq[3i-1]
@@ -1813,17 +1837,6 @@ end
                 pn1t7 = (Rij_dot_Vi^2)/r_p2[i,j]
                 pn1t2_7 = ϕs_and_vs[i,j] - (1.5pn1t7)
                 pn1t1_7[i,j] = c_p2+pn1t2_7
-                ###
-                pn1[i,j] = zero_q_1
-                X_t_pn1[i,j] = zero_q_1
-                Y_t_pn1[i,j] = zero_q_1
-                Z_t_pn1[i,j] = zero_q_1
-                pNX_t_pn3[i,j] = zero_q_1
-                pNY_t_pn3[i,j] = zero_q_1
-                pNZ_t_pn3[i,j] = zero_q_1
-                pNX_t_X[i,j] = zero_q_1
-                pNY_t_Y[i,j] = zero_q_1
-                pNZ_t_Z[i,j] = zero_q_1
             end # else (i != j)
         end
         pntempX[j] = zero_q_1
@@ -2074,8 +2087,8 @@ end
     p_E_cross_I_p_E_2 = (p_E_3*I_p_E_1) - (p_E_1*I_p_E_3)
     p_E_cross_I_p_E_3 = (p_E_1*I_p_E_2) - (p_E_2*I_p_E_1)
 
-    one_minus_7sin2ϕEM = one_t - (7((sin_ϕ[mo,ea])^2))
-    two_sinϕEM = 2sin_ϕ[mo,ea]
+    one_minus_7sin2ϕEM = one_t - (7((sin_ϕ[ea,mo])^2))
+    two_sinϕEM = 2sin_ϕ[ea,mo]
 
     N_MfigM_figE_factor_div_rEMp5 = (N_MfigM_figE_factor/(r_p1d2[mo,ea]^5))
     N_MfigM_figE_1 = N_MfigM_figE_factor_div_rEMp5*( (one_minus_7sin2ϕEM*er_EM_cross_I_er_EM_1) + (two_sinϕEM*(er_EM_cross_I_p_E_1+p_E_cross_I_er_EM_1)) - (0.4p_E_cross_I_p_E_1))
