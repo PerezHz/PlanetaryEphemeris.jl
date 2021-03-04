@@ -46,7 +46,7 @@ function stepsize_jz05(q::AbstractArray{Taylor1{U}, N}, epsilon::T) where
     ordm1 = order-1
     invorder = 1/order
     invordm1 = 1/ordm1
-    nbodies = (length(q)-7)÷6
+    nbodies = (length(q)-13)÷6
     qordm1_norminf = norm(getcoeff.(q[1:6nbodies], ordm1), Inf)
     qorder_norminf = norm(getcoeff.(q[1:6nbodies], order), Inf)
 
