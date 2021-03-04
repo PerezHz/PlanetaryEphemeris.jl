@@ -531,10 +531,13 @@ const A_T = (2(1-β_L*γ_L)/(2β_L-γ_L+β_L*γ_L))*J2_M_und
 const B_T = (2(1+γ_L)/(2β_L-γ_L+β_L*γ_L))*J2_M_und
 const C_T = (2(1+β_L)/(2β_L-γ_L+β_L*γ_L))*J2_M_und
 
+const k_ν = k_ν_div_C_T*(C_T*μ[mo]*(R_moon^2))
+
 #diagonal elements of lunar core moment of inertia
 const A_c = α_c*C_T*(1-f_c)
 const B_c = α_c*C_T*(1-f_c)
 const C_c = α_c*C_T
+const C_c_m_A_c = (C_c - A_c)*(μ[mo]*R_moon^2)
 
 #lunar undistorted total moment of inertia
 const ITM_und = diagm([A_T, B_T, C_T]*μ[mo]*R_moon^2)
