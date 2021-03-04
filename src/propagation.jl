@@ -7,7 +7,7 @@ function selecteph2jld(sseph::TaylorInterpolant, bodyind::AbstractVector{Int}, t
     nyrs_int = Int(abs(tspan))
     # write output to jld file
     ss16ast_fname = "sseph$(lpad(nast,3,'0'))ast$(lpad(nastout,3,'0'))_"*sgn_yrs*"$(nyrs_int)y_et.jld"
-    ss16ast_eph = TaylorInterpolant(sseph.t0, sseph.t, sseph.x[:, union(indvec, 6N+1:6N+7)])
+    ss16ast_eph = TaylorInterpolant(sseph.t0, sseph.t, sseph.x[:, union(indvec, 6N+1:6N+13)])
     jldopen(ss16ast_fname, "w") do file
         addrequire(file, TaylorSeries)
         addrequire(file, PlanetaryEphemeris)
@@ -28,8 +28,8 @@ function propagate(maxsteps::Int, jd0::T, tspan::T;
 
     # total number of bodies
     N = 11+nast
-    # get initial conditions (6N translational + 6 lunar physical librations + TT-TDB)
-    _q0 = initialcond(N) ### <--- length(_q0) == 6N+7
+    # get initial conditions (6N translational + 6 lunar mantle physical librations + 6 lunar core + TT-TDB)
+    _q0 = initialcond(N) ### <--- length(_q0) == 6N+13
     # set initial time equal to zero (improves accuracy in data reductions)
     _t0 = zero(jd0)
     # final time (years)
