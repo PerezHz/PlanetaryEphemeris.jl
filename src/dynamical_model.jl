@@ -19,15 +19,11 @@
     local zero_q_1 = zero(q[1])
     local one_t = one(t)
     local dsj2k = t+(jd0-J2000) # days since J2000.0 (TDB)
-    local ϕ0, θ0, ψ0, ωx0, ωy0, ωz0 = q[6N+1:6N+6]
-    local dϕ0 = ((ωx0*sin(ψ0)) + (ωy0*cos(ψ0)) )/sin(θ0)
-    local dθ0 = (ωx0*cos(ψ0)) - (ωy0*sin(ψ0))
-    local dψ0 = ωz0 - (dϕ0*cos(θ0))
-    local __t = Taylor1(t.order)
-    local eulang_t = [ϕ0 + __t*dϕ0, θ0 + __t*dθ0, ψ0 + __t*dψ0]
     local I_m_t = (ITM_und-I_c).*one_t # ITM(q_del_τ_M, eulang_del_τ_M) # matrix elements of lunar moment of inertia (Folkner et al. 2014, eq. 41)
     local dI_m_t = derivative.(I_m_t) # time-derivative of lunar mantle I at time t
     local inv_I_m_t = inv(I_m_t) # inverse of lunar mantle I matrix at time t
+    local I_c_t = I_c.*one_t # lunar core I matrix
+    local inv_I_c_t = inv(I_c_t) # inverse of lunar core I matrix
 
     # parameters related to speed of light, c
     local c_p2 = 29979.063823897606 # c^2 = 29979.063823897606 au^2/d^2
@@ -184,13 +180,36 @@
     # rotations to and from Earth, Sun and Moon pole-oriented frames
     local αs = deg2rad(α_p_sun*one_t)
     local δs = deg2rad(δ_p_sun*one_t)
-    local αm = eulang_t[1] - (pi/2)
-    local δm = (pi/2) - eulang_t[2]
-    local Wm = eulang_t[3]
     RotM = Array{S}(undef, 3, 3, 5) # space-fixed -> body-fixed coordinate transformations
     local RotM[:,:,ea] = c2t_jpl_de430(dsj2k)
     local RotM[:,:,su] = pole_rotation(αs, δs)
-    local RotM[:,:,mo] = pole_rotation(αm, δm, Wm)
+    ϕ_m = q[6N+1]
+    θ_m = q[6N+2]
+    ψ_m = q[6N+3]
+    RotM[1,1,mo] = (cos(ϕ_m)*cos(ψ_m)) - (cos(θ_m)*(sin(ϕ_m)*sin(ψ_m)))
+    RotM[2,1,mo] = (-cos(θ_m)*(cos(ψ_m)*sin(ϕ_m))) - (cos(ϕ_m)*sin(ψ_m))
+    RotM[3,1,mo] = sin(θ_m)*sin(ϕ_m)
+    RotM[1,2,mo] = (cos(ψ_m)*sin(ϕ_m)) + (cos(θ_m)*(cos(ϕ_m)*sin(ψ_m)))
+    RotM[2,2,mo] = (cos(θ_m)*(cos(ϕ_m)*cos(ψ_m))) - (sin(ϕ_m)*sin(ψ_m))
+    RotM[3,2,mo] = (-cos(ϕ_m))*sin(θ_m)
+    RotM[1,3,mo] = sin(θ_m)*sin(ψ_m)
+    RotM[2,3,mo] = cos(ψ_m)*sin(θ_m)
+    RotM[3,3,mo] = cos(θ_m)
+    mantlef2coref = Array{S}(undef, 3, 3) # lunar mantle frame -> inertial frame -> lunar core-equatorial frame coord transformation
+    ϕ_c = q[6N+7]
+    ### # mantlef2coref = R_z(ϕ_c)*[ R_z(ψ_m)*R_x(θ_m)*R_z(ϕ_m) ]^T
+    mantlef2coref[1,1] = (( RotM[1,1,mo])*cos(ϕ_c)) + (RotM[1,2,mo]*sin(ϕ_c))
+    mantlef2coref[2,1] = ((-RotM[1,1,mo])*sin(ϕ_c)) + (RotM[1,2,mo]*cos(ϕ_c))
+    mantlef2coref[3,1] =  RotM[1,3,mo]
+    mantlef2coref[1,2] = (( RotM[2,1,mo])*cos(ϕ_c)) + (RotM[2,2,mo]*sin(ϕ_c))
+    mantlef2coref[2,2] = ((-RotM[2,1,mo])*sin(ϕ_c)) + (RotM[2,2,mo]*cos(ϕ_c))
+    mantlef2coref[3,2] =  RotM[2,3,mo]
+    mantlef2coref[1,3] = (( RotM[3,1,mo])*cos(ϕ_c)) + (RotM[3,2,mo]*sin(ϕ_c))
+    mantlef2coref[2,3] = ((-RotM[3,1,mo])*sin(ϕ_c)) + (RotM[3,2,mo]*cos(ϕ_c))
+    mantlef2coref[3,3] =  RotM[3,3,mo]
+    ω_c_CE_1 = (mantlef2coref[1,1]*q[6N+10]) + ((mantlef2coref[1,2]*q[6N+11]) + (mantlef2coref[1,3]*q[6N+12]))
+    ω_c_CE_2 = (mantlef2coref[2,1]*q[6N+10]) + ((mantlef2coref[2,2]*q[6N+11]) + (mantlef2coref[2,3]*q[6N+12]))
+    ω_c_CE_3 = (mantlef2coref[3,1]*q[6N+10]) + ((mantlef2coref[3,2]*q[6N+11]) + (mantlef2coref[3,3]*q[6N+12]))
     local fact1_jsem = [(2n-1)/n for n in 1:maximum(n1SEM)]
     local fact2_jsem = [(n-1)/n for n in 1:maximum(n1SEM)]
     local fact3_jsem = [n for n in 1:maximum(n1SEM)]
@@ -622,8 +641,8 @@
     p_E_cross_I_p_E_2 = (p_E_3*I_p_E_1) - (p_E_1*I_p_E_3)
     p_E_cross_I_p_E_3 = (p_E_1*I_p_E_2) - (p_E_2*I_p_E_1)
 
-    one_minus_7sin2ϕEM = one_t - (7((sin_ϕ[mo,ea])^2))
-    two_sinϕEM = 2sin_ϕ[mo,ea]
+    one_minus_7sin2ϕEM = one_t - (7((sin_ϕ[ea,mo])^2))
+    two_sinϕEM = 2sin_ϕ[ea,mo]
 
     N_MfigM_figE_factor_div_rEMp5 = (N_MfigM_figE_factor/(r_p1d2[mo,ea]^5))
     N_MfigM_figE_1 = N_MfigM_figE_factor_div_rEMp5*( (one_minus_7sin2ϕEM*er_EM_cross_I_er_EM_1) + (two_sinϕEM*(er_EM_cross_I_p_E_1+p_E_cross_I_er_EM_1)) - (0.4p_E_cross_I_p_E_1))
@@ -635,10 +654,30 @@
     N_2_LMF = (RotM[2,1,mo]*N_MfigM[1]) + ((RotM[2,2,mo]*N_MfigM[2]) + (RotM[2,3,mo]*N_MfigM[3]))
     N_3_LMF = (RotM[3,1,mo]*N_MfigM[1]) + ((RotM[3,2,mo]*N_MfigM[2]) + (RotM[3,3,mo]*N_MfigM[3]))
 
-    # I*(dω/dt)
-    I_dω_1 = (N_1_LMF + N_MfigM_figE_1) - (dIω_x + ωxIω_x)
-    I_dω_2 = (N_2_LMF + N_MfigM_figE_2) - (dIω_y + ωxIω_y)
-    I_dω_3 = (N_3_LMF + N_MfigM_figE_3) - (dIω_z + ωxIω_z)
+    # torque on the mantle due to the interaction between core and mantle (evaluated in mantle frame): Folkner et al. (2014), Eq. (45)
+    N_cmb_1 = (k_ν*(q[6N+10]-q[6N+4])) - (C_c_m_A_c*(q[6N+12]*q[6N+11]))
+    N_cmb_2 = (k_ν*(q[6N+11]-q[6N+5])) + (C_c_m_A_c*(q[6N+12]*q[6N+10]))
+    N_cmb_3 = (k_ν*(q[6N+12]-q[6N+6]))
+
+    # I*(dω/dt); i.e., I times RHS of Folkner et at. (2014), Eq. (34)
+    I_dω_1 = ((N_1_LMF + N_MfigM_figE_1) + N_cmb_1) - (dIω_x + ωxIω_x)
+    I_dω_2 = ((N_2_LMF + N_MfigM_figE_2) + N_cmb_2) - (dIω_y + ωxIω_y)
+    I_dω_3 = ((N_3_LMF + N_MfigM_figE_3) + N_cmb_3) - (dIω_z + ωxIω_z)
+
+    # I_c * ω_c
+    Ic_ωc_1 = I_c_t[1,1]*q[6N+10] # + ((I_c_t[1,2]*q[6N+11]) + (I_c_t[1,3]*q[6N+12]))
+    Ic_ωc_2 = I_c_t[2,2]*q[6N+11] # + ((I_c_t[2,1]*q[6N+10]) + (I_c_t[2,3]*q[6N+12]))
+    Ic_ωc_3 = I_c_t[3,3]*q[6N+12] # + ((I_c_t[3,1]*q[6N+10]) + (I_c_t[3,2]*q[6N+11]))
+
+    # - ω_m × (I_c * ω_c)
+    m_ωm_x_Icωc_1 = (q[6N+6]*Ic_ωc_2) - (q[6N+5]*Ic_ωc_3)
+    m_ωm_x_Icωc_2 = (q[6N+4]*Ic_ωc_3) - (q[6N+6]*Ic_ωc_1)
+    m_ωm_x_Icωc_3 = (q[6N+5]*Ic_ωc_1) - (q[6N+4]*Ic_ωc_2)
+
+    # I_c*(dω_c/dt); i.e., I_c times RHS of Folkner et at. (2014), Eq. (35)
+    Ic_dωc_1 = m_ωm_x_Icωc_1 - N_cmb_1
+    Ic_dωc_2 = m_ωm_x_Icωc_2 - N_cmb_2
+    Ic_dωc_3 = m_ωm_x_Icωc_3 - N_cmb_3
 
     # lunar physical librations: Folkner et al. (2014), Eq. (14)
     dq[6N+1] = ((q[6N+4]*sin(q[6N+3])) + (q[6N+5]*cos(q[6N+3])) )/sin(q[6N+2])
@@ -646,14 +685,24 @@
     dq[6N+3] = q[6N+6] - (dq[6N+1]*cos(q[6N+2]))
 
     # lunar physical librations: Folkner et al. (2014), Eq. (34)
-    # TODO: add lunar mantle-core boundary interaction
     dq[6N+4] = (inv_I_m_t[1,1]*I_dω_1) + ( (inv_I_m_t[1,2]*I_dω_2) + (inv_I_m_t[1,3]*I_dω_3) )
     dq[6N+5] = (inv_I_m_t[2,1]*I_dω_1) + ( (inv_I_m_t[2,2]*I_dω_2) + (inv_I_m_t[2,3]*I_dω_3) )
     dq[6N+6] = (inv_I_m_t[3,1]*I_dω_1) + ( (inv_I_m_t[3,2]*I_dω_2) + (inv_I_m_t[3,3]*I_dω_3) )
 
+    # time derivatives of core Euler angles: Folkner et al. (2014), Eq. (15)
+    # (core angular velocity components ω_c_CE_i represent lunar core-equator frame coordinates)
+    dq[6N+9] = -(ω_c_CE_2/sin(q[6N+8])) ### evaluated first, since it's used below
+    dq[6N+7] = ω_c_CE_3-(dq[6N+9]*cos(q[6N+8]))
+    dq[6N+8] = ω_c_CE_1
+
+    # time derivative of the angular velocity of the core expressed in the mantle frame: Folkner et al. (2014), Eq. (35)
+    dq[6N+10] = inv_I_c_t[1,1]*Ic_dωc_1 # + ( (inv_I_c_t[1,2]*Ic_dωc_2) + (inv_I_c_t[1,3]*Ic_dωc_3) )
+    dq[6N+11] = inv_I_c_t[2,2]*Ic_dωc_2 # + ( (inv_I_c_t[2,1]*Ic_dωc_1) + (inv_I_c_t[2,3]*Ic_dωc_3) )
+    dq[6N+12] = inv_I_c_t[3,3]*Ic_dωc_3 # + ( (inv_I_c_t[3,1]*Ic_dωc_1) + (inv_I_c_t[3,2]*Ic_dωc_2) )
+
     # TT-TDB
     # TODO: implement TT-TDB integration
-    dq[6N+7] = zero_q_1
+    dq[6N+13] = zero_q_1
 
     nothing
 end
@@ -668,15 +717,11 @@ end
     local zero_q_1 = zero(q[1])
     local one_t = one(t)
     local dsj2k = t+(jd0-J2000) # days since J2000.0 (TDB)
-    local ϕ0, θ0, ψ0, ωx0, ωy0, ωz0 = q[6N+1:6N+6]
-    local dϕ0 = ((ωx0*sin(ψ0)) + (ωy0*cos(ψ0)) )/sin(θ0)
-    local dθ0 = (ωx0*cos(ψ0)) - (ωy0*sin(ψ0))
-    local dψ0 = ωz0 - (dϕ0*cos(θ0))
-    local __t = Taylor1(t.order)
-    local eulang_t = [ϕ0 + __t*dϕ0, θ0 + __t*dθ0, ψ0 + __t*dψ0]
     local I_m_t = (ITM_und-I_c).*one_t # ITM(q_del_τ_M, eulang_del_τ_M) # matrix elements of lunar moment of inertia (Folkner et al. 2014, eq. 41)
     local dI_m_t = derivative.(I_m_t) # time-derivative of lunar mantle I at time t
     local inv_I_m_t = inv(I_m_t) # inverse of lunar mantle I matrix at time t
+    local I_c_t = I_c.*one_t # lunar core I matrix
+    local inv_I_c_t = inv(I_c_t) # inverse of lunar core I matrix
 
     # parameters related to speed of light, c
     local c_p2 = 29979.063823897606 # c^2 = 29979.063823897606 au^2/d^2
@@ -833,13 +878,36 @@ end
     # rotations to and from Earth, Sun and Moon pole-oriented frames
     local αs = deg2rad(α_p_sun*one_t)
     local δs = deg2rad(δ_p_sun*one_t)
-    local αm = eulang_t[1] - (pi/2)
-    local δm = (pi/2) - eulang_t[2]
-    local Wm = eulang_t[3]
     RotM = Array{S}(undef, 3, 3, 5) # space-fixed -> body-fixed coordinate transformations
     local RotM[:,:,ea] = c2t_jpl_de430(dsj2k)
     local RotM[:,:,su] = pole_rotation(αs, δs)
-    local RotM[:,:,mo] = pole_rotation(αm, δm, Wm)
+    ϕ_m = q[6N+1]
+    θ_m = q[6N+2]
+    ψ_m = q[6N+3]
+    RotM[1,1,mo] = (cos(ϕ_m)*cos(ψ_m)) - (cos(θ_m)*(sin(ϕ_m)*sin(ψ_m)))
+    RotM[2,1,mo] = (-cos(θ_m)*(cos(ψ_m)*sin(ϕ_m))) - (cos(ϕ_m)*sin(ψ_m))
+    RotM[3,1,mo] = sin(θ_m)*sin(ϕ_m)
+    RotM[1,2,mo] = (cos(ψ_m)*sin(ϕ_m)) + (cos(θ_m)*(cos(ϕ_m)*sin(ψ_m)))
+    RotM[2,2,mo] = (cos(θ_m)*(cos(ϕ_m)*cos(ψ_m))) - (sin(ϕ_m)*sin(ψ_m))
+    RotM[3,2,mo] = (-cos(ϕ_m))*sin(θ_m)
+    RotM[1,3,mo] = sin(θ_m)*sin(ψ_m)
+    RotM[2,3,mo] = cos(ψ_m)*sin(θ_m)
+    RotM[3,3,mo] = cos(θ_m)
+    mantlef2coref = Array{S}(undef, 3, 3) # lunar mantle frame -> inertial frame -> lunar core-equatorial frame coord transformation
+    ϕ_c = q[6N+7]
+    ### # mantlef2coref = R_z(ϕ_c)*[ R_z(ψ_m)*R_x(θ_m)*R_z(ϕ_m) ]^T
+    mantlef2coref[1,1] = (( RotM[1,1,mo])*cos(ϕ_c)) + (RotM[1,2,mo]*sin(ϕ_c))
+    mantlef2coref[2,1] = ((-RotM[1,1,mo])*sin(ϕ_c)) + (RotM[1,2,mo]*cos(ϕ_c))
+    mantlef2coref[3,1] =  RotM[1,3,mo]
+    mantlef2coref[1,2] = (( RotM[2,1,mo])*cos(ϕ_c)) + (RotM[2,2,mo]*sin(ϕ_c))
+    mantlef2coref[2,2] = ((-RotM[2,1,mo])*sin(ϕ_c)) + (RotM[2,2,mo]*cos(ϕ_c))
+    mantlef2coref[3,2] =  RotM[2,3,mo]
+    mantlef2coref[1,3] = (( RotM[3,1,mo])*cos(ϕ_c)) + (RotM[3,2,mo]*sin(ϕ_c))
+    mantlef2coref[2,3] = ((-RotM[3,1,mo])*sin(ϕ_c)) + (RotM[3,2,mo]*cos(ϕ_c))
+    mantlef2coref[3,3] =  RotM[3,3,mo]
+    ω_c_CE_1 = (mantlef2coref[1,1]*q[6N+10]) + ((mantlef2coref[1,2]*q[6N+11]) + (mantlef2coref[1,3]*q[6N+12]))
+    ω_c_CE_2 = (mantlef2coref[2,1]*q[6N+10]) + ((mantlef2coref[2,2]*q[6N+11]) + (mantlef2coref[2,3]*q[6N+12]))
+    ω_c_CE_3 = (mantlef2coref[3,1]*q[6N+10]) + ((mantlef2coref[3,2]*q[6N+11]) + (mantlef2coref[3,3]*q[6N+12]))
     local fact1_jsem = [(2n-1)/n for n in 1:maximum(n1SEM)]
     local fact2_jsem = [(n-1)/n for n in 1:maximum(n1SEM)]
     local fact3_jsem = [n for n in 1:maximum(n1SEM)]
@@ -1271,8 +1339,8 @@ end
     p_E_cross_I_p_E_2 = (p_E_3*I_p_E_1) - (p_E_1*I_p_E_3)
     p_E_cross_I_p_E_3 = (p_E_1*I_p_E_2) - (p_E_2*I_p_E_1)
 
-    one_minus_7sin2ϕEM = one_t - (7((sin_ϕ[mo,ea])^2))
-    two_sinϕEM = 2sin_ϕ[mo,ea]
+    one_minus_7sin2ϕEM = one_t - (7((sin_ϕ[ea,mo])^2))
+    two_sinϕEM = 2sin_ϕ[ea,mo]
 
     N_MfigM_figE_factor_div_rEMp5 = (N_MfigM_figE_factor/(r_p1d2[mo,ea]^5))
     N_MfigM_figE_1 = N_MfigM_figE_factor_div_rEMp5*( (one_minus_7sin2ϕEM*er_EM_cross_I_er_EM_1) + (two_sinϕEM*(er_EM_cross_I_p_E_1+p_E_cross_I_er_EM_1)) - (0.4p_E_cross_I_p_E_1))
@@ -1284,10 +1352,30 @@ end
     N_2_LMF = (RotM[2,1,mo]*N_MfigM[1]) + ((RotM[2,2,mo]*N_MfigM[2]) + (RotM[2,3,mo]*N_MfigM[3]))
     N_3_LMF = (RotM[3,1,mo]*N_MfigM[1]) + ((RotM[3,2,mo]*N_MfigM[2]) + (RotM[3,3,mo]*N_MfigM[3]))
 
-    # I*(dω/dt)
-    I_dω_1 = (N_1_LMF + N_MfigM_figE_1) - (dIω_x + ωxIω_x)
-    I_dω_2 = (N_2_LMF + N_MfigM_figE_2) - (dIω_y + ωxIω_y)
-    I_dω_3 = (N_3_LMF + N_MfigM_figE_3) - (dIω_z + ωxIω_z)
+    # torque on the mantle due to the interaction between core and mantle (evaluated in mantle frame): Folkner et al. (2014), Eq. (45)
+    N_cmb_1 = (k_ν*(q[6N+10]-q[6N+4])) - (C_c_m_A_c*(q[6N+12]*q[6N+11]))
+    N_cmb_2 = (k_ν*(q[6N+11]-q[6N+5])) + (C_c_m_A_c*(q[6N+12]*q[6N+10]))
+    N_cmb_3 = (k_ν*(q[6N+12]-q[6N+6]))
+
+    # I*(dω/dt); i.e., I times RHS of Folkner et at. (2014), Eq. (34)
+    I_dω_1 = ((N_1_LMF + N_MfigM_figE_1) + N_cmb_1) - (dIω_x + ωxIω_x)
+    I_dω_2 = ((N_2_LMF + N_MfigM_figE_2) + N_cmb_2) - (dIω_y + ωxIω_y)
+    I_dω_3 = ((N_3_LMF + N_MfigM_figE_3) + N_cmb_3) - (dIω_z + ωxIω_z)
+
+    # I_c * ω_c
+    Ic_ωc_1 = I_c_t[1,1]*q[6N+10] # + ((I_c_t[1,2]*q[6N+11]) + (I_c_t[1,3]*q[6N+12]))
+    Ic_ωc_2 = I_c_t[2,2]*q[6N+11] # + ((I_c_t[2,1]*q[6N+10]) + (I_c_t[2,3]*q[6N+12]))
+    Ic_ωc_3 = I_c_t[3,3]*q[6N+12] # + ((I_c_t[3,1]*q[6N+10]) + (I_c_t[3,2]*q[6N+11]))
+
+    # - ω_m × (I_c * ω_c)
+    m_ωm_x_Icωc_1 = (q[6N+6]*Ic_ωc_2) - (q[6N+5]*Ic_ωc_3)
+    m_ωm_x_Icωc_2 = (q[6N+4]*Ic_ωc_3) - (q[6N+6]*Ic_ωc_1)
+    m_ωm_x_Icωc_3 = (q[6N+5]*Ic_ωc_1) - (q[6N+4]*Ic_ωc_2)
+
+    # I_c*(dω_c/dt); i.e., I_c times RHS of Folkner et at. (2014), Eq. (35)
+    Ic_dωc_1 = m_ωm_x_Icωc_1 - N_cmb_1
+    Ic_dωc_2 = m_ωm_x_Icωc_2 - N_cmb_2
+    Ic_dωc_3 = m_ωm_x_Icωc_3 - N_cmb_3
 
     # lunar physical librations: Folkner et al. (2014), Eq. (14)
     dq[6N+1] = ((q[6N+4]*sin(q[6N+3])) + (q[6N+5]*cos(q[6N+3])) )/sin(q[6N+2])
@@ -1295,14 +1383,24 @@ end
     dq[6N+3] = q[6N+6] - (dq[6N+1]*cos(q[6N+2]))
 
     # lunar physical librations: Folkner et al. (2014), Eq. (34)
-    # TODO: add lunar mantle-core boundary interaction
     dq[6N+4] = (inv_I_m_t[1,1]*I_dω_1) + ( (inv_I_m_t[1,2]*I_dω_2) + (inv_I_m_t[1,3]*I_dω_3) )
     dq[6N+5] = (inv_I_m_t[2,1]*I_dω_1) + ( (inv_I_m_t[2,2]*I_dω_2) + (inv_I_m_t[2,3]*I_dω_3) )
     dq[6N+6] = (inv_I_m_t[3,1]*I_dω_1) + ( (inv_I_m_t[3,2]*I_dω_2) + (inv_I_m_t[3,3]*I_dω_3) )
 
+    # time derivatives of core Euler angles: Folkner et al. (2014), Eq. (15)
+    # (core angular velocity components ω_c_CE_i represent lunar core-equator frame coordinates)
+    dq[6N+9] = -(ω_c_CE_2/sin(q[6N+8])) ### evaluated first, since it's used below
+    dq[6N+7] = ω_c_CE_3-(dq[6N+9]*cos(q[6N+8]))
+    dq[6N+8] = ω_c_CE_1
+
+    # time derivative of the angular velocity of the core expressed in the mantle frame: Folkner et al. (2014), Eq. (35)
+    dq[6N+10] = inv_I_c_t[1,1]*Ic_dωc_1 # + ( (inv_I_c_t[1,2]*Ic_dωc_2) + (inv_I_c_t[1,3]*Ic_dωc_3) )
+    dq[6N+11] = inv_I_c_t[2,2]*Ic_dωc_2 # + ( (inv_I_c_t[2,1]*Ic_dωc_1) + (inv_I_c_t[2,3]*Ic_dωc_3) )
+    dq[6N+12] = inv_I_c_t[3,3]*Ic_dωc_3 # + ( (inv_I_c_t[3,1]*Ic_dωc_1) + (inv_I_c_t[3,2]*Ic_dωc_2) )
+
     # TT-TDB
     # TODO: implement TT-TDB integration
-    dq[6N+7] = zero_q_1
+    dq[6N+13] = zero_q_1
 
     nothing
 end
@@ -1313,30 +1411,32 @@ end
     local N, jd0 = params
     local S = eltype(q)
     local N_ext = 11 # number of bodies in extended-body accelerations
+
     local N_bwd = 11 # number of bodies in backward integration
     local params_bwd = (N_bwd, jd0)
-    local qq_bwd = Taylor1.(constant_term.(  q[ union(nbodyind(N,1:N_bwd),lastindex(q)-6:lastindex(q)) ]), t.order )
+    local qq_bwd = Taylor1.(constant_term.(  q[ union(nbodyind(N,1:N_bwd),6N+1:6N+13) ]), t.order )
     local dqq_bwd = similar(qq_bwd)
-    # local xaux_bwd = similar(qq_bwd)
+    local xaux_bwd = similar(qq_bwd)
     # local jc = TaylorIntegration.__jetcoeffs!(Val(false), NBP_pN_A_J23E_J23M_J2S_threads!, t, qq_bwd, dqq_bwd, xaux_bwd, params_bwd)
     # local jc = TaylorIntegration.__jetcoeffs!(Val(true), NBP_pN_A_J23E_J23M_J2S_threads!, t, qq_bwd, dqq_bwd, xaux_bwd, params_bwd)
-    # local jc = TaylorIntegration.jetcoeffs!(NBP_pN_A_J23E_J23M_J2S_threads!, t, qq_bwd, dqq_bwd, xaux_bwd, params_bwd)
-    local jc = TaylorIntegration.jetcoeffs!(Val(NBP_pN_A_J23E_J23M_J2S_threads!), t, qq_bwd, dqq_bwd, params_bwd)
+    local jc = TaylorIntegration.jetcoeffs!(NBP_pN_A_J23E_J23M_J2S_threads!, t, qq_bwd, dqq_bwd, xaux_bwd, params_bwd)
+    # local jc = TaylorIntegration.jetcoeffs!(Val(NBP_pN_A_J23E_J23M_J2S_threads!), t, qq_bwd, dqq_bwd, params_bwd)
     local __t = Taylor1(t.order)
     local q_del_τ_M = qq_bwd(__t-τ_M)
     local q_del_τ_0 = qq_bwd(__t-τ_0p)
     local q_del_τ_1 = qq_bwd(__t-τ_1p)
     local q_del_τ_2 = qq_bwd(__t-τ_2p)
+    local eulang_del_τ_M = q_del_τ_M[6N_bwd+1:6N_bwd+3]
+    local ω_m_del_τ_M = q_del_τ_M[6N_bwd+4:6N_bwd+6]
 
     local zero_q_1 = zero(q[1])
     local one_t = one(t)
     local dsj2k = t+(jd0-J2000) # days since J2000.0 (TDB)
-    local eulang_t = qq_bwd[6N_bwd+1:6N_bwd+3]
-    local eulang_del_τ_M = q_del_τ_M[6N_bwd+1:6N_bwd+3]
-    local ω_m_del_τ_M = q_del_τ_M[6N_bwd+4:6N_bwd+6]
     local I_m_t = ITM(q_del_τ_M, eulang_del_τ_M, ω_m_del_τ_M) # matrix elements of lunar moment of inertia (Folkner et al. 2014, eq. 41)
     local dI_m_t = derivative.(I_m_t) # time-derivative of lunar mantle I at time t
     local inv_I_m_t = inv(I_m_t) # inverse of lunar mantle I matrix at time t
+    local I_c_t = I_c.*one_t # lunar core I matrix
+    local inv_I_c_t = inv(I_c_t) # inverse of lunar core I matrix
 
     # parameters related to speed of light, c
     local c_p2 = 29979.063823897606 # c^2 = 29979.063823897606 au^2/d^2
@@ -1493,13 +1593,36 @@ end
     # rotations to and from Earth, Sun and Moon pole-oriented frames
     local αs = deg2rad(α_p_sun*one_t)
     local δs = deg2rad(δ_p_sun*one_t)
-    local αm = eulang_t[1] - (pi/2)
-    local δm = (pi/2) - eulang_t[2]
-    local Wm = eulang_t[3]
     RotM = Array{S}(undef, 3, 3, 5) # space-fixed -> body-fixed coordinate transformations
     local RotM[:,:,ea] = c2t_jpl_de430(dsj2k)
     local RotM[:,:,su] = pole_rotation(αs, δs)
-    local RotM[:,:,mo] = pole_rotation(αm, δm, Wm)
+    ϕ_m = q[6N+1]
+    θ_m = q[6N+2]
+    ψ_m = q[6N+3]
+    RotM[1,1,mo] = (cos(ϕ_m)*cos(ψ_m)) - (cos(θ_m)*(sin(ϕ_m)*sin(ψ_m)))
+    RotM[2,1,mo] = (-cos(θ_m)*(cos(ψ_m)*sin(ϕ_m))) - (cos(ϕ_m)*sin(ψ_m))
+    RotM[3,1,mo] = sin(θ_m)*sin(ϕ_m)
+    RotM[1,2,mo] = (cos(ψ_m)*sin(ϕ_m)) + (cos(θ_m)*(cos(ϕ_m)*sin(ψ_m)))
+    RotM[2,2,mo] = (cos(θ_m)*(cos(ϕ_m)*cos(ψ_m))) - (sin(ϕ_m)*sin(ψ_m))
+    RotM[3,2,mo] = (-cos(ϕ_m))*sin(θ_m)
+    RotM[1,3,mo] = sin(θ_m)*sin(ψ_m)
+    RotM[2,3,mo] = cos(ψ_m)*sin(θ_m)
+    RotM[3,3,mo] = cos(θ_m)
+    mantlef2coref = Array{S}(undef, 3, 3) # lunar mantle frame -> inertial frame -> lunar core-equatorial frame coord transformation
+    ϕ_c = q[6N+7]
+    ### # mantlef2coref = R_z(ϕ_c)*[ R_z(ψ_m)*R_x(θ_m)*R_z(ϕ_m) ]^T
+    mantlef2coref[1,1] = (( RotM[1,1,mo])*cos(ϕ_c)) + (RotM[1,2,mo]*sin(ϕ_c))
+    mantlef2coref[2,1] = ((-RotM[1,1,mo])*sin(ϕ_c)) + (RotM[1,2,mo]*cos(ϕ_c))
+    mantlef2coref[3,1] =  RotM[1,3,mo]
+    mantlef2coref[1,2] = (( RotM[2,1,mo])*cos(ϕ_c)) + (RotM[2,2,mo]*sin(ϕ_c))
+    mantlef2coref[2,2] = ((-RotM[2,1,mo])*sin(ϕ_c)) + (RotM[2,2,mo]*cos(ϕ_c))
+    mantlef2coref[3,2] =  RotM[2,3,mo]
+    mantlef2coref[1,3] = (( RotM[3,1,mo])*cos(ϕ_c)) + (RotM[3,2,mo]*sin(ϕ_c))
+    mantlef2coref[2,3] = ((-RotM[3,1,mo])*sin(ϕ_c)) + (RotM[3,2,mo]*cos(ϕ_c))
+    mantlef2coref[3,3] =  RotM[3,3,mo]
+    ω_c_CE_1 = (mantlef2coref[1,1]*q[6N+10]) + ((mantlef2coref[1,2]*q[6N+11]) + (mantlef2coref[1,3]*q[6N+12]))
+    ω_c_CE_2 = (mantlef2coref[2,1]*q[6N+10]) + ((mantlef2coref[2,2]*q[6N+11]) + (mantlef2coref[2,3]*q[6N+12]))
+    ω_c_CE_3 = (mantlef2coref[3,1]*q[6N+10]) + ((mantlef2coref[3,2]*q[6N+11]) + (mantlef2coref[3,3]*q[6N+12]))
     local fact1_jsem = [(2n-1)/n for n in 1:maximum(n1SEM)]
     local fact2_jsem = [(n-1)/n for n in 1:maximum(n1SEM)]
     local fact3_jsem = [n for n in 1:maximum(n1SEM)]
@@ -2100,10 +2223,30 @@ end
     N_2_LMF = (RotM[2,1,mo]*N_MfigM[1]) + ((RotM[2,2,mo]*N_MfigM[2]) + (RotM[2,3,mo]*N_MfigM[3]))
     N_3_LMF = (RotM[3,1,mo]*N_MfigM[1]) + ((RotM[3,2,mo]*N_MfigM[2]) + (RotM[3,3,mo]*N_MfigM[3]))
 
-    # I*(dω/dt)
-    I_dω_1 = (N_1_LMF + N_MfigM_figE_1) - (dIω_x + ωxIω_x)
-    I_dω_2 = (N_2_LMF + N_MfigM_figE_2) - (dIω_y + ωxIω_y)
-    I_dω_3 = (N_3_LMF + N_MfigM_figE_3) - (dIω_z + ωxIω_z)
+    # torque on the mantle due to the interaction between core and mantle (evaluated in mantle frame): Folkner et al. (2014), Eq. (45)
+    N_cmb_1 = (k_ν*(q[6N+10]-q[6N+4])) - (C_c_m_A_c*(q[6N+12]*q[6N+11]))
+    N_cmb_2 = (k_ν*(q[6N+11]-q[6N+5])) + (C_c_m_A_c*(q[6N+12]*q[6N+10]))
+    N_cmb_3 = (k_ν*(q[6N+12]-q[6N+6]))
+
+    # I*(dω/dt); i.e., I times RHS of Folkner et at. (2014), Eq. (34)
+    I_dω_1 = ((N_1_LMF + N_MfigM_figE_1) + N_cmb_1) - (dIω_x + ωxIω_x)
+    I_dω_2 = ((N_2_LMF + N_MfigM_figE_2) + N_cmb_2) - (dIω_y + ωxIω_y)
+    I_dω_3 = ((N_3_LMF + N_MfigM_figE_3) + N_cmb_3) - (dIω_z + ωxIω_z)
+
+    # I_c * ω_c
+    Ic_ωc_1 = I_c_t[1,1]*q[6N+10] # + ((I_c_t[1,2]*q[6N+11]) + (I_c_t[1,3]*q[6N+12]))
+    Ic_ωc_2 = I_c_t[2,2]*q[6N+11] # + ((I_c_t[2,1]*q[6N+10]) + (I_c_t[2,3]*q[6N+12]))
+    Ic_ωc_3 = I_c_t[3,3]*q[6N+12] # + ((I_c_t[3,1]*q[6N+10]) + (I_c_t[3,2]*q[6N+11]))
+
+    # - ω_m × (I_c * ω_c)
+    m_ωm_x_Icωc_1 = (q[6N+6]*Ic_ωc_2) - (q[6N+5]*Ic_ωc_3)
+    m_ωm_x_Icωc_2 = (q[6N+4]*Ic_ωc_3) - (q[6N+6]*Ic_ωc_1)
+    m_ωm_x_Icωc_3 = (q[6N+5]*Ic_ωc_1) - (q[6N+4]*Ic_ωc_2)
+
+    # I_c*(dω_c/dt); i.e., I_c times RHS of Folkner et at. (2014), Eq. (35)
+    Ic_dωc_1 = m_ωm_x_Icωc_1 - N_cmb_1
+    Ic_dωc_2 = m_ωm_x_Icωc_2 - N_cmb_2
+    Ic_dωc_3 = m_ωm_x_Icωc_3 - N_cmb_3
 
     # lunar physical librations: Folkner et al. (2014), Eq. (14)
     dq[6N+1] = ((q[6N+4]*sin(q[6N+3])) + (q[6N+5]*cos(q[6N+3])) )/sin(q[6N+2])
@@ -2111,14 +2254,24 @@ end
     dq[6N+3] = q[6N+6] - (dq[6N+1]*cos(q[6N+2]))
 
     # lunar physical librations: Folkner et al. (2014), Eq. (34)
-    # TODO: add lunar mantle-core boundary interaction
     dq[6N+4] = (inv_I_m_t[1,1]*I_dω_1) + ( (inv_I_m_t[1,2]*I_dω_2) + (inv_I_m_t[1,3]*I_dω_3) )
     dq[6N+5] = (inv_I_m_t[2,1]*I_dω_1) + ( (inv_I_m_t[2,2]*I_dω_2) + (inv_I_m_t[2,3]*I_dω_3) )
     dq[6N+6] = (inv_I_m_t[3,1]*I_dω_1) + ( (inv_I_m_t[3,2]*I_dω_2) + (inv_I_m_t[3,3]*I_dω_3) )
 
+    # time derivatives of core Euler angles: Folkner et al. (2014), Eq. (15)
+    # (core angular velocity components ω_c_CE_i represent lunar core-equator frame coordinates)
+    dq[6N+9] = -(ω_c_CE_2/sin(q[6N+8])) ### evaluated first, since it's used below
+    dq[6N+7] = ω_c_CE_3-(dq[6N+9]*cos(q[6N+8]))
+    dq[6N+8] = ω_c_CE_1
+
+    # time derivative of the angular velocity of the core expressed in the mantle frame: Folkner et al. (2014), Eq. (35)
+    dq[6N+10] = inv_I_c_t[1,1]*Ic_dωc_1 # + ( (inv_I_c_t[1,2]*Ic_dωc_2) + (inv_I_c_t[1,3]*Ic_dωc_3) )
+    dq[6N+11] = inv_I_c_t[2,2]*Ic_dωc_2 # + ( (inv_I_c_t[2,1]*Ic_dωc_1) + (inv_I_c_t[2,3]*Ic_dωc_3) )
+    dq[6N+12] = inv_I_c_t[3,3]*Ic_dωc_3 # + ( (inv_I_c_t[3,1]*Ic_dωc_1) + (inv_I_c_t[3,2]*Ic_dωc_2) )
+
     # TT-TDB
     # TODO: implement TT-TDB integration
-    dq[6N+7] = zero_q_1
+    dq[6N+13] = zero_q_1
 
     nothing
 end
