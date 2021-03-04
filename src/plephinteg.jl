@@ -33,7 +33,8 @@ end
 # first step-size control from Jorba & Zou, 2005
 function stepsize_jz05(q::AbstractArray{Taylor1{U}, N}, epsilon::T) where
         {T<:Real, U<:Number, N}
-    q0_norminf = norm(constant_term.(q), Inf)
+    nbodies = (length(q)-13)÷6
+    q0_norminf = norm(constant_term.(q[1:6nbodies]), Inf)
     pred = epsilon*q0_norminf ≤ epsilon
 
     if pred
@@ -46,7 +47,6 @@ function stepsize_jz05(q::AbstractArray{Taylor1{U}, N}, epsilon::T) where
     ordm1 = order-1
     invorder = 1/order
     invordm1 = 1/ordm1
-    nbodies = (length(q)-13)÷6
     qordm1_norminf = norm(getcoeff.(q[1:6nbodies], ordm1), Inf)
     qorder_norminf = norm(getcoeff.(q[1:6nbodies], order), Inf)
 
