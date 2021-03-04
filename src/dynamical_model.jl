@@ -488,11 +488,11 @@
                         N_MfigM_pmA_y[i] = μ[i]*( (Z[i,j]*F_JCS_x[i,j]) - (X[i,j]*F_JCS_z[i,j]) )
                         N_MfigM_pmA_z[i] = μ[i]*( (X[i,j]*F_JCS_y[i,j]) - (Y[i,j]*F_JCS_x[i,j]) )
                         # expressions below have minus sign since N_MfigM_pmA_{x,y,z} have inverted signs in cross product
-                        temp_N_M_x[i] = N_MfigM[1] - (μ[j]*N_MfigM_pmA_x[i])
+                        temp_N_M_x[i] = N_MfigM[1] - (N_MfigM_pmA_x[i]*μ[j])
                         N_MfigM[1] = temp_N_M_x[i]
-                        temp_N_M_y[i] = N_MfigM[2] - (μ[j]*N_MfigM_pmA_y[i])
+                        temp_N_M_y[i] = N_MfigM[2] - (N_MfigM_pmA_y[i]*μ[j])
                         N_MfigM[2] = temp_N_M_y[i]
-                        temp_N_M_z[i] = N_MfigM[3] - (μ[j]*N_MfigM_pmA_z[i])
+                        temp_N_M_z[i] = N_MfigM[3] - (N_MfigM_pmA_z[i]*μ[j])
                         N_MfigM[3] = temp_N_M_z[i]
                     end
                 end
@@ -1186,11 +1186,11 @@ end
                         N_MfigM_pmA_y[i] = μ[i]*( (Z[i,j]*F_JCS_x[i,j]) - (X[i,j]*F_JCS_z[i,j]) )
                         N_MfigM_pmA_z[i] = μ[i]*( (X[i,j]*F_JCS_y[i,j]) - (Y[i,j]*F_JCS_x[i,j]) )
                         # expressions below have minus sign since N_MfigM_pmA_{x,y,z} have inverted signs in cross product
-                        temp_N_M_x[i] = N_MfigM[1] - (μ[j]*N_MfigM_pmA_x[i])
+                        temp_N_M_x[i] = N_MfigM[1] - (N_MfigM_pmA_x[i]*μ[j])
                         N_MfigM[1] = temp_N_M_x[i]
-                        temp_N_M_y[i] = N_MfigM[2] - (μ[j]*N_MfigM_pmA_y[i])
+                        temp_N_M_y[i] = N_MfigM[2] - (N_MfigM_pmA_y[i]*μ[j])
                         N_MfigM[2] = temp_N_M_y[i]
-                        temp_N_M_z[i] = N_MfigM[3] - (μ[j]*N_MfigM_pmA_z[i])
+                        temp_N_M_z[i] = N_MfigM[3] - (N_MfigM_pmA_z[i]*μ[j])
                         N_MfigM[3] = temp_N_M_z[i]
                     end
                 end
@@ -1924,11 +1924,11 @@ end
                         N_MfigM_pmA_y[i] = μ[i]*( (Z[i,j]*F_JCS_x[i,j]) - (X[i,j]*F_JCS_z[i,j]) )
                         N_MfigM_pmA_z[i] = μ[i]*( (X[i,j]*F_JCS_y[i,j]) - (Y[i,j]*F_JCS_x[i,j]) )
                         # expressions below have minus sign since N_MfigM_pmA_{x,y,z} have inverted signs in cross product
-                        temp_N_M_x[i] = N_MfigM[1] - (μ[j]*N_MfigM_pmA_x[i])
+                        temp_N_M_x[i] = N_MfigM[1] - (N_MfigM_pmA_x[i]*μ[j])
                         N_MfigM[1] = temp_N_M_x[i]
-                        temp_N_M_y[i] = N_MfigM[2] - (μ[j]*N_MfigM_pmA_y[i])
+                        temp_N_M_y[i] = N_MfigM[2] - (N_MfigM_pmA_y[i]*μ[j])
                         N_MfigM[2] = temp_N_M_y[i]
-                        temp_N_M_z[i] = N_MfigM[3] - (μ[j]*N_MfigM_pmA_z[i])
+                        temp_N_M_z[i] = N_MfigM[3] - (N_MfigM_pmA_z[i]*μ[j])
                         N_MfigM[3] = temp_N_M_z[i]
                     end
                 end
