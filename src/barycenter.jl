@@ -1,7 +1,6 @@
 #Fienga et al. (A&A, 2006), Eqs. (2) and (4)
 function μ_star_fun(μ, q, i)
-    # N = length(q) ÷ 6 # total number of bodies (Sun+planets+Moon+Pluto+asts)
-    N = (length(q)-7) ÷ 6 # total number of bodies (Sun+planets+Moon+Pluto+asts)
+    N = (length(q)-13) ÷ 6 # total number of bodies (Sun+planets+Moon+Pluto+asts)
     sum1 = zero(q[1])
     sum2 = zero(q[1])
     for j in 1:N
@@ -31,8 +30,7 @@ end
 
 #Fienga et al. (A&A, 2006), LHS of Eq. (5)
 function ssb_posvel_pN(μ, q)
-    # N = length(q) ÷ 6 # total number of bodies (Sun+planets+Moon+Pluto+asts)
-    N = (length(q)-7) ÷ 6 # total number of bodies (Sun+planets+Moon+Pluto+asts)
+    N = (length(q)-13) ÷ 6 # total number of bodies (Sun+planets+Moon+Pluto+asts)
     rvec_ssb = zeros(3)
     vvec_ssb = zeros(3)
     μ_star_SSB = zero(q[1])
@@ -50,8 +48,7 @@ end
 
 #Fienga et al. (A&A, 2006), Eq. (5), solved for Sun position and velocity
 function sun_posvel_pN(μ, q)
-    # N = length(q) ÷ 6 # total number of bodies (Sun+planets+Moon+Pluto+asts)
-    N = (length(q)-7) ÷ 6 # total number of bodies (Sun+planets+Moon+Pluto+asts)
+    N = (length(q)-13) ÷ 6 # total number of bodies (Sun+planets+Moon+Pluto+asts)
     rvec_ss_wout_sun = zeros(3)
     vvec_ss_wout_sun = zeros(3)
     for i in 2:N
