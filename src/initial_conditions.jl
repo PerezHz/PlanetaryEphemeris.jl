@@ -6,14 +6,14 @@ function initialcond(N)
     # fill initial conditions for Sun, Moon, planets and Pluto
     # order is the following:
     # Mercury, Venus, Earth-Moon barycenter, Moon (wrt geocenter), Mars, Jupiter, Saturn, Uranus, Neptune, Pluto
-    smppic = readdlm( joinpath(dirname(pathof(PlanetaryEphemeris)), "ss11ic_1969Jun28.txt") )
+    smppic = readdlm( joinpath(dirname(pathof(PlanetaryEphemeris)), "ss11ic_1969Jun28.txt") ) # "ss11ic.txt"
     for i in 1:11
         ith_body_ind = nbodyind(N, i)
         q0[ith_body_ind[1:3]] .= smppic[i, 1:3]
         q0[ith_body_ind[4:6]] .= smppic[i, 4:6]
     end
     # fill initial conditions for 343 asteroids used in integration of JPL DE430 ephemeris
-    ast343ic = readdlm( joinpath(dirname(pathof(PlanetaryEphemeris)), "ast343ic_1969Jun28.txt") )
+    ast343ic = readdlm( joinpath(dirname(pathof(PlanetaryEphemeris)), "ast343ic_1969Jun28.txt") ) # "ast343ic.txt"
     for i in 12:N
         ith_body_ind = nbodyind(N, i)
         q0[ith_body_ind[1:3]] .= ast343ic[i-11, 1:3]
@@ -29,6 +29,9 @@ function initialcond(N)
     # # J2000
     # q0[6N+1:6N+3] .= [-0.05414766382529318, 0.42485573826608863, 2564.2582726674223] # Euler angles
     # q0[6N+4:6N+6] .= [2.3013404932266894e-6, -6.600217715260397e-5, 0.22999341817950175] # lunar mantle angular velocity vector (mantle frame)
-    # q0[6N+7] = 9.930292723454279e-5 # DE430 TT-TDB at initial epoch
+    # # TODO: update initial values of core angles/omegas
+    # q0[6N+7:6N+9] .= [0.0025540694773077983, 0.4093729601101397, 2560.1155575767643] # lunar core Euler angles
+    # q0[6N+10:6N+12] .= [0.006442148151968311, -0.0005951105657642203, 0.22968516373808195] # lunar core angular velocity vector (mantle frame)
+    # q0[6N+13] = 9.930292723454279e-5 # DE430 TT-TDB at initial epoch
     return q0
 end

@@ -418,7 +418,7 @@ const c_cm_per_sec = 100_000*clightkms # speed of light in cm per sec
 const sundofs = nbodyind(length(μ), su)
 const earthdofs = nbodyind(length(μ), ea)
 
-const J2000 = 2.451545e6
+const J2000 = 2451545.0
 
 const R_sun = 696000.0/au # Solar radius in au, value taken from DE430 docs
 
