@@ -19,11 +19,12 @@
     local zero_q_1 = zero(q[1])
     local one_t = one(t)
     local dsj2k = t+(jd0-J2000) # days since J2000.0 (TDB)
-    local I_m_t = (ITM_und-I_c).*one_t # ITM(q_del_τ_M, eulang_del_τ_M) # matrix elements of lunar moment of inertia (Folkner et al. 2014, eq. 41)
-    local dI_m_t = derivative.(I_m_t) # time-derivative of lunar mantle I at time t
-    local inv_I_m_t = inv(I_m_t) # inverse of lunar mantle I matrix at time t
+    local I_m_t = (ITM_und-I_c).*one_t # ITM(q_del_τ_M, eulang_del_τ_M) # matrix elements of lunar moment of inertia at time t-τ_M (Folkner et al. 2014, eq. 41)
+    local dI_m_t = derivative.(I_m_t) # time-derivative of lunar mantle I at time t-τ_M
+    local inv_I_m_t = inv(I_m_t) # inverse of lunar mantle I matrix at time t-τ_M
     local I_c_t = I_c.*one_t # lunar core I matrix
     local inv_I_c_t = inv(I_c_t) # inverse of lunar core I matrix
+    local I_M_t = I_m_t+I_c_t # total I matrix (mantle+core)
 
     # parameters related to speed of light, c
     local c_p2 = 29979.063823897606 # c^2 = 29979.063823897606 au^2/d^2
@@ -311,11 +312,11 @@
     end #for, j
 
     # 2nd-order lunar zonal and tesseral harmonics
-    J2M_t = ( I_m_t[3,3] - ((I_m_t[1,1]+I_m_t[2,2])/2) )/(μ[mo]) # J_{2,M}*R_M^2
-    C22M_t = ((I_m_t[2,2] - I_m_t[1,1])/(μ[mo]))/4 # C_{22,M}*R_M^2
-    C21M_t = (-I_m_t[1,3])/(μ[mo]) # C_{21,M}*R_M^2
-    S21M_t = (-I_m_t[3,2])/(μ[mo]) # S_{21,M}*R_M^2
-    S22M_t = ((-I_m_t[2,1])/(μ[mo]))/2 # S_{22,M}*R_M^2
+    J2M_t = ( I_M_t[3,3] - ((I_M_t[1,1]+I_M_t[2,2])/2) )/(μ[mo]) # J_{2,M}*R_M^2
+    C22M_t = ((I_M_t[2,2] - I_M_t[1,1])/(μ[mo]))/4 # C_{22,M}*R_M^2
+    C21M_t = (-I_M_t[1,3])/(μ[mo]) # C_{21,M}*R_M^2
+    S21M_t = (-I_M_t[3,2])/(μ[mo]) # S_{21,M}*R_M^2
+    S22M_t = ((-I_M_t[2,1])/(μ[mo]))/2 # S_{22,M}*R_M^2
     J2_t[mo] = J2M_t
 
     for j in 1:N_ext
@@ -612,14 +613,14 @@
 
     # evaluate Eq. (44) of Folkner et al. (2014) in lunar mantle frame coords
     # I*e_r
-    I_er_EM_1 = (I_m_t[1,1]*er_EM_1) + ((I_m_t[1,2]*er_EM_2) + (I_m_t[1,3]*er_EM_3))
-    I_er_EM_2 = (I_m_t[2,1]*er_EM_1) + ((I_m_t[2,2]*er_EM_2) + (I_m_t[2,3]*er_EM_3))
-    I_er_EM_3 = (I_m_t[3,1]*er_EM_1) + ((I_m_t[3,2]*er_EM_2) + (I_m_t[3,3]*er_EM_3))
+    I_er_EM_1 = (I_M_t[1,1]*er_EM_1) + ((I_M_t[1,2]*er_EM_2) + (I_M_t[1,3]*er_EM_3))
+    I_er_EM_2 = (I_M_t[2,1]*er_EM_1) + ((I_M_t[2,2]*er_EM_2) + (I_M_t[2,3]*er_EM_3))
+    I_er_EM_3 = (I_M_t[3,1]*er_EM_1) + ((I_M_t[3,2]*er_EM_2) + (I_M_t[3,3]*er_EM_3))
 
     # I*p_E
-    I_p_E_1 = (I_m_t[1,1]*p_E_1) + ((I_m_t[1,2]*p_E_2) + (I_m_t[1,3]*p_E_3))
-    I_p_E_2 = (I_m_t[2,1]*p_E_1) + ((I_m_t[2,2]*p_E_2) + (I_m_t[2,3]*p_E_3))
-    I_p_E_3 = (I_m_t[3,1]*p_E_1) + ((I_m_t[3,2]*p_E_2) + (I_m_t[3,3]*p_E_3))
+    I_p_E_1 = (I_M_t[1,1]*p_E_1) + ((I_M_t[1,2]*p_E_2) + (I_M_t[1,3]*p_E_3))
+    I_p_E_2 = (I_M_t[2,1]*p_E_1) + ((I_M_t[2,2]*p_E_2) + (I_M_t[2,3]*p_E_3))
+    I_p_E_3 = (I_M_t[3,1]*p_E_1) + ((I_M_t[3,2]*p_E_2) + (I_M_t[3,3]*p_E_3))
 
     # e_r × (I*e_r)
     er_EM_cross_I_er_EM_1 = (er_EM_2*I_er_EM_3) - (er_EM_3*I_er_EM_2)
@@ -717,11 +718,12 @@ end
     local zero_q_1 = zero(q[1])
     local one_t = one(t)
     local dsj2k = t+(jd0-J2000) # days since J2000.0 (TDB)
-    local I_m_t = (ITM_und-I_c).*one_t # ITM(q_del_τ_M, eulang_del_τ_M) # matrix elements of lunar moment of inertia (Folkner et al. 2014, eq. 41)
-    local dI_m_t = derivative.(I_m_t) # time-derivative of lunar mantle I at time t
-    local inv_I_m_t = inv(I_m_t) # inverse of lunar mantle I matrix at time t
+    local I_m_t = (ITM_und-I_c).*one_t # ITM(q_del_τ_M, eulang_del_τ_M) # matrix elements of lunar moment of inertia at time t-τ_M (Folkner et al. 2014, eq. 41)
+    local dI_m_t = derivative.(I_m_t) # time-derivative of lunar mantle I at time t-τ_M
+    local inv_I_m_t = inv(I_m_t) # inverse of lunar mantle I matrix at time t-τ_M
     local I_c_t = I_c.*one_t # lunar core I matrix
     local inv_I_c_t = inv(I_c_t) # inverse of lunar core I matrix
+    local I_M_t = I_m_t+I_c_t # total I matrix (mantle+core)
 
     # parameters related to speed of light, c
     local c_p2 = 29979.063823897606 # c^2 = 29979.063823897606 au^2/d^2
@@ -1009,11 +1011,11 @@ end
     end #for, j
 
     # 2nd-order lunar zonal and tesseral harmonics
-    J2M_t = ( I_m_t[3,3] - ((I_m_t[1,1]+I_m_t[2,2])/2) )/(μ[mo]) # J_{2,M}*R_M^2
-    C22M_t = ((I_m_t[2,2] - I_m_t[1,1])/(μ[mo]))/4 # C_{22,M}*R_M^2
-    C21M_t = (-I_m_t[1,3])/(μ[mo]) # C_{21,M}*R_M^2
-    S21M_t = (-I_m_t[3,2])/(μ[mo]) # S_{21,M}*R_M^2
-    S22M_t = ((-I_m_t[2,1])/(μ[mo]))/2 # S_{22,M}*R_M^2
+    J2M_t = ( I_M_t[3,3] - ((I_M_t[1,1]+I_M_t[2,2])/2) )/(μ[mo]) # J_{2,M}*R_M^2
+    C22M_t = ((I_M_t[2,2] - I_M_t[1,1])/(μ[mo]))/4 # C_{22,M}*R_M^2
+    C21M_t = (-I_M_t[1,3])/(μ[mo]) # C_{21,M}*R_M^2
+    S21M_t = (-I_M_t[3,2])/(μ[mo]) # S_{21,M}*R_M^2
+    S22M_t = ((-I_M_t[2,1])/(μ[mo]))/2 # S_{22,M}*R_M^2
     J2_t[mo] = J2M_t
 
     Threads.@threads for j in 1:N_ext
@@ -1186,11 +1188,11 @@ end
                         N_MfigM_pmA_y[i] = μ[i]*( (Z[i,j]*F_JCS_x[i,j]) - (X[i,j]*F_JCS_z[i,j]) )
                         N_MfigM_pmA_z[i] = μ[i]*( (X[i,j]*F_JCS_y[i,j]) - (Y[i,j]*F_JCS_x[i,j]) )
                         # expressions below have minus sign since N_MfigM_pmA_{x,y,z} have inverted signs in cross product
-                        temp_N_M_x[i] = N_MfigM[1] - (N_MfigM_pmA_x[i]*μ[j])
+                        temp_N_M_x[i] = N_MfigM[1] - N_MfigM_pmA_x[i]
                         N_MfigM[1] = temp_N_M_x[i]
-                        temp_N_M_y[i] = N_MfigM[2] - (N_MfigM_pmA_y[i]*μ[j])
+                        temp_N_M_y[i] = N_MfigM[2] - N_MfigM_pmA_y[i]
                         N_MfigM[2] = temp_N_M_y[i]
-                        temp_N_M_z[i] = N_MfigM[3] - (N_MfigM_pmA_z[i]*μ[j])
+                        temp_N_M_z[i] = N_MfigM[3] - N_MfigM_pmA_z[i]
                         N_MfigM[3] = temp_N_M_z[i]
                     end
                 end
@@ -1276,6 +1278,7 @@ end
         dq[3(N+i)  ] = postNewtonZ[i]
     end
 
+    # I*ω
     Iω_x = (I_m_t[1,1]*q[6N+4]) + ((I_m_t[1,2]*q[6N+5]) + (I_m_t[1,3]*q[6N+6]))
     Iω_y = (I_m_t[2,1]*q[6N+4]) + ((I_m_t[2,2]*q[6N+5]) + (I_m_t[2,3]*q[6N+6]))
     Iω_z = (I_m_t[3,1]*q[6N+4]) + ((I_m_t[3,2]*q[6N+5]) + (I_m_t[3,3]*q[6N+6]))
@@ -1310,14 +1313,14 @@ end
 
     # evaluate Eq. (44) of Folkner et al. (2014) in lunar mantle frame coords
     # I*e_r
-    I_er_EM_1 = (I_m_t[1,1]*er_EM_1) + ((I_m_t[1,2]*er_EM_2) + (I_m_t[1,3]*er_EM_3))
-    I_er_EM_2 = (I_m_t[2,1]*er_EM_1) + ((I_m_t[2,2]*er_EM_2) + (I_m_t[2,3]*er_EM_3))
-    I_er_EM_3 = (I_m_t[3,1]*er_EM_1) + ((I_m_t[3,2]*er_EM_2) + (I_m_t[3,3]*er_EM_3))
+    I_er_EM_1 = (I_M_t[1,1]*er_EM_1) + ((I_M_t[1,2]*er_EM_2) + (I_M_t[1,3]*er_EM_3))
+    I_er_EM_2 = (I_M_t[2,1]*er_EM_1) + ((I_M_t[2,2]*er_EM_2) + (I_M_t[2,3]*er_EM_3))
+    I_er_EM_3 = (I_M_t[3,1]*er_EM_1) + ((I_M_t[3,2]*er_EM_2) + (I_M_t[3,3]*er_EM_3))
 
     # I*p_E
-    I_p_E_1 = (I_m_t[1,1]*p_E_1) + ((I_m_t[1,2]*p_E_2) + (I_m_t[1,3]*p_E_3))
-    I_p_E_2 = (I_m_t[2,1]*p_E_1) + ((I_m_t[2,2]*p_E_2) + (I_m_t[2,3]*p_E_3))
-    I_p_E_3 = (I_m_t[3,1]*p_E_1) + ((I_m_t[3,2]*p_E_2) + (I_m_t[3,3]*p_E_3))
+    I_p_E_1 = (I_M_t[1,1]*p_E_1) + ((I_M_t[1,2]*p_E_2) + (I_M_t[1,3]*p_E_3))
+    I_p_E_2 = (I_M_t[2,1]*p_E_1) + ((I_M_t[2,2]*p_E_2) + (I_M_t[2,3]*p_E_3))
+    I_p_E_3 = (I_M_t[3,1]*p_E_1) + ((I_M_t[3,2]*p_E_2) + (I_M_t[3,3]*p_E_3))
 
     # e_r × (I*e_r)
     er_EM_cross_I_er_EM_1 = (er_EM_2*I_er_EM_3) - (er_EM_3*I_er_EM_2)
@@ -1358,9 +1361,9 @@ end
     N_cmb_3 = (k_ν*(q[6N+12]-q[6N+6]))
 
     # I*(dω/dt); i.e., I times RHS of Folkner et at. (2014), Eq. (34)
-    I_dω_1 = ((N_1_LMF + N_MfigM_figE_1) + N_cmb_1) - (dIω_x + ωxIω_x)
-    I_dω_2 = ((N_2_LMF + N_MfigM_figE_2) + N_cmb_2) - (dIω_y + ωxIω_y)
-    I_dω_3 = ((N_3_LMF + N_MfigM_figE_3) + N_cmb_3) - (dIω_z + ωxIω_z)
+    I_dω_1 = ((N_MfigM_figE_1 + (μ[mo]*N_1_LMF)) + N_cmb_1) - (dIω_x + ωxIω_x)
+    I_dω_2 = ((N_MfigM_figE_2 + (μ[mo]*N_2_LMF)) + N_cmb_2) - (dIω_y + ωxIω_y)
+    I_dω_3 = ((N_MfigM_figE_3 + (μ[mo]*N_3_LMF)) + N_cmb_3) - (dIω_z + ωxIω_z)
 
     # I_c * ω_c
     Ic_ωc_1 = I_c_t[1,1]*q[6N+10] # + ((I_c_t[1,2]*q[6N+11]) + (I_c_t[1,3]*q[6N+12]))
@@ -1432,11 +1435,12 @@ end
     local zero_q_1 = zero(q[1])
     local one_t = one(t)
     local dsj2k = t+(jd0-J2000) # days since J2000.0 (TDB)
-    local I_m_t = ITM(q_del_τ_M, eulang_del_τ_M, ω_m_del_τ_M) # matrix elements of lunar moment of inertia (Folkner et al. 2014, eq. 41)
-    local dI_m_t = derivative.(I_m_t) # time-derivative of lunar mantle I at time t
-    local inv_I_m_t = inv(I_m_t) # inverse of lunar mantle I matrix at time t
+    local I_m_t = ITM(q_del_τ_M, eulang_del_τ_M, ω_m_del_τ_M) # matrix elements of lunar mantle moment of inertia at time t-τ_M (Folkner et al. 2014, eq. 41)
+    local dI_m_t = derivative.(I_m_t) # time-derivative of lunar mantle I at time t-τ_M
+    local inv_I_m_t = inv(I_m_t) # inverse of lunar mantle I matrix at time t-τ_M
     local I_c_t = I_c.*one_t # lunar core I matrix
     local inv_I_c_t = inv(I_c_t) # inverse of lunar core I matrix
+    local I_M_t = I_m_t+I_c_t # total I matrix (mantle+core)
 
     # parameters related to speed of light, c
     local c_p2 = 29979.063823897606 # c^2 = 29979.063823897606 au^2/d^2
@@ -1747,11 +1751,11 @@ end
     end #for, j
 
     # 2nd-order lunar zonal and tesseral harmonics
-    J2M_t = ( I_m_t[3,3] - ((I_m_t[1,1]+I_m_t[2,2])/2) )/(μ[mo]) # J_{2,M}*R_M^2
-    C22M_t = ((I_m_t[2,2] - I_m_t[1,1])/(μ[mo]))/4 # C_{22,M}*R_M^2
-    C21M_t = (-I_m_t[1,3])/(μ[mo]) # C_{21,M}*R_M^2
-    S21M_t = (-I_m_t[3,2])/(μ[mo]) # S_{21,M}*R_M^2
-    S22M_t = ((-I_m_t[2,1])/(μ[mo]))/2 # S_{22,M}*R_M^2
+    J2M_t = ( I_M_t[3,3] - ((I_M_t[1,1]+I_M_t[2,2])/2) )/(μ[mo]) # J_{2,M}*R_M^2
+    C22M_t = ((I_M_t[2,2] - I_M_t[1,1])/(μ[mo]))/4 # C_{22,M}*R_M^2
+    C21M_t = (-I_M_t[1,3])/(μ[mo]) # C_{21,M}*R_M^2
+    S21M_t = (-I_M_t[3,2])/(μ[mo]) # S_{21,M}*R_M^2
+    S22M_t = ((-I_M_t[2,1])/(μ[mo]))/2 # S_{22,M}*R_M^2
     J2_t[mo] = J2M_t
 
     Threads.@threads for j in 1:N_ext
@@ -1924,11 +1928,11 @@ end
                         N_MfigM_pmA_y[i] = μ[i]*( (Z[i,j]*F_JCS_x[i,j]) - (X[i,j]*F_JCS_z[i,j]) )
                         N_MfigM_pmA_z[i] = μ[i]*( (X[i,j]*F_JCS_y[i,j]) - (Y[i,j]*F_JCS_x[i,j]) )
                         # expressions below have minus sign since N_MfigM_pmA_{x,y,z} have inverted signs in cross product
-                        temp_N_M_x[i] = N_MfigM[1] - (N_MfigM_pmA_x[i]*μ[j])
+                        temp_N_M_x[i] = N_MfigM[1] - N_MfigM_pmA_x[i]
                         N_MfigM[1] = temp_N_M_x[i]
-                        temp_N_M_y[i] = N_MfigM[2] - (N_MfigM_pmA_y[i]*μ[j])
+                        temp_N_M_y[i] = N_MfigM[2] - N_MfigM_pmA_y[i]
                         N_MfigM[2] = temp_N_M_y[i]
-                        temp_N_M_z[i] = N_MfigM[3] - (N_MfigM_pmA_z[i]*μ[j])
+                        temp_N_M_z[i] = N_MfigM[3] - N_MfigM_pmA_z[i]
                         N_MfigM[3] = temp_N_M_z[i]
                     end
                 end
@@ -2147,6 +2151,7 @@ end
         dq[3(N+i)  ] = postNewtonZ[i]
     end
 
+    # I*ω
     Iω_x = (I_m_t[1,1]*q[6N+4]) + ((I_m_t[1,2]*q[6N+5]) + (I_m_t[1,3]*q[6N+6]))
     Iω_y = (I_m_t[2,1]*q[6N+4]) + ((I_m_t[2,2]*q[6N+5]) + (I_m_t[2,3]*q[6N+6]))
     Iω_z = (I_m_t[3,1]*q[6N+4]) + ((I_m_t[3,2]*q[6N+5]) + (I_m_t[3,3]*q[6N+6]))
@@ -2181,14 +2186,14 @@ end
 
     # evaluate Eq. (44) of Folkner et al. (2014) in lunar mantle frame coords
     # I*e_r
-    I_er_EM_1 = (I_m_t[1,1]*er_EM_1) + ((I_m_t[1,2]*er_EM_2) + (I_m_t[1,3]*er_EM_3))
-    I_er_EM_2 = (I_m_t[2,1]*er_EM_1) + ((I_m_t[2,2]*er_EM_2) + (I_m_t[2,3]*er_EM_3))
-    I_er_EM_3 = (I_m_t[3,1]*er_EM_1) + ((I_m_t[3,2]*er_EM_2) + (I_m_t[3,3]*er_EM_3))
+    I_er_EM_1 = (I_M_t[1,1]*er_EM_1) + ((I_M_t[1,2]*er_EM_2) + (I_M_t[1,3]*er_EM_3))
+    I_er_EM_2 = (I_M_t[2,1]*er_EM_1) + ((I_M_t[2,2]*er_EM_2) + (I_M_t[2,3]*er_EM_3))
+    I_er_EM_3 = (I_M_t[3,1]*er_EM_1) + ((I_M_t[3,2]*er_EM_2) + (I_M_t[3,3]*er_EM_3))
 
     # I*p_E
-    I_p_E_1 = (I_m_t[1,1]*p_E_1) + ((I_m_t[1,2]*p_E_2) + (I_m_t[1,3]*p_E_3))
-    I_p_E_2 = (I_m_t[2,1]*p_E_1) + ((I_m_t[2,2]*p_E_2) + (I_m_t[2,3]*p_E_3))
-    I_p_E_3 = (I_m_t[3,1]*p_E_1) + ((I_m_t[3,2]*p_E_2) + (I_m_t[3,3]*p_E_3))
+    I_p_E_1 = (I_M_t[1,1]*p_E_1) + ((I_M_t[1,2]*p_E_2) + (I_M_t[1,3]*p_E_3))
+    I_p_E_2 = (I_M_t[2,1]*p_E_1) + ((I_M_t[2,2]*p_E_2) + (I_M_t[2,3]*p_E_3))
+    I_p_E_3 = (I_M_t[3,1]*p_E_1) + ((I_M_t[3,2]*p_E_2) + (I_M_t[3,3]*p_E_3))
 
     # e_r × (I*e_r)
     er_EM_cross_I_er_EM_1 = (er_EM_2*I_er_EM_3) - (er_EM_3*I_er_EM_2)
@@ -2229,9 +2234,9 @@ end
     N_cmb_3 = (k_ν*(q[6N+12]-q[6N+6]))
 
     # I*(dω/dt); i.e., I times RHS of Folkner et at. (2014), Eq. (34)
-    I_dω_1 = ((N_1_LMF + N_MfigM_figE_1) + N_cmb_1) - (dIω_x + ωxIω_x)
-    I_dω_2 = ((N_2_LMF + N_MfigM_figE_2) + N_cmb_2) - (dIω_y + ωxIω_y)
-    I_dω_3 = ((N_3_LMF + N_MfigM_figE_3) + N_cmb_3) - (dIω_z + ωxIω_z)
+    I_dω_1 = ((N_MfigM_figE_1 + (μ[mo]*N_1_LMF)) + N_cmb_1) - (dIω_x + ωxIω_x)
+    I_dω_2 = ((N_MfigM_figE_2 + (μ[mo]*N_2_LMF)) + N_cmb_2) - (dIω_y + ωxIω_y)
+    I_dω_3 = ((N_MfigM_figE_3 + (μ[mo]*N_3_LMF)) + N_cmb_3) - (dIω_z + ωxIω_z)
 
     # I_c * ω_c
     Ic_ωc_1 = I_c_t[1,1]*q[6N+10] # + ((I_c_t[1,2]*q[6N+11]) + (I_c_t[1,3]*q[6N+12]))
