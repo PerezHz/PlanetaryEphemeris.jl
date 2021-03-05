@@ -613,14 +613,14 @@
 
     # evaluate Eq. (44) of Folkner et al. (2014) in lunar mantle frame coords
     # I*e_r
-    I_er_EM_1 = (I_M_t[1,1]*er_EM_1) + ((I_M_t[1,2]*er_EM_2) + (I_M_t[1,3]*er_EM_3))
-    I_er_EM_2 = (I_M_t[2,1]*er_EM_1) + ((I_M_t[2,2]*er_EM_2) + (I_M_t[2,3]*er_EM_3))
-    I_er_EM_3 = (I_M_t[3,1]*er_EM_1) + ((I_M_t[3,2]*er_EM_2) + (I_M_t[3,3]*er_EM_3))
+    I_er_EM_1 = (I_m_t[1,1]*er_EM_1) + ((I_m_t[1,2]*er_EM_2) + (I_m_t[1,3]*er_EM_3))
+    I_er_EM_2 = (I_m_t[2,1]*er_EM_1) + ((I_m_t[2,2]*er_EM_2) + (I_m_t[2,3]*er_EM_3))
+    I_er_EM_3 = (I_m_t[3,1]*er_EM_1) + ((I_m_t[3,2]*er_EM_2) + (I_m_t[3,3]*er_EM_3))
 
     # I*p_E
-    I_p_E_1 = (I_M_t[1,1]*p_E_1) + ((I_M_t[1,2]*p_E_2) + (I_M_t[1,3]*p_E_3))
-    I_p_E_2 = (I_M_t[2,1]*p_E_1) + ((I_M_t[2,2]*p_E_2) + (I_M_t[2,3]*p_E_3))
-    I_p_E_3 = (I_M_t[3,1]*p_E_1) + ((I_M_t[3,2]*p_E_2) + (I_M_t[3,3]*p_E_3))
+    I_p_E_1 = (I_m_t[1,1]*p_E_1) + ((I_m_t[1,2]*p_E_2) + (I_m_t[1,3]*p_E_3))
+    I_p_E_2 = (I_m_t[2,1]*p_E_1) + ((I_m_t[2,2]*p_E_2) + (I_m_t[2,3]*p_E_3))
+    I_p_E_3 = (I_m_t[3,1]*p_E_1) + ((I_m_t[3,2]*p_E_2) + (I_m_t[3,3]*p_E_3))
 
     # e_r × (I*e_r)
     er_EM_cross_I_er_EM_1 = (er_EM_2*I_er_EM_3) - (er_EM_3*I_er_EM_2)
@@ -1313,14 +1313,14 @@ end
 
     # evaluate Eq. (44) of Folkner et al. (2014) in lunar mantle frame coords
     # I*e_r
-    I_er_EM_1 = (I_M_t[1,1]*er_EM_1) + ((I_M_t[1,2]*er_EM_2) + (I_M_t[1,3]*er_EM_3))
-    I_er_EM_2 = (I_M_t[2,1]*er_EM_1) + ((I_M_t[2,2]*er_EM_2) + (I_M_t[2,3]*er_EM_3))
-    I_er_EM_3 = (I_M_t[3,1]*er_EM_1) + ((I_M_t[3,2]*er_EM_2) + (I_M_t[3,3]*er_EM_3))
+    I_er_EM_1 = (I_m_t[1,1]*er_EM_1) + ((I_m_t[1,2]*er_EM_2) + (I_m_t[1,3]*er_EM_3))
+    I_er_EM_2 = (I_m_t[2,1]*er_EM_1) + ((I_m_t[2,2]*er_EM_2) + (I_m_t[2,3]*er_EM_3))
+    I_er_EM_3 = (I_m_t[3,1]*er_EM_1) + ((I_m_t[3,2]*er_EM_2) + (I_m_t[3,3]*er_EM_3))
 
     # I*p_E
-    I_p_E_1 = (I_M_t[1,1]*p_E_1) + ((I_M_t[1,2]*p_E_2) + (I_M_t[1,3]*p_E_3))
-    I_p_E_2 = (I_M_t[2,1]*p_E_1) + ((I_M_t[2,2]*p_E_2) + (I_M_t[2,3]*p_E_3))
-    I_p_E_3 = (I_M_t[3,1]*p_E_1) + ((I_M_t[3,2]*p_E_2) + (I_M_t[3,3]*p_E_3))
+    I_p_E_1 = (I_m_t[1,1]*p_E_1) + ((I_m_t[1,2]*p_E_2) + (I_m_t[1,3]*p_E_3))
+    I_p_E_2 = (I_m_t[2,1]*p_E_1) + ((I_m_t[2,2]*p_E_2) + (I_m_t[2,3]*p_E_3))
+    I_p_E_3 = (I_m_t[3,1]*p_E_1) + ((I_m_t[3,2]*p_E_2) + (I_m_t[3,3]*p_E_3))
 
     # e_r × (I*e_r)
     er_EM_cross_I_er_EM_1 = (er_EM_2*I_er_EM_3) - (er_EM_3*I_er_EM_2)
@@ -2186,14 +2186,14 @@ end
 
     # evaluate Eq. (44) of Folkner et al. (2014) in lunar mantle frame coords
     # I*e_r
-    I_er_EM_1 = (I_M_t[1,1]*er_EM_1) + ((I_M_t[1,2]*er_EM_2) + (I_M_t[1,3]*er_EM_3))
-    I_er_EM_2 = (I_M_t[2,1]*er_EM_1) + ((I_M_t[2,2]*er_EM_2) + (I_M_t[2,3]*er_EM_3))
-    I_er_EM_3 = (I_M_t[3,1]*er_EM_1) + ((I_M_t[3,2]*er_EM_2) + (I_M_t[3,3]*er_EM_3))
+    I_er_EM_1 = (I_m_t[1,1]*er_EM_1) + ((I_m_t[1,2]*er_EM_2) + (I_m_t[1,3]*er_EM_3))
+    I_er_EM_2 = (I_m_t[2,1]*er_EM_1) + ((I_m_t[2,2]*er_EM_2) + (I_m_t[2,3]*er_EM_3))
+    I_er_EM_3 = (I_m_t[3,1]*er_EM_1) + ((I_m_t[3,2]*er_EM_2) + (I_m_t[3,3]*er_EM_3))
 
     # I*p_E
-    I_p_E_1 = (I_M_t[1,1]*p_E_1) + ((I_M_t[1,2]*p_E_2) + (I_M_t[1,3]*p_E_3))
-    I_p_E_2 = (I_M_t[2,1]*p_E_1) + ((I_M_t[2,2]*p_E_2) + (I_M_t[2,3]*p_E_3))
-    I_p_E_3 = (I_M_t[3,1]*p_E_1) + ((I_M_t[3,2]*p_E_2) + (I_M_t[3,3]*p_E_3))
+    I_p_E_1 = (I_m_t[1,1]*p_E_1) + ((I_m_t[1,2]*p_E_2) + (I_m_t[1,3]*p_E_3))
+    I_p_E_2 = (I_m_t[2,1]*p_E_1) + ((I_m_t[2,2]*p_E_2) + (I_m_t[2,3]*p_E_3))
+    I_p_E_3 = (I_m_t[3,1]*p_E_1) + ((I_m_t[3,2]*p_E_2) + (I_m_t[3,3]*p_E_3))
 
     # e_r × (I*e_r)
     er_EM_cross_I_er_EM_1 = (er_EM_2*I_er_EM_3) - (er_EM_3*I_er_EM_2)
