@@ -27,6 +27,8 @@ using DelimitedFiles
 using JLD
 using Quadmath
 
+import Base.reverse
+
 # integration parameters
 const order = 30
 const abstol = 1.0E-20

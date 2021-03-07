@@ -21,11 +21,6 @@ function TaylorInterpolant(t0::T, t::AbstractVector{T},
     return TaylorInterpolant{T,U,N}(t0, t, x)
 end
 
-# function TaylorInterpolant(t::AbstractVector{T},
-#         x::AbstractArray{Taylor1{U},N}) where {T<:Real, U<:Number, N}
-#     return TaylorInterpolant{T,U,N}(t[1], t.-t[1], x)
-# end
-
 # return time vector index corresponding to interpolation range
 function getinterpindex(tinterp::TaylorInterpolant{T,U,N}, t::T) where {T<:Real, U<:Number, N}
     tmin, tmax = minmax(tinterp.t[end], tinterp.t[1])
@@ -81,4 +76,13 @@ end
 function (tinterp::TaylorInterpolant{T,U,N})(t::V) where {T<:Real, U<:Number, V<:Real, N}
     R = promote_type(T, V)
     return tinterp(convert(R, t))
+end
+
+# reverse independent variable function
+function reverse(tinterp::TaylorInterpolant{T,U,N}) where {T<:Real, U<:Number, N}
+    tinterp_rev_t0 = tinterp.t[end]
+    tinterp_rev_t = tinterp.t[end:-1:1] .- tinterp_rev_t0
+    tinterp_rev_x = vcat(tinterp(tinterp.t[end]+Taylor1(tinterp.x[1].order))', tinterp.x[end:-1:2,:])
+
+    return TaylorInterpolant(tinterp_rev_t0, tinterp_rev_t, tinterp_rev_x)
 end
