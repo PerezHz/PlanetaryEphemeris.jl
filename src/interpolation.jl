@@ -22,60 +22,33 @@ function TaylorInterpolant(t0::T, t::AbstractVector{T},
 end
 
 # return time vector index corresponding to interpolation range
-function getinterpindex(tinterp::TaylorInterpolant{T,U,N}, t::T) where {T<:Real, U<:Number, N}
+function getinterpindex(tinterp::TaylorInterpolant{T,U,N}, t::V) where {T<:Real, U<:Number, V<:Number, N}
+    t00 = constant_term(constant_term(t))
     tmin, tmax = minmax(tinterp.t[end], tinterp.t[1])
     Δt = t-tinterp.t0
-    @assert tmin ≤ Δt ≤ tmax "Evaluation time outside range of interpolation"
-    if Δt == tinterp.t[end] # compute solution at final time from last step expansion
+    Δt00 = t00-tinterp.t0
+    @assert tmin ≤ Δt00 ≤ tmax "Evaluation time outside range of interpolation"
+    if Δt00 == tinterp.t[end] # compute solution at final time from last step expansion
         ind = lastindex(tinterp.t)-1
     elseif issorted(tinterp.t) # forward integration
-        ind = searchsortedlast(tinterp.t, Δt)
+        ind = searchsortedlast(tinterp.t, Δt00)
     elseif issorted(tinterp.t, rev=true) # backward integration
-        ind = searchsortedlast(tinterp.t, Δt, rev=true)
+        ind = searchsortedlast(tinterp.t, Δt00, rev=true)
     end
     return ind, Δt
 end
 
 # function-like (callability) methods
-function (tinterp::TaylorInterpolant{T,U,1})(t::T) where {T<:Real, U<:Number}
+function (tinterp::TaylorInterpolant{T,U,1})(t::V) where {T<:Real, U<:Number, V<:Number}
     ind, Δt = getinterpindex(tinterp, t)
     δt = Δt-tinterp.t[ind]
     return tinterp.x[ind](δt)
 end
 
-function (tinterp::TaylorInterpolant{T,U,1})(t::Taylor1{T}) where {T<:Real, U<:Number}
-    ind, _ = getinterpindex(tinterp, constant_term(t))
-    δt = (t-tinterp.t0)-tinterp.t[ind]
-    return tinterp.x[ind](δt)
-end
-
-function (tinterp::TaylorInterpolant{T,U,1})(t::TaylorN{T}) where {T<:Real, U<:Number}
-    ind, _ = getinterpindex(tinterp, constant_term(t))
-    δt = (t-tinterp.t0)-tinterp.t[ind]
-    return tinterp.x[ind](δt)
-end
-
-function (tinterp::TaylorInterpolant{T,U,2})(t::T) where {T<:Real, U<:Number}
+function (tinterp::TaylorInterpolant{T,U,2})(t::V) where {T<:Real, U<:Number, V<:Number}
     ind, Δt = getinterpindex(tinterp, t)
     δt = Δt-tinterp.t[ind]
     return tinterp.x[ind,:](δt)
-end
-
-function (tinterp::TaylorInterpolant{T,U,2})(t::Taylor1{T}) where {T<:Real, U<:Number}
-    ind, _ = getinterpindex(tinterp, constant_term(t))
-    δt = (t-tinterp.t0)-tinterp.t[ind]
-    return tinterp.x[ind,:](δt)
-end
-
-function (tinterp::TaylorInterpolant{T,U,2})(t::TaylorN{T}) where {T<:Real, U<:Number}
-    ind, _ = getinterpindex(tinterp, constant_term(t))
-    δt = (t-tinterp.t0)-tinterp.t[ind]
-    return tinterp.x[ind,:](δt)
-end
-
-function (tinterp::TaylorInterpolant{T,U,N})(t::V) where {T<:Real, U<:Number, V<:Real, N}
-    R = promote_type(T, V)
-    return tinterp(convert(R, t))
 end
 
 # reverse independent variable function
@@ -83,6 +56,5 @@ function reverse(tinterp::TaylorInterpolant{T,U,N}) where {T<:Real, U<:Number, N
     tinterp_rev_t0 = tinterp.t[end]
     tinterp_rev_t = tinterp.t[end:-1:1] .- tinterp_rev_t0
     tinterp_rev_x = vcat(tinterp(tinterp.t[end]+Taylor1(tinterp.x[1].order))', tinterp.x[end:-1:2,:])
-
     return TaylorInterpolant(tinterp_rev_t0, tinterp_rev_t, tinterp_rev_x)
 end
