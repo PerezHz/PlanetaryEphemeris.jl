@@ -16,7 +16,7 @@ Instituto de Ciencias Físicas, Universidad Nacional Autónoma de México (UNAM)
 The current development version of this package may be installed in Julia via:
 ```
 import Pkg
-Pkg.add(Pkg.PackageSpec(url="https://github.com/PerezHz/PlanetaryEphemeris.jl.git", rev="jp/threads"))
+Pkg.add(Pkg.PackageSpec(url="https://github.com/PerezHz/PlanetaryEphemeris.jl.git", rev="main"))
 ```
 
 ## Usage
