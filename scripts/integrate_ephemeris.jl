@@ -9,8 +9,8 @@ using PlanetaryEphemeris
 using Dates, JLD
 
 #script parameters (TODO: use ArgParse.jl instead)
-const maxsteps = 10000
-const nyears = 6.0 #21.0 #-5.0
+const maxsteps = 100000
+const nyears = 100.0
 const jd0 = datetime2julian(DateTime(1969,6,28,0,0,0)) #starting time of integration
 @show jd0, J2000, jd0-J2000
 const dense = true #false
