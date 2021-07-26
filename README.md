@@ -22,15 +22,14 @@ Pkg.add(Pkg.PackageSpec(url="https://github.com/PerezHz/PlanetaryEphemeris.jl.gi
 ## Usage
 
 `PlanetaryEphemeris.propagate` is a high-level function which performs the
-numerical integration. The file `main.jl` in this package root directory
-contains an example script. This script may be called from any subfolder of this
-package simply as:
+numerical integration. The file `integrate_ephemeris.jl` in the `scripts` directory
+contains an example script. This script may be called as:
 
-`julia --project=@. main.jl`
+`julia --project=@. integrate_ephemeris.jl`
 
 `PlanetaryEphemeris.propagate` also supports multi-threading:
 
-`JULIA_NUM_THREADS=<number-of-threads> julia --project=@. main.jl`
+`JULIA_NUM_THREADS=<number-of-threads> julia --project=@. integrate_ephemeris.jl`
 
 ## Acknowledgments
 
