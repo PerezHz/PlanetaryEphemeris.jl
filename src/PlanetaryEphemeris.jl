@@ -22,7 +22,7 @@ export au, yr, sundofs, earthdofs,
 using AutoHashEquals
 using TaylorIntegration, LinearAlgebra
 using Printf
-using Dates: DateTime, julian2datetime, datetime2julian
+using Dates: DateTime, julian2datetime, datetime2julian, year
 using DelimitedFiles
 using JLD
 using Quadmath
