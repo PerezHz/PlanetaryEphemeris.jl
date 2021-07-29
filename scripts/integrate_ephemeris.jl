@@ -10,9 +10,9 @@ using Dates, JLD
 
 #script parameters (TODO: use ArgParse.jl instead)
 maxsteps = 1000000
-nyears = 100.0
 # jd0 = datetime2julian(DateTime(1969,6,28,0,0,0)) #starting time of integration
 jd0 = datetime2julian(DateTime(2000,1,1,12)) #starting time of integration
+nyears = 2031 - year(julian2datetime(jd0))
 @show jd0, J2000, jd0-J2000
 dense = true #false
 dynamics = DE430!
