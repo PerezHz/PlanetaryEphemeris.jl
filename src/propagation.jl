@@ -29,7 +29,7 @@ function propagate(maxsteps::Int, jd0::T, tspan::T;
     # total number of bodies
     N = 11+nast
     # get initial conditions (6N translational + 6 lunar mantle physical librations + 6 lunar core + TT-TDB)
-    _q0 = initialcond(N) ### <--- length(_q0) == 6N+13
+    _q0 = initialcond(N, jd0) ### <--- length(_q0) == 6N+13
     # set initial time equal to zero (improves accuracy in data reductions)
     _t0 = zero(jd0)
     # final time (years)

@@ -7,7 +7,7 @@ function initialcond(N, jd0::Float64=datetime2julian(DateTime(1969,6,28,0,0,0)))
     dt0_2000 = DateTime(2000,1,1,12)
 
     if dt0 == dt0_1969
-        # 1969-Jun-28.0 (TDB)
+        print("Initial conditions: 1969-Jun-28.0 (TDB)")
         ss_ic_filename = "ss11ic_1969Jun28.txt"
         ast_ic_filename = "ast343ic_1969Jun28.txt"
         # Initial conditions for unar mantle and core libration angles/rates
@@ -17,7 +17,7 @@ function initialcond(N, jd0::Float64=datetime2julian(DateTime(1969,6,28,0,0,0)))
         q0[6N+10:6N+12] .= [-0.00661836772247824400, -0.00107295445159005100, 0.22964879652299730000] # lunar core angular velocity vector (mantle frame)
         q0[6N+13] = -0.00016266592104301078 # DE430 TT-TDB at initial epoch
     elseif dt0 == dt0_2000
-        # J2000
+        print("Initial conditions: 2000-Jan-1.5 (TDB)")
         ss_ic_filename = "ss11ic.txt"
         ast_ic_filename = "ast343ic.txt"
         # Initial conditions for unar mantle and core libration angles/rates
