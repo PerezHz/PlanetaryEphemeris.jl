@@ -1,4 +1,4 @@
-The NEOs.jl package is licensed under the MIT "Expat" License:
+The PlanetaryEphemeris.jl package is licensed under the MIT "Expat" License:
 
 Copyright (c) 2021: Jorge A. Perez-Hernandez and Luis Benet.
 
