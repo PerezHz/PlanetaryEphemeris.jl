@@ -1,5 +1,7 @@
 # PlanetaryEphemeris.jl
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5152451.svg)](https://doi.org/10.5281/zenodo.5152451)
+
 `PlanetaryEphemeris.jl` is a Taylor integrator for the JPL DE430 planetary
 ephemeris dynamical model (Folkner et al., 2014), based on
 [TaylorIntegration.jl](https://github.com/PerezHzTaylorIntegration.jl).
