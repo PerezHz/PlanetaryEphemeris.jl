@@ -81,8 +81,8 @@ function taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}},
     # @time TaylorIntegration.__jetcoeffs!(Val(true), f!, t, x, dx, xaux, params)
 
     # Compute the step-size of the integration using `abstol`
-    # δt = stepsize_threads(x, abstol)
-    δt = stepsize_jz05(x, abstol)
+    δt = stepsize_threads(x, abstol)
+    # δt = stepsize_jz05(x, abstol)
 
     return δt
 end

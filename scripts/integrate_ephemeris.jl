@@ -6,7 +6,7 @@
 @show Threads.nthreads()
 
 using PlanetaryEphemeris
-using Dates, JLD
+using Dates
 
 #script parameters (TODO: use ArgParse.jl instead)
 maxsteps = 1000000
