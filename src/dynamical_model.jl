@@ -9,6 +9,16 @@
 # - Kinematic model for the precession and nutation of the Earth's orientation (IAU 1976/1980 Earth orientation model)
 # - Kinematic model for the Moons's orientation (Seidelmann et al., 2006)
 # - tidal secular acceleration of Moon due to rides raised on Earth by both the Moon and the Sun
+
+# auxiliary function: order-preserving differentiate
+function ordpres_differentiate(a::Taylor1)
+    res = zero(a)
+    for ord in eachindex(res)
+        TaylorSeries.differentiate!(res, a, ord)
+    end
+    return res
+end
+
 @taylorize function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     # N: number of bodies
     # jd0: initial Julian date
@@ -20,7 +30,7 @@
     local one_t = one(t)
     local dsj2k = t+(jd0-J2000) # days since J2000.0 (TDB)
     local I_m_t = (ITM_und-I_c).*one_t # ITM(q_del_τ_M, eulang_del_τ_M) # matrix elements of lunar moment of inertia at time t-τ_M (Folkner et al. 2014, eq. 41)
-    local dI_m_t = derivative.(I_m_t) # time-derivative of lunar mantle I at time t-τ_M
+    local dI_m_t = ordpres_differentiate.(I_m_t) # time-derivative of lunar mantle I at time t-τ_M
     local inv_I_m_t = inv(I_m_t) # inverse of lunar mantle I matrix at time t-τ_M
     local I_c_t = I_c.*one_t # lunar core I matrix
     local inv_I_c_t = inv(I_c_t) # inverse of lunar core I matrix
@@ -719,7 +729,7 @@ end
     local one_t = one(t)
     local dsj2k = t+(jd0-J2000) # days since J2000.0 (TDB)
     local I_m_t = (ITM_und-I_c).*one_t # ITM(q_del_τ_M, eulang_del_τ_M) # matrix elements of lunar moment of inertia at time t-τ_M (Folkner et al. 2014, eq. 41)
-    local dI_m_t = derivative.(I_m_t) # time-derivative of lunar mantle I at time t-τ_M
+    local dI_m_t = ordpres_differentiate.(I_m_t) # time-derivative of lunar mantle I at time t-τ_M
     local inv_I_m_t = inv(I_m_t) # inverse of lunar mantle I matrix at time t-τ_M
     local I_c_t = I_c.*one_t # lunar core I matrix
     local inv_I_c_t = inv(I_c_t) # inverse of lunar core I matrix
@@ -1436,7 +1446,7 @@ end
     local one_t = one(t)
     local dsj2k = t+(jd0-J2000) # days since J2000.0 (TDB)
     local I_m_t = ITM(q_del_τ_M, eulang_del_τ_M, ω_m_del_τ_M) # matrix elements of lunar mantle moment of inertia at time t-τ_M (Folkner et al. 2014, eq. 41)
-    local dI_m_t = derivative.(I_m_t) # time-derivative of lunar mantle I at time t-τ_M
+    local dI_m_t = ordpres_differentiate.(I_m_t) # time-derivative of lunar mantle I at time t-τ_M
     local inv_I_m_t = inv(I_m_t) # inverse of lunar mantle I matrix at time t-τ_M
     local I_c_t = I_c.*one_t # lunar core I matrix
     local inv_I_c_t = inv(I_c_t) # inverse of lunar core I matrix
