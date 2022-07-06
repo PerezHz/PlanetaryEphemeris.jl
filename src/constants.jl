@@ -1,8 +1,9 @@
-const su = 1 #Sun's index
-const ea = 4 #Earth's index
-const mo = 5 #Moon's index
+const su = 1 # Sun's index
+const ea = 4 # Earth's index
+const mo = 5 # Moon's index
 
-# vector of G*m values in au^3/day^2
+# Mass parameters μ = G*m (in au^3/day^2) of major bodies (Sun + Planets + Moon)
+# See Table 8 in page 49 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 GM1 = 0.491248045036476000E-10 # Mercury
 GM2 = 0.724345233264412000E-09 # Venus
 GM3 = 0.888769244512563400E-09 # Earth
@@ -16,6 +17,8 @@ GMS = 0.295912208285591100E-03 # Sun
 GMM = 0.109318945074237400E-10 # Moon
 GMB = 0.899701139019987100E-09 # Earth-Moon barycenter
 
+# Vector of mass parameters μ = G*m (in au^3/day^2) of  Sun + Planets + Moon + 343 Asteroids
+# See Table 8 in page 49 and Table 12 in pages 53-59 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 const μ = [GMS, GM1, GM2, GM3, GMM, GM4, GM5, GM6, GM7, GM8, GM9,
 
 1.4004765561723440E-13, # 1 Ceres
@@ -363,6 +366,7 @@ const μ = [GMS, GM1, GM2, GM3, GMM, GM4, GM5, GM6, GM7, GM8, GM9,
 9.9000011897959020E-19  # 433 Eros
 ]
 
+# Vector of JPL DE430 asteroids IDs
 const de430_343ast_ids =
     [1, 4, 2, 10, 31, 704, 511, 15, 3, 16,
     65, 88, 48, 52, 451, 87, 7, 423, 29, 24,
@@ -401,69 +405,94 @@ const de430_343ast_ids =
     132, 585, 433
 ]
 
-# Matrix of J2 interactions included in DE430 ephemeris, according to Folkner et al., 2014
+# Matrix of second-degree zonal harmonic J2 interactions included in DE430 ephemeris
+# See Section III. Translational Equations of Motion in pages 11-15 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 const UJ_interaction = fill(false, length(μ), length(μ))
-UJ_interaction[2:11, su] .= true # per Folkner et al. (2014), Section III, 1st paragraph: Sun's J2 only interacts with the Moon and planets
-UJ_interaction[union(1:ea-1,ea+1:7), ea] .= true # Earth's grav potential interacts with Sun, Mercury, Venus, Moon, Mars and Jupiter
-UJ_interaction[union(1:mo-1,mo+1:7), mo] .= true # Moon's grav potential interacts with Sun, Mercury, Venus, Earth, Mars and Jupiter
+# First paragraph of Section III. Translational Equations of Motion in page 11 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract:
+# Sun's J2 only interacts with the Moon and planets
+UJ_interaction[2:11, su] .= true
+# Earth's grav potential interacts with Sun, Mercury, Venus, Moon, Mars and Jupiter
+UJ_interaction[union(1:ea-1,ea+1:7), ea] .= true 
+# Moon's grav potential interacts with Sun, Mercury, Venus, Earth, Mars and Jupiter
+UJ_interaction[union(1:mo-1,mo+1:7), mo] .= true 
 
-const au = 1.495978707E8 # astronomical unit value in km
-const yr = 365.25 # days in a Julian year
-const daysec = 86_400 # number of seconds in a day
-const clightkms = 2.99792458E5 # speed of light, km/sec
-const c_au_per_day = daysec*(clightkms/au) # speed of light in au per day
-const c_au_per_sec = clightkms/au # speed of light in au per sec
-const c_cm_per_sec = 100_000*clightkms # speed of light in cm per sec
+# Physical constants in various units 
+# See Table 4 in page 47 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
+const au = 1.495978707E8                       # Astronomical unit value in km
+const yr = 365.25                              # Days in a Julian year
+const daysec = 86_400                          # Number of seconds in a day
+const clightkms = 2.99792458E5                 # Speed of light, km/sec
+const c_au_per_day = daysec*(clightkms/au)     # Speed of light in au per day
+const c_au_per_sec = clightkms/au              # Speed of light in au per sec
+const c_cm_per_sec = 100_000*clightkms         # Speed of light in cm per sec
 
-const sundofs = nbodyind(length(μ), su)
-const earthdofs = nbodyind(length(μ), ea)
+const sundofs = nbodyind(length(μ), su)        # Sun's position and velocity indices
+const earthdofs = nbodyind(length(μ), ea)      # Earth's position and velocity indices
 
-const J2000 = 2451545.0
+const J2000 = 2451545.0                        # 2000 epoch julian date   
 
-const R_sun = 696000.0/au # Solar radius in au, value taken from DE430 docs
+# Extended body parameters for the Sun.
+# See Table 9 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
+const R_sun = 696000.0/au                      # Solar radius in au
 
-const α_p_sun = 286.13 # Sun's rotation pole right ascension (degrees)
-const δ_p_sun = 63.87 # Sun's rotation pole declination (degrees)
+const α_p_sun = 286.13                         # Sun's rotation pole right ascension (degrees)
+const δ_p_sun = 63.87                          # Sun's rotation pole declination (degrees)
 
-const RSUN  = 6.9600000000000000E+05
-const J2SUN = 2.1106088532726840E-07
-const JS = [J2SUN*(RSUN/au)^2]
+const RSUN  = 6.9600000000000000E+05           # Solar radius in km  
+const J2SUN = 2.1106088532726840E-07           # Dynamical form–factor of the Sun
+# Second zonal harmonic coefficient J_2 * Suns's radius in au^2
+const JS = [J2SUN*(RSUN/au)^2]                 
 
-const RE     =  6.378136300E+03
-const J2E    =  1.082625450E-03
-const J3E    = -2.532410000E-06
-const J4E    = -1.619898000E-06
-const J5E    = -2.277345000E-07
-const J2EDOT = -2.600000000E-11
+# Extended body parameters for the Earth
+# See Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
+const RE     =  6.378136300E+03                # Earth's radius in km 
+const J2E    =  1.082625450E-03                # Second zonal harmonic of the Earth 
+const J3E    = -2.532410000E-06                # Third zonal harmonic of the Earth 
+const J4E    = -1.619898000E-06                # Fourth zonal harmonic of the Earth 
+const J5E    = -2.277345000E-07                # Fifth zonal harmonic of the Earth 
+const J2EDOT = -2.600000000E-11                # Rate of change of J2E in 1/yr
+# Vector of zonal harmonic coefficients J_n * Earth's radius in au ^n 
 const JE = [J2E*(RE/au)^2, J3E*(RE/au)^3, J4E*(RE/au)^4, J5E*(RE/au)^5]
 
-const RM = 1.7380000000000000E+03
-const J2M  =  2.0321568464952570E-04
-const J3M  =  8.4597026974594570E-06
-const J4M  = -9.7044138365700000E-06
-const J5M  =  7.4221608384052890E-07
-const J6M  = -1.3767531350969900E-05
+# Extended body parameters for the Moon
+# See Table 11 in page 51 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
+const RM = 1.7380000000000000E+03              # Moon's radius in km 
+const J2M  =  2.0321568464952570E-04           # Undistorted 2nd zonal harmonic coefficient
+const J3M  =  8.4597026974594570E-06           # Third zonal harmonic coefficient
+const J4M  = -9.7044138365700000E-06           # Fourth zonal harmonic coefficient
+const J5M  =  7.4221608384052890E-07           # Fifth zonal harmonic coefficient
+const J6M  = -1.3767531350969900E-05           # Sixth zonal harmonic coefficient
+# Vector of zonal harmonic coefficients J_n * Moons's radius in au ^n
 const JM = [J2M*(RM/au)^2, J3M*(RM/au)^3, J4M*(RM/au)^4, J5M*(RM/au)^5, J6M*(RM/au)^6]
 
+# Matrix of zonal harmonic coefficients J_n * radius of the corresponding body ^n
 const JSEM = zeros(5, 6)
 JSEM[su,2:2] = JS
 JSEM[ea,2:5] = JE
 JSEM[mo,2:6] = JM
 
+# Degree of zonal harmonics expansion for each body with extended body accelerations
 const n1SEM = [2, 0, 0, 5, 6]
 const n2M = 6
 
-const C22M =  2.2382740590560020E-05
+# Lunar tesseral harmonics coefficients (C_{nm}, S_{nm}) with n = 2,...,6 and m = 1,...,n
+# See Table 11 in page 51 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 
+# n = 2
+const C22M =  2.2382740590560020E-05          
+
+# n = 3
 const C31M =  2.8480741195592860E-05
 const S31M =  5.8915551555318640E-06
 const C32M =  4.8449420619770600E-06
 const S32M =  1.6844743962783900E-06
 const C33M =  1.6756178134114570E-06
 const S33M = -2.4742714379805760E-07
+# Vector of tesseral harmonic coefficients (C_{3m}, S_{3m}) * Moons's radius in au ^3
 const C3M = [C31M, C32M, C33M]*(RM/au)^3
 const S3M = [S31M, S32M, S33M]*(RM/au)^3
 
+# n = 4
 const C41M = -5.7048697319733210E-06
 const S41M =  1.5789202789245720E-06
 const C42M = -1.5912271792977430E-06
@@ -472,9 +501,11 @@ const C43M = -8.0678881596778210E-08
 const S43M = -8.0349266627431070E-07
 const C44M = -1.2692158612216040E-07
 const S44M =  8.2964257754075220E-08
+# Vector of tesseral harmonic coefficients (C_{4m}, S_{4m}) * Moons's radius in au ^4
 const C4M = [C41M, C42M, C43M, C44M]*(RM/au)^4
 const S4M = [S41M, S42M, S43M, S44M]*(RM/au)^4
 
+# n = 5
 const C51M = -8.6629769308983560E-07
 const S51M = -3.5272289393243820E-06
 const C52M =  7.1199537967353330E-07
@@ -485,9 +516,11 @@ const C54M =  2.1444704319218450E-08
 const S54M =  5.2652110720146800E-10
 const C55M =  7.6596153884006140E-09
 const S55M = -6.7824035473995330E-09
+# Vector of tesseral harmonic coefficients (C_{5m}, S_{5m}) * Moons's radius in au ^5
 const C5M = [C51M, C52M, C53M, C54M, C55M]*(RM/au)^5
 const S5M = [S51M, S52M, S53M, S54M, S55M]*(RM/au)^5
 
+# n = 6
 const C61M =  1.2024363601545920E-06
 const S61M = -2.0453507141252220E-06
 const C62M = -5.4703897324156850E-07
@@ -500,69 +533,87 @@ const C65M =  1.1737698784460500E-09
 const S65M = -8.3465073195142520E-09
 const C66M = -1.0913395178881540E-09
 const S66M =  1.6844213702632920E-09
+# Vector of tesseral harmonic coefficients (C_{6m}, S_{6m}) * Moons's radius in au ^6
 const C6M = [C61M, C62M, C63M, C64M, C65M, C66M]*(RM/au)^6
 const S6M = [S61M, S62M, S63M, S64M, S65M, S66M]*(RM/au)^6
 
+# Matrix of tesseral harmonic coefficients C_{nm} * radius of the moon ^n
 const CM = zeros(6, 6)
 CM[3,1:3] = C3M
 CM[4,1:4] = C4M
 CM[5,1:5] = C5M
 CM[6,1:6] = C6M
-
+# Matrix of tesseral harmonic coefficients S_{nm} * radius of the moon ^n
 const SM = zeros(6, 6)
 SM[3,1:3] = S3M
 SM[4,1:4] = S4M
 SM[5,1:5] = S5M
 SM[6,1:6] = S6M
 
-const R_moon = RM/au # lunar radius in au, value taken from DE430 docs
-const β_L = 6.3102131934887270E-04 # Lunar moment parameter, β_L = (C_T-A_T)/B_T
-const γ_L = 2.2773171480091860E-04 # Lunar moment parameter, γ_L = (B_T-A_T)/C_T
-const k_2M = 0.024059 # potential Love number
-const τ_M = 9.5830547273306690E-02 # time-lag for the lunar solid-body tide (days)
-const α_c = 0.0007 # Ratio of polar moment of inertia of core to mean total polar moment of inertia
-const f_c = 2.4623904789198150E-04 #oblateness of core
-const k_ν_div_C_T = 1.6365616533709530E-08 # Friction coefficient between core and mantle, radian/day
+# Extended body parameters for the Moon
+# See Table 11 in page 51 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
+const R_moon = RM/au                         # Lunar radius in au
+const β_L = 6.3102131934887270E-04           # Lunar moment parameter, β_L = (C_T-A_T)/B_T
+const γ_L = 2.2773171480091860E-04           # Lunar moment parameter, γ_L = (B_T-A_T)/C_T
+const k_2M = 0.024059                        # Potential Love number
+const τ_M = 9.5830547273306690E-02           # Time-lag for the lunar solid-body tide (days)
+const α_c = 0.0007                           # Ratio of polar moment of inertia of core to mean total polar moment of inertia
+const f_c = 2.4623904789198150E-04           # Oblateness of core
+const k_ν_div_C_T = 1.6365616533709530E-08   # Friction coefficient between core and mantle, radian/day
 
-const J2_M_und = 2.0321568464952570E-04 # undistorted lunar 2nd zonal harmonic coefficient
+const J2_M_und = 2.0321568464952570E-04      # Undistorted lunar 2nd zonal harmonic coefficient
 
-#diagonal elements of undistorted lunar mantle moment of inertia
+# Diagonal elements of undistorted lunar mantle moment of inertia
+# See equation (37) in page 16 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 const A_T = (2(1-β_L*γ_L)/(2β_L-γ_L+β_L*γ_L))*J2_M_und
 const B_T = (2(1+γ_L)/(2β_L-γ_L+β_L*γ_L))*J2_M_und
 const C_T = (2(1+β_L)/(2β_L-γ_L+β_L*γ_L))*J2_M_und
 
 const k_ν = k_ν_div_C_T*(C_T*μ[mo]*(R_moon^2))
 
-#diagonal elements of lunar core moment of inertia
+# Diagonal elements of lunar core moment of inertia
+# See equation (39) in page 17 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 const A_c = α_c*C_T*(1-f_c)
 const B_c = α_c*C_T*(1-f_c)
 const C_c = α_c*C_T
 const C_c_m_A_c = (C_c - A_c)*(μ[mo]*R_moon^2)
 
-#lunar undistorted total moment of inertia
+# Lunar undistorted total moment of inertia
+# See equation (36) in page 16 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 const ITM_und = diagm([A_T, B_T, C_T]*μ[mo]*R_moon^2)
 
-#lunar core moment of inertia
+# Lunar core moment of inertia
+# See equation (39) in page 17 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 const I_c = diagm([A_c, B_c, C_c]*μ[mo]*R_moon^2)
+
 
 const ld = 384402.0 # Lunar distance (km)
 # 384399.014 km  mean semi-major axis value was retrieved from:
-# J. G. Williams, D. H. Boggs, and W. M. Folkner (2013). “DE430 Lunar Orbit, Physical Librations and Surface Coordinates,” JPL IOM 335-JW,DB,WF-20130722-016 (internal document)
-const n_moon = sqrt((μ[ea]+μ[mo])/((384399.014/au)^3)) # lunar mean motion (rad/day)
+# Table 3, page 5, J. G. Williams, D. H. Boggs, and W. M. Folkner (2013). 
+# “DE430 Lunar Orbit, Physical Librations and Surface Coordinates,” JPL IOM 335-JW,
+# DB,WF-20130722-016 (internal document)
+# https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de430_moon_coord.pdf
+const n_moon = sqrt((μ[ea]+μ[mo])/((384399.014/au)^3)) # Lunar mean motion (rad/day)
 
-const k_20E = 0.335 # Potential Love number for long-period deformation
-const k_21E = 0.32 # Potential Love number for diurnal deformation
-const k_22E = 0.32 # Potential Love number for semi-diurnal deformation
+# Love numbers for Earth
+# See Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
+const k_20E = 0.335           # Potential Love number for long-period deformation
+const k_21E = 0.32            # Potential Love number for diurnal deformation
+const k_22E = 0.32            # Potential Love number for semi-diurnal deformation
 
-const τ_0p = 0.0640 # Orbital time-lag for long-period deformation, days
-const τ_1p = -0.044 # Orbital time-lag for diurnal deformation, days --> DE430 report states -0.0044, but tech comments and Williams et al. (2006) state -0.044
-const τ_2p = -0.1000 # Orbital time-lag for semi-diurnal deformation, days
+# Orbital time-lags  for Earth
+# See Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
+const τ_0p = 0.0640           # Orbital time-lag for long-period deformation, days
+const τ_1p = -0.044           # Orbital time-lag for diurnal deformation, days --> DE430 report states -0.0044, but tech comments and Williams et al. (2006) state -0.044
+const τ_2p = -0.1000          # Orbital time-lag for semi-diurnal deformation, days
 
-const τ_0 = 0.0 # Rotational time-lag for long-period deformation, days
+# Rotational time-lags for Earth
+# See Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
+const τ_0 = 0.0                    # Rotational time-lag for long-period deformation, days
 const τ_1 = 7.3632190228041890E-03 # Rotational time-lag for diurnal deformation, days
 const τ_2 = 2.5352978633388720E-03 # Rotational time-lag for semi-diurnal deformation, days
 
-# standard value of nominal mean angular velocity of Earth (rad/day), ESAA 2014 Sec 7.4.3.3 p. 296: 7.2921151467e-5 rad/second
+# Standard value of nominal mean angular velocity of Earth (rad/day), ESAA 2014 Sec 7.4.3.3 p. 296: 7.2921151467e-5 rad/second
 const ω_E = daysec*7.2921151467e-5 # (7.2921151467e-5 rad/sec)*daysec -> rad/day
 
 # Earth/Moon mass ratio

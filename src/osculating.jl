@@ -1,85 +1,99 @@
-"""`semimajoraxis(x, y, z, u, v, w, m1, m2)`
+@doc raw"""
+    semimajoraxis(x, y, z, u, v, w, m1, m2)
 
-Calculates semimajor axis for the two
-body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies
-with masses `m1` and `m2`."""
+Calculates semimajor axis for the two body problem defined by the relative position 
+`(x,y,z)` and velocity `(u,v,w)` vectors between two bodies with masses `m1` and `m2`.
+"""
 function semimajoraxis(x, y, z, u, v, w, m1, m2)
-    r = sqrt(x^2+y^2+z^2)
-    vsq = u^2+v^2+w^2
-    M = m1+m2
+    r = sqrt(x^2+y^2+z^2)       # Position magnitude
+    vsq = u^2+v^2+w^2           # Velocity magnitude squared
+    M = m1+m2                   # Total mass
     return 1/( (2/r)-(vsq/M) )
 end
 
-"""`eccentricity(x, y, z, u, v, w, m1, m2)`
+@doc raw"""
+    eccentricity(x, y, z, u, v, w, m1, m2)
 
-Calculates eccentricity for the two
-body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies
-with masses `m1` and `m2`."""
+Calculates eccentricity for the two body problem defined by the relative position 
+`(x,y,z)` and velocity `(u,v,w)` vectors between two bodies with masses `m1` and `m2`.
+"""
 function eccentricity(x, y, z, u, v, w, m1, m2)
-    hsq = (y*w-z*v)^2 + (z*u-x*w)^2 + (x*v-y*u)^2
-    a = semimajoraxis(x, y, z, u, v, w, m1, m2)
-    M = m1+m2
-    quotient = hsq/( M*a )
+    # h: Angular momentum per unit mass
+    hsq = (y*w-z*v)^2 + (z*u-x*w)^2 + (x*v-y*u)^2   # h magnitude squared
+    a = semimajoraxis(x, y, z, u, v, w, m1, m2)     # Semimajor axis
+    M = m1+m2                                       # Total mass   
+    quotient = hsq/( M*a )                          
     return sqrt(1 - quotient)
 end
 
-"""`inclination(x, y, z, u, v, w)`
+@doc raw"""
+    inclination(x, y, z, u, v, w)
 
-Calculates inclination for the two
-body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies."""
+Calculates inclination for the two body problem defined by the relative position 
+`(x,y,z)` and velocity `(u,v,w)` vectors between two bodies."""
 function inclination(x, y, z, u, v, w)
-    hz = x*v-y*u
-    h = sqrt( (y*w-z*v)^2 + (z*u-x*w)^2 + (x*v-y*u)^2 )
+    # h: Angular momentum per unit mass
+    hz = x*v-y*u                                         # z-coordinate of h
+    h = sqrt( (y*w-z*v)^2 + (z*u-x*w)^2 + (x*v-y*u)^2 )  # h magnitude squared
     return acos(hz/h)
 end
 
-"""`aei(x, y, z, u, v, w, m1, m2)`
+@doc raw"""
+    aei(x, y, z, u, v, w, m1, m2)
 
 Returns semimajor axis `a`, eccentricity `e` and inclination `I` for the two-body
 problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)`vectors
-between two bodies with masses `m1` and `m2`."""
+between two bodies with masses `m1` and `m2`.
+
+See also [`semimajoraxis`](@ref), [`eccentricity`](@ref) and [`inclination`](@ref).
+"""
 function aei(x, y, z, u, v, w, m1, m2)
-    r = sqrt(x^2+y^2+z^2)
-    vsq = u^2+v^2+w^2
-    M = m1+m2
-    a = 1/( (2/r)-(vsq/M) )
-    hsq = (y*w-z*v)^2 + (z*u-x*w)^2 + (x*v-y*u)^2
-    h = sqrt(hsq)
-    quotient = hsq/( M*a )
-    e = sqrt(1 - quotient)
-    hz = x*v-y*u
-    inc = acos(hz/h)
+    r = sqrt(x^2+y^2+z^2)                           # Position magnitude
+    vsq = u^2+v^2+w^2                               # Velocity magnitude squared
+    M = m1+m2                                       # Total mass 
+    a = 1/( (2/r)-(vsq/M) )                         # Semimajor axis
+    # h: Angular momentum per unit mass
+    hsq = (y*w-z*v)^2 + (z*u-x*w)^2 + (x*v-y*u)^2   # h magnitude squared
+    h = sqrt(hsq)                                   # h magnitude
+    quotient = hsq/( M*a )         
+    e = sqrt(1 - quotient)                          # Eccentricity
+    hz = x*v-y*u                                    # z-coordinate of h
+    inc = acos(hz/h)                                # Inclination 
     return a, e, inc
 end
 
-"""`ae(x, y, z, u, v, w)`
+@doc """
+    ae(x, y, z, u, v, w)
 
 Returns semimajor axis `a` and eccentricity `e` for the two-body problem defined
 by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between two
-bodies with masses `m1` and `m2`."""
+bodies with masses `m1` and `m2`.
+
+See also [`semimajoraxis`](@ref) and [`eccentricity`](@ref).
+"""
 function ae(x, y, z, u, v, w, m1, m2)
-    r = sqrt(x^2+y^2+z^2)
-    vsq = u^2+v^2+w^2
-    M = m1+m2
-    a = 1/( (2/r)-(vsq/M) )
-    hsq = (y*w-z*v)^2 + (z*u-x*w)^2 + (x*v-y*u)^2
-    quotient = hsq/( M*a )
-    e = sqrt(1 - quotient)
+    r = sqrt(x^2+y^2+z^2)                           # Position magnitude
+    vsq = u^2+v^2+w^2                               # Velocity magnitude squared
+    M = m1+m2                                       # Total mass
+    a = 1/( (2/r)-(vsq/M) )                         # Semimajor axis 
+    # h: Angular momentum per unit mass
+    hsq = (y*w-z*v)^2 + (z*u-x*w)^2 + (x*v-y*u)^2   # h magnitude squared
+    quotient = hsq/( M*a )                  
+    e = sqrt(1 - quotient)                          # Eccentricity
     return a, e
 end
 
-"""`longascnode(x, y, z, u, v, w)`
+@doc raw"""
+    longascnode(x, y, z, u, v, w)
 
-Calculates longitude of ascending node for the two
-body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies."""
-function longascnode(
-    x, y, z,
-    u, v, w
-    )
+Calculates longitude of ascending node for the two body problem defined by the relative 
+position `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies.
+"""
+function longascnode(x, y, z, u, v, w)
 
-    #the longitude of ascending node is computed as
-    #the angle between x-axis and the vector n = (-hy,hx,0)
-    #where hx, hy, are resp., the x and y comps. of ang mom vector per unit mass, h
+    # The longitude of ascending node is computed as
+    # the angle between x-axis and the vector n = (-hy, hx, 0)
+    # where hx, hy, are resp., the x and y comps. of ang mom vector per unit mass, h
 
     res = atan( y*w-z*v, x*w-z*u)
 
@@ -91,23 +105,21 @@ function longascnode(
 
 end
 
-"""`argperi(x, y, z, u, v, w, m1, m2)`
+@doc raw"""
+    argperi(x, y, z, u, v, w, m1, m2)
 
 Calculates the instantaneous (osculating) argument of pericentre for the two
-body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies
-with masses `m1` and `m2`."""
-function argperi(
-    x, y, z,
-    u, v, w,
-    m1, m2
-    )
-
-    #n = (z-axis unit vector)×h = (-hy, hx, 0)
+body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors 
+between two bodies with masses `m1` and `m2`.
+"""
+function argperi(x, y, z, u, v, w, m1, m2)
+    # h: Angular momentum per unit mass
+    # n = (z-axis unit vector)×h = (-hy, hx, 0)
     n = [x*w-z*u, y*w-z*v, zero(x)]
-    e = lrlvec(x,y,z,u,v,w,m1,m2) #cartesian comps. of Laplace-Runge-Lenz vector
-    n = n/sqrt(n[1]^2+n[2]^2+n[3]^2)
-    e = e/sqrt(e[1]^2+e[2]^2+e[3]^2)
-    cosω = dot(n, e)
+    e = lrlvec(x,y,z,u,v,w,m1,m2)       # Cartesian comps. of Laplace-Runge-Lenz vector
+    n = n/sqrt(n[1]^2+n[2]^2+n[3]^2)    # n unit vector
+    e = e/sqrt(e[1]^2+e[2]^2+e[3]^2)    # Laplace-Runge-Lenz unit vector
+    cosω = dot(n, e)                    # Cosine of argument of pericentre ω
 
     if constant_term(e[3]) >= zero(constant_term(x))
         return acos(cosω)
@@ -117,50 +129,47 @@ function argperi(
 
 end
 
-"""`longperi(x, y, z, u, v, w, m1, m2)`
+@doc raw"""
+    longperi(x, y, z, u, v, w, m1, m2)
 
 Calculates the instantaneous (osculating) longitude of pericentre for the two
-body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies
-with masses `m1` and `m2`."""
-function longperi(
-    x, y, z,
-    u, v, w,
-    m1, m2
-    )
-
+body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors 
+between two bodies with masses `m1` and `m2`.
+"""
+function longperi(x, y, z, u, v, w, m1, m2)
+    # Argument of pericentre + longitude of ascending node
     return argperi(x, y, z, u, v, w, m1, m2)+longascnode(x, y, z, u, v, w)
 end
 
-"""`trueanomaly(x, y, z, u, v, w, m1, m2)`
+@doc raw"""
+    trueanomaly(x, y, z, u, v, w, m1, m2)
 
 Calculates the instantaneous (osculating) true anomaly for the two
-body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies
-with masses `m1` and `m2`."""
-function trueanomaly(
-    x, y, z,
-    u, v, w,
-    m1, m2
-    )
+body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors 
+between two bodies with masses `m1` and `m2`.
+"""
+function trueanomaly(x, y, z, u, v, w, m1, m2)
 
-    R = sqrt(x^2+y^2+z^2)
-    V2 = u^2+v^2+w^2
-    V = sqrt(V2)
+    R = sqrt(x^2+y^2+z^2)    # Position magnitude
+    V2 = u^2+v^2+w^2         # Velocity mangitude squared
+    V = sqrt(V2)             # Velocity magnitude 
 
-    a = 1.0/( (2.0/R)-(V2/(m1+m2)) )
+    a = 1.0/( (2.0/R)-(V2/(m1+m2)) )   # Semimajor axis
 
-    h2 = (y*w-z*v)^2 + (z*u-x*w)^2 + (x*v-y*u)^2
-    h = sqrt(h2)
+    # h: Angular momentum per unit mass
+    h2 = (y*w-z*v)^2 + (z*u-x*w)^2 + (x*v-y*u)^2   # h magnitude squared 
+    h = sqrt(h2)                                   # h magnitude  
 
     quotient=h2/( (m1+m2)*a )
 
-    e = sqrt(1.0 - quotient)
+    e = sqrt(1.0 - quotient)  # Eccentricity
 
-    Rdot = (x*u+y*v+z*w)/R
+    Rdot = (x*u+y*v+z*w)/R    # <Position, Velocity> / Position magnitude
 
-    sin_f = Rdot*a*(1.0-e^2)/( e*h )
-    cos_f = (1.0/e)*( -1.0+a*(1.0-e^2)/R )
+    sin_f = Rdot*a*(1.0-e^2)/( e*h )         # sin( true anomaly )
+    cos_f = (1.0/e)*( -1.0+a*(1.0-e^2)/R )   # cos( true anomaly )
 
-    res = atan(sin_f, cos_f)
+    res = atan(sin_f, cos_f)  # True anomaly
 
     if res ≥ zero(res)
         return res
@@ -169,213 +178,249 @@ function trueanomaly(
     end
 end
 
-"""`ecanomaly(x, y, z, u, v, w, m1, m2)`
+@doc raw"""
+    ecanomaly(x, y, z, u, v, w, m1, m2)
 
 Calculates the instantaneous (osculating) eccentric anomaly for the two
-body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies
-with masses `m1` and `m2`."""
-function ecanomaly(
-    x, y, z,
-    u, v, w,
-    m1, m2
-    )
+body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors 
+between two bodies with masses `m1` and `m2`.
 
-    a = semimajoraxis(x, y, z, u, v, w, m1, m2)
-    e = eccentricity(x, y, z, u, v, w, m1, m2)
-    R = sqrt(x^2+y^2+z^2)
-    Rdot = (x*u+y*v+z*w)/R
-    mu = m1+m2
+See also [`semimajoraxis`](@ref) and [`eccentricity`](@ref).
+"""
+function ecanomaly(x, y, z, u, v, w, m1, m2)
 
-    cosE = (a-R)/(a*e)
-    sinE = Rdot*R/( e*sqrt(mu*a) )
+    a = semimajoraxis(x, y, z, u, v, w, m1, m2)  # Semimajor axis
+    e = eccentricity(x, y, z, u, v, w, m1, m2)   # Eccentricity
+    R = sqrt(x^2+y^2+z^2)                        # Position magnitude
+    Rdot = (x*u+y*v+z*w)/R                       # <Position, Velocity> / Position magnitude
+    mu = m1+m2                                   # Total mass
 
-    res = atan(sinE, cosE)
+    cosE = (a-R)/(a*e)                           # sin( eccentric anomaly )
+    sinE = Rdot*R/( e*sqrt(mu*a) )               # cos( eccentric anomaly )
+
+    res = atan(sinE, cosE)                       # Eccentric anomaly 
 
     return res
 
 end
 
-"""`meananomaly(x, y, z, u, v, w, m1, m2)`
+@doc """
+    meananomaly(x, y, z, u, v, w, m1, m2)
 
-Calculates the instantaneous (osculating) mean anomaly for the two
-body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies
-with masses `m1` and `m2`."""
-function meananomaly(
-    x, y, z,
-    u, v, w,
-    m1, m2
-    )
+Calculates the instantaneous (osculating) mean anomaly for the two 
+body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors 
+between two bodies with masses `m1` and `m2`.
 
-    E = ecanomaly(x, y, z, u, v, w, m1, m2)
-    e = eccentricity(x, y, z, u, v, w, m1, m2)
+See also [`ecanomaly`](@ref) and [`eccentricity`](@ref).
+"""
+function meananomaly(x, y, z, u, v, w, m1, m2)
 
+    E = ecanomaly(x, y, z, u, v, w, m1, m2)    # Eccentric anomaly
+    e = eccentricity(x, y, z, u, v, w, m1, m2) # eccentricity
+    # Mean anomaly
     return E-e*sin(E)
 end
 
-"""`timeperipass(t, x, y, z, u, v, w, m1, m2)`
+@doc """
+    timeperipass(t, x, y, z, u, v, w, m1, m2)
 
 Calculates the instantaneous (osculating) time of pericentre passage, at time `t`, for the two
-body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies
-with masses `m1` and `m2`."""
-function timeperipass(
-    t, x, y, z,
-    u, v, w,
-    m1, m2
-    )
+body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between
+two bodies with masses `m1` and `m2`.
 
-    me_an = meananomaly(x, y, z, u, v, w, m1, m2) #mean anomaly
-    a = semimajoraxis(x, y, z, u, v, w, m1, m2)
-    me_mo = meanmotion(m1+m2, a) #mean motion
+See also [`meananomaly`](@ref), [`semimajoraxis`](@ref) and [`meanmotion`](@ref).
+"""
+function timeperipass(t, x, y, z, u, v, w, m1, m2)
 
+    me_an = meananomaly(x, y, z, u, v, w, m1, m2) # Mean anomaly
+    a = semimajoraxis(x, y, z, u, v, w, m1, m2)   # Semimajor axis
+    me_mo = meanmotion(m1+m2, a)                  # Mean motion 
+    # Time of pericentre passage
     return t-me_an/me_mo
 end
 
-"""`rungelenzx(x, y, z, u, v, w, m1, m2)`
+@doc """
+    rungelenzx(x, y, z, u, v, w, m1, m2)
 
-Calculates the instantaneous (osculating) x-component of the Laplace-Runge-Lenz vector for the two
-body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies
-with masses `m1` and `m2`."""
-function rungelenzx(
-    x, y, z,
-    u, v, w,
-    m1, m2
-    )
+Calculates the instantaneous (osculating) x-component of the Laplace-Runge-Lenz vector for the
+two body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors 
+between two bodies with masses `m1` and `m2`.
 
-    # v = [u, v, w]
-    # h = [y.*w-z.*v, z.*u-x.*w, x.*v-y.*u]
-    mu = m1+m2
-    # r = [x, y, z]
-    rmag = sqrt(x^2+y^2+z^2)
+See also [`rungelenzy`](@ref), [`rungelenzz`](@ref), [`rungelenzmag`](@ref) and [`lrlvec`](@ref).
+"""
+function rungelenzx(x, y, z, u, v, w, m1, m2)
 
+    # Velocity v = [u, v, w]
+    # Angular momentum per unit mass h = [y.*w-z.*v, z.*u-x.*w, x.*v-y.*u]
+    # Total mass
+    mu = m1+m2                                         
+    # Position r = [x, y, z]
+    rmag = sqrt(x^2+y^2+z^2)  # Position magnitude
+    # x-component of Laplace-Runge-Lenz vector
     lrl_x = ( -(z*u-x*w)*w+(x*v-y*u)*v )/(mu)-x/rmag
 
     return lrl_x
 end
 
-"""`rungelenzy(x, y, z, u, v, w, m1, m2)`
+@doc raw"""
+    rungelenzy(x, y, z, u, v, w, m1, m2)
 
-Calculates the instantaneous (osculating) y-component of the Laplace-Runge-Lenz vector for the two
-body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies
-with masses `m1` and `m2`."""
-function rungelenzy(
-    x, y, z,
-    u, v, w,
-    m1, m2
-    )
+Calculates the instantaneous (osculating) y-component of the Laplace-Runge-Lenz vector for the
+two body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors 
+between two bodies with masses `m1` and `m2`.
 
-    # v = [u, v, w]
-    # h = [y.*w-z.*v, z.*u-x.*w, x.*v-y.*u]
+See also [`rungelenzx`](@ref), [`rungelenzz`](@ref), [`rungelenzmag`](@ref) and [`lrlvec`](@ref).
+"""
+function rungelenzy(x, y, z, u, v, w, m1, m2)
+
+    # Velocity v = [u, v, w]
+    # Angular momentum per unit mass h = [y.*w-z.*v, z.*u-x.*w, x.*v-y.*u]
+    # Total mass
     mu = m1+m2
-    # r = [x, y, z]
-    rmag = sqrt(x^2+y^2+z^2)
-
+    # Position r = [x, y, z]
+    rmag = sqrt(x^2+y^2+z^2)  # Position magnitude
+    # y-component of Laplace-Runge-Lenz vector
     lrl_y = ( -(x*v-y*u)*u+(y*w-z*v)*w )/(mu)-y/rmag
 
     return lrl_y
 end
 
-"""`rungelenzz(x, y, z, u, v, w, m1, m2)`
+@doc raw"""
+    rungelenzz(x, y, z, u, v, w, m1, m2)
 
-Calculates the instantaneous (osculating) z-component of the Laplace-Runge-Lenz vector for the two
-body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies
-with masses `m1` and `m2`."""
-function rungelenzz(
-    x, y, z,
-    u, v, w,
-    m1, m2
-    )
+Calculates the instantaneous (osculating) z-component of the Laplace-Runge-Lenz vector for the
+two body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors 
+between two bodies with masses `m1` and `m2`.
 
-    # v = [u, v, w]
-    # h = [y.*w-z.*v, z.*u-x.*w, x.*v-y.*u]
+See also [`rungelenzx`](@ref), [`rungelenzy`](@ref), [`rungelenzmag`](@ref) and [`lrlvec`](@ref).
+"""
+function rungelenzz(x, y, z, u, v, w, m1, m2)
+
+    # Velocity v = [u, v, w]
+    # Angular momentum per unit mass h = [y.*w-z.*v, z.*u-x.*w, x.*v-y.*u]
+    # Total mass
     mu = m1+m2
-    # r = [x, y, z]
-    rmag = sqrt(x^2+y^2+z^2)
-
+    # Position r = [x, y, z]
+    rmag = sqrt(x^2+y^2+z^2)  # Position magnitude
+    # z-component of Laplace-Runge-Lenz vector
     lrl_z = ( -(y*w-z*v)*v+(z*u-x*w)*u )/(mu)-z/rmag
 
     return lrl_z
 end
 
-"""`rungelenzmag(x, y, z, u, v, w, m1, m2)`
+@doc raw"""
+    rungelenzmag(x, y, z, u, v, w, m1, m2)
 
-Calculates the instantaneous (osculating) magnitude of the Laplace-Runge-Lenz vector for the two
-body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies
-with masses `m1` and `m2`."""
-function rungelenzmag(
-    x, y, z,
-    u, v, w,
-    m1, m2
-    )
+Calculates the instantaneous (osculating) magnitude of the Laplace-Runge-Lenz vector for the
+two body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors 
+between two bodies with masses `m1` and `m2`.
 
-    # v = [u, v, w]
-    # h = [y.*w-z.*v, z.*u-x.*w, x.*v-y.*u]
+See also [`rungelenzx`](@ref), [`rungelenzy`](@ref), [`rungelenzz`](@ref) and [`lrlvec`](@ref).
+"""
+function rungelenzmag(x, y, z, u, v, w, m1, m2)
+
+    # Velocity v = [u, v, w]
+    # Angular momentum per unit mass h = [y.*w-z.*v, z.*u-x.*w, x.*v-y.*u]
+    # Total mass
     mu = m1+m2
-    # r = [x, y, z]
-    rmag = sqrt(x^2+y^2+z^2)
-
-    lrl_x = ( -(z*u-x*w)*w+(x*v-y*u)*v )/(mu)-x/rmag
-    lrl_y = ( -(x*v-y*u)*u+(y*w-z*v)*w )/(mu)-y/rmag
-    lrl_z = ( -(y*w-z*v)*v+(z*u-x*w)*u )/(mu)-z/rmag
-
+    # Position r = [x, y, z]
+    rmag = sqrt(x^2+y^2+z^2)  # Position magnitude
+    
+    # Components of Laplace-Runge-Lenz vector
+    lrl_x = ( -(z*u-x*w)*w+(x*v-y*u)*v )/(mu)-x/rmag  # x-coordinate
+    lrl_y = ( -(x*v-y*u)*u+(y*w-z*v)*w )/(mu)-y/rmag  # y-coordinate
+    lrl_z = ( -(y*w-z*v)*v+(z*u-x*w)*u )/(mu)-z/rmag  # z-coordinate
+    # Mangnitude of Laplace-Runge-Lenz vector
     return sqrt(lrl_x^2+lrl_y^2+lrl_z^2)
 end
 
-"""`lrlvec(x, y, z, u, v, w, m1, m2)`
+@doc raw"""
+    lrlvec(x, y, z, u, v, w, m1, m2)
 
-Calculates the instantaneous (osculating) cartesian components of the Laplace-Runge-Lenz vector for the two
-body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies
-with masses `m1` and `m2`."""
-function lrlvec(
-    x, y, z,
-    u, v, w,
-    m1, m2
-    )
+Calculates the instantaneous (osculating) cartesian components of the Laplace-Runge-Lenz vector
+for the two body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` 
+vectors between two bodies with masses `m1` and `m2`.
 
+See also [`rungelenzx`](@ref), [`rungelenzy`](@ref), [`rungelenzz`](@ref) and [`rungelenzmag`](@ref).
+"""
+function lrlvec(x, y, z, u, v, w, m1, m2)
+    # Total mass
     mu = m1+m2
+    # Position magnitude
     rmag = sqrt(x^2+y^2+z^2)
-
-    lrl_x = ( -(z*u-x*w)*w+(x*v-y*u)*v )/(mu)-x/rmag
-    lrl_y = ( -(x*v-y*u)*u+(y*w-z*v)*w )/(mu)-y/rmag
-    lrl_z = ( -(y*w-z*v)*v+(z*u-x*w)*u )/(mu)-z/rmag
-
+    # Components of Laplace-Runge-Lenz vector
+    lrl_x = ( -(z*u-x*w)*w+(x*v-y*u)*v )/(mu)-x/rmag  # x-coordinate
+    lrl_y = ( -(x*v-y*u)*u+(y*w-z*v)*w )/(mu)-y/rmag  # y-coordinate
+    lrl_z = ( -(y*w-z*v)*v+(z*u-x*w)*u )/(mu)-z/rmag  # z-coordinate
+    # Laplace-Runge-Lenz vector
     return [lrl_x, lrl_y, lrl_z]
 end
 
-# compute eccentric anomaly (E) from eccentricity (e) and mean anomaly (M)
+@doc raw"""
+    eccentricanomaly(e::T, M::T) where {T <: Number}
+
+Compute eccentric anomaly (`E`) from eccentricity (`e`) and mean anomaly (`M`). 
+See pages 32-37 of https://doi.org/10.1017/CBO9781139174817.
+"""
 function eccentricanomaly(e::T, M::T) where {T <: Number}
     M0 = mod2pi(M)
-    E0 = M0 + sign(sin(M0))*0.85*e #Murray-Dermotts' initial estimate
-    # successive approximations via Newtons' method
+    E0 = M0 + sign(sin(M0))*0.85*e # Murray-Dermotts' initial estimate
+    # Successive approximations via Newtons' method
     for i in 0:4
-        #TODO: implement modified Newton's method for Kepler's equation (Murray-Dermott)
+        # TODO: implement modified Newton's method for Kepler's equation (Murray-Dermott)
         Eans = E0 - (E0-e*sin(E0)-M0)/(1.0-e*cos(E0))
         E0 = Eans
     end
     return E0
 end
 
-# compute true anomaly (f) from eccentricity (e) and eccentric anomaly (E)
+@doc raw"""
+    trueanomaly(e,E)
+
+Compute true anomaly (`f`) from eccentricity (`e`) and eccentric anomaly (`E`).
+"""
 function trueanomaly(e,E)
     Enew = mod2pi(E)
     return 2.0*atan(  sqrt((1.0+e)/(1.0-e))*tan(Enew/2)  )
 end
 
-# compute true anomaly from eccentricity and mean anomaly
+@doc raw"""
+    meanan2truean(e,M)
+
+Compute true anomaly (`f`) from eccentricity (`e`) and mean anomaly (`M`).
+
+See also [`trueanomaly`](@ref) and [`eccentricanomaly`](@ref).
+"""
 function meanan2truean(e,M)
     return trueanomaly(e, eccentricanomaly(e, M))
 end
 
-# get mean motion from mass parameter (mu) and semimajor axis (a)
+@doc raw"""
+    meanmotion(mu,a)
+
+Get mean motion from mass parameter (`mu`) and semimajor axis (`a`).
+"""
 function meanmotion(mu,a)
     return sqrt(mu/(a^3))
 end
 
-# get mean anomaly from mean motion (n), time (t) and time of pericenter passage (taup)
+@doc raw"""
+    meananomaly(n, t, taup)
+
+Get mean anomaly from mean motion (`n`), time (`t`) and time of pericenter passage (`taup`).
+"""
 function meananomaly(n, t, taup)
     return n*(t-taup)
 end
 
-# compute true anomaly from time, a, e, mu and taup
+@doc raw"""
+    time2truean(a, e, mu, t, taup)
+
+Compute true anomaly from time (`t`), semimajor axis (`a`), eccentricity (`e`), 
+mass parameter (`mu`) and time of pericenter passage (`taup`).
+
+See also [`meanan2truean`](@ref), [`meananomaly`](@ref) and [`meanmotion`](@ref).
+"""
 function time2truean(a, e, mu, t, taup)
     return meanan2truean(e, meananomaly(meanmotion(mu, a), t, taup))
 end
