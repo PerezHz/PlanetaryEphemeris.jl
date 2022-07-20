@@ -1,16 +1,17 @@
 # This file is part of the TaylorIntegration.jl package; MIT licensed
 
 @doc raw"""
-    @auto_hash_equals struct TaylorInterpolant{T,U,N}
+    TaylorInterpolant{T,U,N}
  
-Collection of Taylor polynomials that interpolate the position and velocity of a body
-as a function of time. 
+Collection of Taylor polynomials that interpolate a dependent variable as a function of 
+an independent variable. For example, the ``x``-axis position of the Earth as a function of 
+time ``x(t)``; or a lunar core Euler angle as a function of time ``\theta_c(t)``.
 
 # Fields
 
 - `t0::T`: Start time.
-- `t::AbstractVector{T}`: Vector of time instances when the timespan of the i-th element of `x` ends and the (i+1)-th element of `x` starts being valid. 
-- `x::AbstractArray{Taylor1{U},N}`: Vector of Taylor polynomials that interpolate the position and velocity as functions of time.
+- `t::AbstractVector{T}`: Vector of time instances when the timespan of the ``i``-th element of `x` ends and the ``(i+1)``-th element of `x` starts being valid. 
+- `x::AbstractArray{Taylor1{U},N}`: Vector of Taylor polynomials that interpolate the dependent variable as a function of the independent variable.
 """
 @auto_hash_equals struct TaylorInterpolant{T,U,N}
     t0::T
@@ -37,7 +38,8 @@ end
 @doc raw"""
     getinterpindex(tinterp::TaylorInterpolant{T,U,N}, t::V) where {T<:Real, U<:Number, V<:Number, N}
 
-Returns the index of `tinterp.t` corresponding to `t` and the time elapsed from `tinterp.t0` to `t`.
+Returns the index of `tinterp.t` corresponding to `t` and the time elapsed from `tinterp.t0`
+to `t`.
 """
 function getinterpindex(tinterp::TaylorInterpolant{T,U,N}, t::V) where {T<:Real, U<:Number, V<:Number, N}
     t00 = constant_term(constant_term(t))                # Current time
@@ -65,17 +67,25 @@ end
     (tinterp::TaylorInterpolant{T,U,1})(t::V) where {T<:Real, U<:Number, V<:Number}
     (tinterp::TaylorInterpolant{T,U,2})(t::V) where {T<:Real, U<:Number, V<:Number}
 
-Returns the interpolation of the body described by `tinterp` at time `t`.
+Evaluates `tinterp.x` at time `t`.
+
+See also [`getinterpindex`](@ref).
 """
 function (tinterp::TaylorInterpolant{T,U,1})(t::V) where {T<:Real, U<:Number, V<:Number}
+    # Get index of tinterp.x that interpolates at time t
     ind, Δt = getinterpindex(tinterp, t)
+    # Time since the start of the ind-th timespan
     δt = Δt-tinterp.t[ind]
+    # Evaluate tinterp.x[ind] at δt
     return tinterp.x[ind](δt)
 end
 
 function (tinterp::TaylorInterpolant{T,U,2})(t::V) where {T<:Real, U<:Number, V<:Number}
+    # Get index of tinterp.x that interpolates at time t
     ind, Δt = getinterpindex(tinterp, t)
+    # Time since the start of the ind-th timespan
     δt = Δt-tinterp.t[ind]
+    # Evaluate tinterp.x[ind] at δt
     return tinterp.x[ind,:](δt)
 end
 
@@ -84,10 +94,16 @@ end
 
 Returns a `TaylorInterpolant` object with the same information as `tinterp` but 
 the independent variable reversed.
+
+See also [`TaylorInterpolant`](@ref).
 """
 function reverse(tinterp::TaylorInterpolant{T,U,N}) where {T<:Real, U<:Number, N}
+    # tinterp end time is the new start time 
     tinterp_rev_t0 = tinterp.t[end]
+    # reverse independent variable vector tinterp.t
     tinterp_rev_t = tinterp.t[end:-1:1] .- tinterp_rev_t0
+    # reverse dependent variable vector tinterp.x
     tinterp_rev_x = vcat(tinterp(tinterp.t[end]+Taylor1(tinterp.x[1].order))', tinterp.x[end:-1:2,:])
+    # Return reversed TaylorInterpolant
     return TaylorInterpolant(tinterp_rev_t0, tinterp_rev_t, tinterp_rev_x)
 end

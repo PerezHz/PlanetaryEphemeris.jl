@@ -8,7 +8,7 @@ function semimajoraxis(x, y, z, u, v, w, m1, m2)
     r = sqrt(x^2+y^2+z^2)       # Position magnitude
     vsq = u^2+v^2+w^2           # Velocity magnitude squared
     M = m1+m2                   # Total mass
-    return 1/( (2/r)-(vsq/M) )
+    return 1/( (2/r)-(vsq/M) )  # Semimajor axis 
 end
 
 @doc raw"""
@@ -23,7 +23,7 @@ function eccentricity(x, y, z, u, v, w, m1, m2)
     a = semimajoraxis(x, y, z, u, v, w, m1, m2)     # Semimajor axis
     M = m1+m2                                       # Total mass   
     quotient = hsq/( M*a )                          
-    return sqrt(1 - quotient)
+    return sqrt(1 - quotient)                       # Eccentricity 
 end
 
 @doc raw"""
@@ -35,13 +35,13 @@ function inclination(x, y, z, u, v, w)
     # h: Angular momentum per unit mass
     hz = x*v-y*u                                         # z-coordinate of h
     h = sqrt( (y*w-z*v)^2 + (z*u-x*w)^2 + (x*v-y*u)^2 )  # h magnitude squared
-    return acos(hz/h)
+    return acos(hz/h)                                    # Inclination 
 end
 
 @doc raw"""
     aei(x, y, z, u, v, w, m1, m2)
 
-Returns semimajor axis `a`, eccentricity `e` and inclination `I` for the two-body
+Returns semimajor axis `a`, eccentricity `e` and inclination `inc` for the two-body
 problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)`vectors
 between two bodies with masses `m1` and `m2`.
 
@@ -59,6 +59,7 @@ function aei(x, y, z, u, v, w, m1, m2)
     e = sqrt(1 - quotient)                          # Eccentricity
     hz = x*v-y*u                                    # z-coordinate of h
     inc = acos(hz/h)                                # Inclination 
+
     return a, e, inc
 end
 
@@ -91,9 +92,9 @@ position `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies.
 """
 function longascnode(x, y, z, u, v, w)
 
-    # The longitude of ascending node is computed as
-    # the angle between x-axis and the vector n = (-hy, hx, 0)
-    # where hx, hy, are resp., the x and y comps. of ang mom vector per unit mass, h
+    # The longitude of ascending node is computed as the angle between x-axis and the 
+    # vector n = (-hy, hx, 0) where hx, hy, are resp., the x and y comps. of angular
+    # momentum vector per unit mass, h
 
     res = atan( y*w-z*v, x*w-z*u)
 
@@ -216,7 +217,7 @@ See also [`ecanomaly`](@ref) and [`eccentricity`](@ref).
 function meananomaly(x, y, z, u, v, w, m1, m2)
 
     E = ecanomaly(x, y, z, u, v, w, m1, m2)    # Eccentric anomaly
-    e = eccentricity(x, y, z, u, v, w, m1, m2) # eccentricity
+    e = eccentricity(x, y, z, u, v, w, m1, m2) # Eccentricity
     # Mean anomaly
     return E-e*sin(E)
 end
@@ -398,7 +399,7 @@ end
 @doc raw"""
     meanmotion(mu,a)
 
-Get mean motion from mass parameter (`mu`) and semimajor axis (`a`).
+Compute mean motion from mass parameter (`mu`) and semimajor axis (`a`).
 """
 function meanmotion(mu,a)
     return sqrt(mu/(a^3))
@@ -407,7 +408,7 @@ end
 @doc raw"""
     meananomaly(n, t, taup)
 
-Get mean anomaly from mean motion (`n`), time (`t`) and time of pericenter passage (`taup`).
+Compute mean anomaly from mean motion (`n`), time (`t`) and time of pericenter passage (`taup`).
 """
 function meananomaly(n, t, taup)
     return n*(t-taup)

@@ -16,12 +16,11 @@ function evaluate_threads!(x::Array{Taylor1{T},1}, δt::T,
 end
 
 @doc raw"""
-    stepsize_threads(q::AbstractArray{Taylor1{U},1}, epsilon::T) where
-                     {T<:Real, U<:Number}
+    stepsize_threads(q::AbstractArray{Taylor1{U},1}, epsilon::T) where {T<:Real, U<:Number}
 
 Threaded version of `TaylorIntegration.stepsize`.
 
-See also [`TaylorIntegration.stepsize`](@ref).
+See also [`TaylorIntegration.stepsize`](@ref) and [`TaylorIntegration._second_stepsize`](@ref).
 """
 function stepsize_threads(q::AbstractArray{Taylor1{U},1}, epsilon::T) where
         {T<:Real, U<:Number}
@@ -45,8 +44,7 @@ function stepsize_threads(q::AbstractArray{Taylor1{U},1}, epsilon::T) where
 end
 
 @doc raw"""
-    stepsize_jz05(q::AbstractArray{Taylor1{U}, N}, epsilon::T) where
-                  {T<:Real, U<:Number, N}
+    stepsize_jz05(q::AbstractArray{Taylor1{U}, N}, epsilon::T) where {T<:Real, U<:Number, N}
 
 First step-size control. See section 3.2 of https://doi.org/10.1080/10586458.2005.10128904.
 

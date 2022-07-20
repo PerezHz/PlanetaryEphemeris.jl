@@ -24,10 +24,11 @@ function ordpres_differentiate(a::Taylor1)
 end
 
 @doc raw"""
-    function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
+    NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
 
-Solar System (JPL DE430/431) dynamical model. Bodies considered in the model are: the Sun, the eight planets, 
-the Moon and the 343 main-belt asteroids included in the JPL DE430 ephemeris. Effects considered are:
+Solar System (JPL DE430/431) dynamical model. Bodies considered in the model are: the Sun, 
+the eight planets, the Moon and the 343 main-belt asteroids included in the JPL DE430 
+ephemeris. Effects considered are:
 
 - Post-Newtonian point-mass accelerations between all bodies: see equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
 ```math
@@ -195,10 +196,10 @@ to interaction between the mantle and core.
     _4V_m_3Y = Array{S}(undef, N, N)  # Y-axis component
     _4W_m_3Z = Array{S}(undef, N, N)  # Z-axis component
 
-    # Velocity components squared
-    UU = Array{S}(undef, N, N)        # v_x^2
-    VV = Array{S}(undef, N, N)        # v_y^2 
-    WW = Array{S}(undef, N, N)        # v_z^2
+    # Product of velocity components 
+    UU = Array{S}(undef, N, N)        # v_{ix}v_{jx}
+    VV = Array{S}(undef, N, N)        # v_{iy}v_{jy}
+    WW = Array{S}(undef, N, N)        # v_{iz}v_{jz}
 
     # Newtonian potential of 1 body \mu_i / r_{ij}
     newtonian1b_Potential = Array{S}(undef, N, N)
@@ -237,7 +238,7 @@ to interaction between the mantle and core.
     _4ϕj = Array{S}(undef, N, N)            # 4*\sum term inside {}
     ϕi_plus_4ϕj = Array{S}(undef, N, N)     # 4*\sum + \sum terms inside {}
     sj2_plus_2si2 = Array{S}(undef, N, N)   # \dot{s}_j^2 + 2\dot{s}_i^2 inside {}
-    sj2_plus_2si2_minus_4vivj = Array{S}(undef, N, N)  # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2 inside {}
+    sj2_plus_2si2_minus_4vivj = Array{S}(undef, N, N)  # \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {} 
     ϕs_and_vs = Array{S}(undef, N, N)       # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2  - 4<, > terms inside {} 
     pn1t1_7 = Array{S}(undef, N, N)         # Everything inside the {} in the first term except for the term with accelerations (last)
     # Last term inside the {}
@@ -502,10 +503,10 @@ to interaction between the mantle and core.
                 pn2y = Y[i,j]*_4V_m_3Y[i,j]
                 pn2z = Z[i,j]*_4W_m_3Z[i,j]
                 
-                # Velocity components squared
-                UU[i,j] = dq[3i-2]*dq[3j-2]   # v_x^2
-                VV[i,j] = dq[3i-1]*dq[3j-1]   # v_y^2
-                WW[i,j] = dq[3i  ]*dq[3j  ]   # v_z^2
+                # Product of velocity components
+                UU[i,j] = dq[3i-2]*dq[3j-2]   # v_{ix}v_{jx}
+                VV[i,j] = dq[3i-1]*dq[3j-1]   # v_{iy}v_{jy}
+                WW[i,j] = dq[3i  ]*dq[3j  ]   # v_{iz}v_{jz}
                 
                 # Dot product of velocities \mathbf{v_i}\cdot\mathbf{v_j}
                 vi_dot_vj[i,j] = ( UU[i,j]+VV[i,j] ) + WW[i,j]
@@ -563,7 +564,7 @@ to interaction between the mantle and core.
 
     # 2nd-order lunar zonal (J_2) and tesseral (C_2, S_2) harmonics coefficients 
     # times the equatorial radius of the moon squared R_M^2
-    # See equation (30) in page 13 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
+    # See equation (30) in page 13 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     J2M_t = ( I_M_t[3,3] - ((I_M_t[1,1]+I_M_t[2,2])/2) )/(μ[mo]) # J_{2,M}*R_M^2
     C22M_t = ((I_M_t[2,2] - I_M_t[1,1])/(μ[mo]))/4               # C_{22,M}*R_M^2
     C21M_t = (-I_M_t[1,3])/(μ[mo])                               # C_{21,M}*R_M^2
@@ -824,7 +825,7 @@ to interaction between the mantle and core.
                 _2v2[i,j] = 2v2[i]
                 # \dot{s}_j^2 + 2\dot{s}_i^2 inside {}
                 sj2_plus_2si2[i,j] = v2[j] + _2v2[i,j]
-                # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2 inside {}
+                # \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {} 
                 sj2_plus_2si2_minus_4vivj[i,j] = sj2_plus_2si2[i,j] - (4vi_dot_vj[i,j])
                 # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2  - 4<, > terms inside {} 
                 ϕs_and_vs[i,j] = sj2_plus_2si2_minus_4vivj[i,j] - ϕi_plus_4ϕj[i,j]
@@ -1058,9 +1059,9 @@ end
 @doc raw"""
     NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
 
-Threaded version of `NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)`.
+Threaded version of `NBP_pN_A_J23E_J23M_J2S!`.
 
-See also [`NBP_pN_A_J23E_J23M_J2S_threads!`](@ref).
+See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref).
 """ NBP_pN_A_J23E_J23M_J2S_threads!
 
 @taylorize function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
@@ -1122,10 +1123,10 @@ See also [`NBP_pN_A_J23E_J23M_J2S_threads!`](@ref).
     _4V_m_3Y = Array{S}(undef, N, N)  # Y-axis component
     _4W_m_3Z = Array{S}(undef, N, N)  # Z-axis component
 
-    # Velocity components squared
-    UU = Array{S}(undef, N, N)        # v_x^2
-    VV = Array{S}(undef, N, N)        # v_y^2
-    WW = Array{S}(undef, N, N)        # v_z^2
+    # Product of velocity components
+    UU = Array{S}(undef, N, N)        # v_{ix}v_{jx}
+    VV = Array{S}(undef, N, N)        # v_{iy}v_{jy}
+    WW = Array{S}(undef, N, N)        # v_{iz}v_{jz}
 
     # Newtonian potential of 1 body \mu_i / r_{ij}
     newtonian1b_Potential = Array{S}(undef, N, N)
@@ -1164,7 +1165,7 @@ See also [`NBP_pN_A_J23E_J23M_J2S_threads!`](@ref).
     _4ϕj = Array{S}(undef, N, N)            # 4*\sum term inside {}
     ϕi_plus_4ϕj = Array{S}(undef, N, N)     # 4*\sum + \sum terms inside {}
     sj2_plus_2si2 = Array{S}(undef, N, N)   # \dot{s}_j^2 + 2\dot{s}_i^2 inside {}
-    sj2_plus_2si2_minus_4vivj = Array{S}(undef, N, N)  # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2 inside {}
+    sj2_plus_2si2_minus_4vivj = Array{S}(undef, N, N)  # \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {}
     ϕs_and_vs = Array{S}(undef, N, N)       # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2  - 4<, > terms inside {} 
     pn1t1_7 = Array{S}(undef, N, N)         # Everything inside the {} in the first term except for the term with accelerations (last)
     # Last term inside the {}
@@ -1430,10 +1431,10 @@ See also [`NBP_pN_A_J23E_J23M_J2S_threads!`](@ref).
                 pn2y = Y[i,j]*_4V_m_3Y[i,j]
                 pn2z = Z[i,j]*_4W_m_3Z[i,j]
 
-                # Velocity components squared
-                UU[i,j] = dq[3i-2]*dq[3j-2]   # v_x^2
-                VV[i,j] = dq[3i-1]*dq[3j-1]   # v_y^2
-                WW[i,j] = dq[3i  ]*dq[3j  ]   # v_z^2
+                # Product of velocity components 
+                UU[i,j] = dq[3i-2]*dq[3j-2]   # v_{ix}v_{jx}
+                VV[i,j] = dq[3i-1]*dq[3j-1]   # v_{iy}v_{jy}
+                WW[i,j] = dq[3i  ]*dq[3j  ]   # v_{iz}v_{jz}
 
                 # Dot product of velocities \mathbf{v_i}\cdot\mathbf{v_j}
                 vi_dot_vj[i,j] = ( UU[i,j]+VV[i,j] ) + WW[i,j]
@@ -1488,7 +1489,7 @@ See also [`NBP_pN_A_J23E_J23M_J2S_threads!`](@ref).
 
     # 2nd-order lunar zonal (J_2) and tesseral (C_2, S_2) harmonics coefficients 
     # times the equatorial radius of the moon squared R_M^2
-    # See equation (30) in page 13 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
+    # See equation (30) in page 13 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     J2M_t = ( I_M_t[3,3] - ((I_M_t[1,1]+I_M_t[2,2])/2) )/(μ[mo]) # J_{2,M}*R_M^2
     C22M_t = ((I_M_t[2,2] - I_M_t[1,1])/(μ[mo]))/4               # C_{22,M}*R_M^2
     C21M_t = (-I_M_t[1,3])/(μ[mo])                               # C_{21,M}*R_M^2
@@ -1750,7 +1751,7 @@ See also [`NBP_pN_A_J23E_J23M_J2S_threads!`](@ref).
                 _2v2[i,j] = 2v2[i]
                 # \dot{s}_j^2 + 2\dot{s}_i^2 inside {}
                 sj2_plus_2si2[i,j] = v2[j] + _2v2[i,j]
-                # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2 inside {}
+                # \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {}
                 sj2_plus_2si2_minus_4vivj[i,j] = sj2_plus_2si2[i,j] - (4vi_dot_vj[i,j])
                 # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2  - 4<, > terms inside {} 
                 ϕs_and_vs[i,j] = sj2_plus_2si2_minus_4vivj[i,j] - ϕi_plus_4ϕj[i,j]
@@ -1984,7 +1985,8 @@ end
 @doc raw"""
     DE430!(dq, q, params, t)
 
-Solar System (JPL DE430/431) dynamical model. Includes all the effects in `NBP_pN_A_J23E_J23M_J2S!` plus
+Solar System (JPL DE430/431) dynamical model. Includes all the effects in 
+`NBP_pN_A_J23E_J23M_J2S!` plus
 
 - Tidal secular acceleration of Moon due to rides raised on Earth by both the Moon and the Sun: see equation (32) in page 14 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 ```math
@@ -2006,7 +2008,7 @@ Solar System (JPL DE430/431) dynamical model. Includes all the effects in `NBP_p
 ```
 where ``k_{2j,E}`` with ``j = 0, 1, 2`` are the degree-2 Love numbers corresponding to tides
 with long-period, diurnal, and semi-diurnal periods, respectively; ``m_E``, ``m_M`` and ``m_T`` are the masses
-of the Earth, the Moon and the tide-raising body, respectively; ``R_E^5`` is the Earth's radius;
+of the Earth, the Moon and the tide-raising body, respectively; ``R_E`` is the Earth's radius;
 the position vectors ``\mathbf{r}`` and ``\mathbf{r}_j^*`` with ``j = 0, 1, 2`` are
 expressed in cylindrical coordinates with the ``Z`` axis perpendicular to the Earth’s equator,
 so that ``\mathbf{r} = \mathbf{\rho} + \mathbf{z}`` and the time-delayed position of the tide-raising
@@ -2100,10 +2102,10 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
     _4V_m_3Y = Array{S}(undef, N, N)  # Y-axis component
     _4W_m_3Z = Array{S}(undef, N, N)  # Z-axis component
 
-    # Velocity components squared
-    UU = Array{S}(undef, N, N)        # v_x^2
-    VV = Array{S}(undef, N, N)        # v_y^2
-    WW = Array{S}(undef, N, N)        # v_z^2
+    # Product of velocity components
+    UU = Array{S}(undef, N, N)        # v_{ix}v_{jx}
+    VV = Array{S}(undef, N, N)        # v_{iy}v_{jy}
+    WW = Array{S}(undef, N, N)        # v_{iz}v_{jz}
 
     # Newtonian potential of 1 body \mu_i / r_{ij}
     newtonian1b_Potential = Array{S}(undef, N, N)
@@ -2142,8 +2144,8 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
     _4ϕj = Array{S}(undef, N, N)            # 4*\sum term inside {}
     ϕi_plus_4ϕj = Array{S}(undef, N, N)     # 4*\sum + \sum terms inside {}
     sj2_plus_2si2 = Array{S}(undef, N, N)   # \dot{s}_j^2 + 2\dot{s}_i^2 inside {}
-    sj2_plus_2si2_minus_4vivj = Array{S}(undef, N, N)  # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2 inside {}
-    ϕs_and_vs = Array{S}(undef, N, N)       # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2  - 4<, > terms inside {} 
+    sj2_plus_2si2_minus_4vivj = Array{S}(undef, N, N)  # \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {} 
+    ϕs_and_vs = Array{S}(undef, N, N)       # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {} 
     pn1t1_7 = Array{S}(undef, N, N)         # Everything inside the {} in the first term except for the term with accelerations (last)
     # Last term inside the {}
     pNX_t_X = Array{S}(undef, N, N)     # X-axis component
@@ -2438,10 +2440,10 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
                 pn2y = Y[i,j]*_4V_m_3Y[i,j]
                 pn2z = Z[i,j]*_4W_m_3Z[i,j]
                 
-                # Velocity components squared
-                UU[i,j] = dq[3i-2]*dq[3j-2]   # v_x^2
-                VV[i,j] = dq[3i-1]*dq[3j-1]   # v_y^2
-                WW[i,j] = dq[3i  ]*dq[3j  ]   # v_z^2
+                # Product of velocity components
+                UU[i,j] = dq[3i-2]*dq[3j-2]   # v_{ix}v_{jx}
+                VV[i,j] = dq[3i-1]*dq[3j-1]   # v_{iy}v_{jy}
+                WW[i,j] = dq[3i  ]*dq[3j  ]   # v_{iz}v_{jz}
                 
                 # Dot product of velocities \mathbf{v_i}\cdot\mathbf{v_j}
                 vi_dot_vj[i,j] = ( UU[i,j]+VV[i,j] ) + WW[i,j]
@@ -2499,7 +2501,7 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
 
     # 2nd-order lunar zonal (J_2) and tesseral (C_2, S_2) harmonics coefficients 
     # times the equatorial radius of the moon squared R_M^2
-    # See equation (30) in page 13 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
+    # See equation (30) in page 13 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     J2M_t = ( I_M_t[3,3] - ((I_M_t[1,1]+I_M_t[2,2])/2) )/(μ[mo]) # J_{2,M}*R_M^2
     C22M_t = ((I_M_t[2,2] - I_M_t[1,1])/(μ[mo]))/4               # C_{22,M}*R_M^2
     C21M_t = (-I_M_t[1,3])/(μ[mo])                               # C_{21,M}*R_M^2
@@ -2760,7 +2762,7 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
                 _2v2[i,j] = 2v2[i]
                 # \dot{s}_j^2 + 2\dot{s}_i^2 inside {}
                 sj2_plus_2si2[i,j] = v2[j] + _2v2[i,j]
-                # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2 inside {}
+                # \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {} 
                 sj2_plus_2si2_minus_4vivj[i,j] = sj2_plus_2si2[i,j] - (4vi_dot_vj[i,j])
                 # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2  - 4<, > terms inside {} 
                 ϕs_and_vs[i,j] = sj2_plus_2si2_minus_4vivj[i,j] - ϕi_plus_4ϕj[i,j]

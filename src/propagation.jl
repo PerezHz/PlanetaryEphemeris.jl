@@ -1,7 +1,6 @@
 
 @doc raw"""
-    selecteph2jld(sseph::TaylorInterpolant, bodyind::AbstractVector{Int}, tspan::Number, 
-                  N::Int)
+    selecteph2jld(sseph::TaylorInterpolant, bodyind::AbstractVector{Int}, tspan::Number, N::Int)
 
 Saves the ephemeris, contained in `sseph`, of the bodies with indexes `bodyind`, in a jld file
 named as follows
@@ -23,6 +22,7 @@ function selecteph2jld(sseph::TaylorInterpolant, bodyind::AbstractVector{Int}, t
     @assert nastout <= nast
     sgn_yrs = sign(tspan) == 1.0 ? "p" : "m" # Prefix to distinguish between forward (p) / backward (m) integration
     nyrs_int = Int(abs(tspan))               # Number of years 
+    
     # Write output to jld file
 
     # Name of the file
@@ -56,7 +56,7 @@ Integrates the Solar System via the Taylor method.
 - `jd0::T`: initial Julian date.
 - `tspan::T`: time span of the integration (in Julian days). 
 - `output::Bool`: whether to write the output to a file (`true`) or not.
-- `dense::Bool``: whether to safe the Taylor polynomials at each step (`true`) of not.
+- `dense::Bool`: whether to save the Taylor polynomials at each step (`true`) or not.
 - `ephfile::String`: name of the file where to save the solution if `output` is `true` but one or both of `dense` and `ss16ast` is `false`.
 - `dynamics::Function`: dynamical model function.
 - `nast::Int`: number of asteroids to be considered in the integration.
@@ -64,7 +64,7 @@ Integrates the Solar System via the Taylor method.
 - `ss16ast::Bool`: wheter to save the solution using `selecteph2jld` (`true`) or not.
 - `bodyind::AbstractVector{Int}`: indexes of the bodies to be saved.
 - `order::Int=order`: order of the Taylor expansions to be used in the integration. 
-- `abstol::T`: absoluto tolerance.
+- `abstol::T`: absolute tolerance.
 - `parse_eqs::Bool`: whether to use the specialized method of `jetcoeffs!` (`true`) created with `@taylorize` or not.
 """
 function propagate(maxsteps::Int, jd0::T, tspan::T; output::Bool=true, dense::Bool=false, 
