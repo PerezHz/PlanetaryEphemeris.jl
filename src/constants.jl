@@ -1,21 +1,26 @@
+# Integration parameters
+const order = 30
+const abstol = 1.0E-20
+
+# Important bodies indexes 
 const su = 1 # Sun's index
 const ea = 4 # Earth's index
 const mo = 5 # Moon's index
 
 # Mass parameters μ = G*m (in au^3/day^2) of major bodies (Sun + Planets + Moon)
 # See Table 8 in page 49 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-GM1 = 0.491248045036476000E-10 # Mercury
-GM2 = 0.724345233264412000E-09 # Venus
-GM3 = 0.888769244512563400E-09 # Earth
-GM4 = 0.954954869555077000E-10 # Mars
-GM5 = 0.282534584083387000E-06 # Jupiter
-GM6 = 0.845970607324503000E-07 # Saturn
-GM7 = 0.129202482578296000E-07 # Uranus
-GM8 = 0.152435734788511000E-07 # Neptune
-GM9 = 0.217844105197418000E-11 # Pluto
-GMS = 0.295912208285591100E-03 # Sun
-GMM = 0.109318945074237400E-10 # Moon
-GMB = 0.899701139019987100E-09 # Earth-Moon barycenter
+const GM1 = 0.491248045036476000E-10 # Mercury
+const GM2 = 0.724345233264412000E-09 # Venus
+const GM3 = 0.888769244512563400E-09 # Earth
+const GM4 = 0.954954869555077000E-10 # Mars
+const GM5 = 0.282534584083387000E-06 # Jupiter
+const GM6 = 0.845970607324503000E-07 # Saturn
+const GM7 = 0.129202482578296000E-07 # Uranus
+const GM8 = 0.152435734788511000E-07 # Neptune
+const GM9 = 0.217844105197418000E-11 # Pluto
+const GMS = 0.295912208285591100E-03 # Sun
+const GMM = 0.109318945074237400E-10 # Moon
+const GMB = 0.899701139019987100E-09 # Earth-Moon barycenter
 
 # Vector of mass parameters μ = G*m (in au^3/day^2) of  Sun + Planets + Moon + 343 Asteroids
 # See Table 8 in page 49 and Table 12 in pages 53-59 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
@@ -422,10 +427,14 @@ UJ_interaction[union(1:mo-1,mo+1:7), mo] .= true
 const au = 1.495978707E8                       # Astronomical unit value in km
 const yr = 365.25                              # Days in a Julian year
 const daysec = 86_400                          # Number of seconds in a day
+
+# Parameters related to speed of light, c
 const clightkms = 2.99792458E5                 # Speed of light, km/sec
 const c_au_per_day = daysec*(clightkms/au)     # Speed of light in au per day
 const c_au_per_sec = clightkms/au              # Speed of light in au per sec
 const c_cm_per_sec = 100_000*clightkms         # Speed of light in cm per sec
+const c_p2 = 29979.063823897606                # Speed of light^2 in au^2/day^2
+const c_m2 = 3.3356611996764786e-5             # Speed of light^-2 in day^2/au^2
 
 const sundofs = nbodyind(length(μ), su)        # Sun's position and velocity indices
 const earthdofs = nbodyind(length(μ), ea)      # Earth's position and velocity indices
@@ -447,6 +456,8 @@ const JS = [J2SUN*(RSUN/au)^2]
 # Extended body parameters for the Earth
 # See Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 const RE     =  6.378136300E+03                # Earth's radius in km 
+# TODO: solve differences between parsed and non-parsed
+const RE_au = (RE/au)                          # Earth's radius in au
 const J2E    =  1.082625450E-03                # Second zonal harmonic of the Earth 
 const J3E    = -2.532410000E-06                # Third zonal harmonic of the Earth 
 const J4E    = -1.619898000E-06                # Fourth zonal harmonic of the Earth 
@@ -456,15 +467,28 @@ const J2EDOT = -2.600000000E-11                # Rate of change of J2E in 1/yr
 const JE = [J2E*(RE/au)^2, J3E*(RE/au)^3, J4E*(RE/au)^4, J5E*(RE/au)^5]
 
 # Extended body parameters for the Moon
+
+# Extended body parameters for the Moon
 # See Table 11 in page 51 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-const RM = 1.7380000000000000E+03              # Moon's radius in km 
+const RM = 1.7380000000000000E+03            # Lunar radius in km 
+const R_moon = RM/au                         # Lunar radius in au
+const β_L = 6.3102131934887270E-04           # Lunar moment parameter, β_L = (C_T-A_T)/B_T
+const γ_L = 2.2773171480091860E-04           # Lunar moment parameter, γ_L = (B_T-A_T)/C_T
+const k_2M = 0.024059                        # Potential Love number
+const τ_M = 9.5830547273306690E-02           # Time-lag for the lunar solid-body tide (days)
+const α_c = 0.0007                           # Ratio of polar moment of inertia of core to mean total polar moment of inertia
+const f_c = 2.4623904789198150E-04           # Oblateness of core
+const k_ν_div_C_T = 1.6365616533709530E-08   # Friction coefficient between core and mantle, radian/day
+
+const J2_M_und = 2.0321568464952570E-04      # Undistorted lunar 2nd zonal harmonic coefficient
+
 const J2M  =  2.0321568464952570E-04           # Undistorted 2nd zonal harmonic coefficient
 const J3M  =  8.4597026974594570E-06           # Third zonal harmonic coefficient
 const J4M  = -9.7044138365700000E-06           # Fourth zonal harmonic coefficient
 const J5M  =  7.4221608384052890E-07           # Fifth zonal harmonic coefficient
 const J6M  = -1.3767531350969900E-05           # Sixth zonal harmonic coefficient
 # Vector of zonal harmonic coefficients J_n * Moons's radius in au ^n
-const JM = [J2M*(RM/au)^2, J3M*(RM/au)^3, J4M*(RM/au)^4, J5M*(RM/au)^5, J6M*(RM/au)^6]
+const JM = [J2M*R_moon^2, J3M*R_moon^3, J4M*R_moon^4, J5M*R_moon^5, J6M*R_moon^6]
 
 # Matrix of zonal harmonic coefficients J_n * radius of the corresponding body ^n
 const JSEM = zeros(5, 6)
@@ -476,6 +500,15 @@ JSEM[mo,2:6] = JM     # Moon
 const n1SEM = [2, 0, 0, 5, 6]   # Sun, Mercury, Venus, Earth, Moon
 # Degree of zonal harmonics expansion for the Moon
 const n2M = 6
+
+# Numerical factors for recursion relations of Legendre polynomials
+# See equations (175)-(178) in page 33 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
+const max_n1SEM = maximum(n1SEM)
+const fact1_jsem = [(2n-1)/n for n in 1:max_n1SEM]  # (2n - 1) / n
+const fact2_jsem = [(n-1)/n for n in 1:max_n1SEM]   # (n - 1) / n
+const fact3_jsem = [n for n in 1:max_n1SEM]         # n
+const fact4_jsem = fact3_jsem .+ 1                  # n + 1
+const fact5_jsem = fact3_jsem .+ 2                  # n + 2    
 
 # Lunar tesseral harmonics coefficients (C_{nm}, S_{nm}) with n = 2,...,6 and m = 1,...,n
 # See Table 11 in page 51 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
@@ -491,8 +524,8 @@ const S32M =  1.6844743962783900E-06
 const C33M =  1.6756178134114570E-06
 const S33M = -2.4742714379805760E-07
 # Vector of tesseral harmonic coefficients (C_{3m}, S_{3m}) * Moons's radius in au ^3
-const C3M = [C31M, C32M, C33M]*(RM/au)^3
-const S3M = [S31M, S32M, S33M]*(RM/au)^3
+const C3M = [C31M, C32M, C33M]*R_moon^3
+const S3M = [S31M, S32M, S33M]*R_moon^3
 
 # n = 4, m = 1, 2, 3, 4
 const C41M = -5.7048697319733210E-06
@@ -504,8 +537,8 @@ const S43M = -8.0349266627431070E-07
 const C44M = -1.2692158612216040E-07
 const S44M =  8.2964257754075220E-08
 # Vector of tesseral harmonic coefficients (C_{4m}, S_{4m}) * Moons's radius in au ^4
-const C4M = [C41M, C42M, C43M, C44M]*(RM/au)^4
-const S4M = [S41M, S42M, S43M, S44M]*(RM/au)^4
+const C4M = [C41M, C42M, C43M, C44M]*R_moon^4
+const S4M = [S41M, S42M, S43M, S44M]*R_moon^4
 
 # n = 5, m = 1, 2, 3, 4, 5
 const C51M = -8.6629769308983560E-07
@@ -519,8 +552,8 @@ const S54M =  5.2652110720146800E-10
 const C55M =  7.6596153884006140E-09
 const S55M = -6.7824035473995330E-09
 # Vector of tesseral harmonic coefficients (C_{5m}, S_{5m}) * Moons's radius in au ^5
-const C5M = [C51M, C52M, C53M, C54M, C55M]*(RM/au)^5
-const S5M = [S51M, S52M, S53M, S54M, S55M]*(RM/au)^5
+const C5M = [C51M, C52M, C53M, C54M, C55M]*R_moon^5
+const S5M = [S51M, S52M, S53M, S54M, S55M]*R_moon^5
 
 # n = 6, m = 1, 2, 3, 4, 5, 6
 const C61M =  1.2024363601545920E-06
@@ -536,34 +569,31 @@ const S65M = -8.3465073195142520E-09
 const C66M = -1.0913395178881540E-09
 const S66M =  1.6844213702632920E-09
 # Vector of tesseral harmonic coefficients (C_{6m}, S_{6m}) * Moons's radius in au ^6
-const C6M = [C61M, C62M, C63M, C64M, C65M, C66M]*(RM/au)^6
-const S6M = [S61M, S62M, S63M, S64M, S65M, S66M]*(RM/au)^6
+const C6M = [C61M, C62M, C63M, C64M, C65M, C66M]*R_moon^6
+const S6M = [S61M, S62M, S63M, S64M, S65M, S66M]*R_moon^6
 
 # Matrix of tesseral harmonic coefficients C_{nm} * radius of the moon ^n
 const CM = zeros(6, 6)
-CM[3,1:3] = C3M    # n = 3
-CM[4,1:4] = C4M    # n = 4
-CM[5,1:5] = C5M    # n = 5
-CM[6,1:6] = C6M    # n = 6
+CM[3,1:3] .= C3M    # n = 3
+CM[4,1:4] .= C4M    # n = 4
+CM[5,1:5] .= C5M    # n = 5
+CM[6,1:6] .= C6M    # n = 6
 # Matrix of tesseral harmonic coefficients S_{nm} * radius of the moon ^n
 const SM = zeros(6, 6)
-SM[3,1:3] = S3M    # n = 3
-SM[4,1:4] = S4M    # n = 4
-SM[5,1:5] = S5M    # n = 5
-SM[6,1:6] = S6M    # n = 6
+SM[3,1:3] .= S3M    # n = 3
+SM[4,1:4] .= S4M    # n = 4
+SM[5,1:5] .= S5M    # n = 5
+SM[6,1:6] .= S6M    # n = 6
 
-# Extended body parameters for the Moon
-# See Table 11 in page 51 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-const R_moon = RM/au                         # Lunar radius in au
-const β_L = 6.3102131934887270E-04           # Lunar moment parameter, β_L = (C_T-A_T)/B_T
-const γ_L = 2.2773171480091860E-04           # Lunar moment parameter, γ_L = (B_T-A_T)/C_T
-const k_2M = 0.024059                        # Potential Love number
-const τ_M = 9.5830547273306690E-02           # Time-lag for the lunar solid-body tide (days)
-const α_c = 0.0007                           # Ratio of polar moment of inertia of core to mean total polar moment of inertia
-const f_c = 2.4623904789198150E-04           # Oblateness of core
-const k_ν_div_C_T = 1.6365616533709530E-08   # Friction coefficient between core and mantle, radian/day
-
-const J2_M_und = 2.0321568464952570E-04      # Undistorted lunar 2nd zonal harmonic coefficient
+# Numerical factors for recursion relations of Associated Legendre polynomials
+# See equations (180)-(183) in pages 33-34 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
+const lnm1 = [(2n-1)/(n-m) for n in 1:6, m in 1:6]       # (2n - 1) / (n - m)
+const lnm2 = [-(n+m-1)/(n-m) for n in 1:6, m in 1:6]     # -(n + m - 1) / (n - m)
+const lnm3 = [-n for n in 1:6]                           # -n 
+const lnm4 = [n+m for n in 1:6, m in 1:6]                # (n + m)
+const lnm5 = [2n-1 for n in 1:6]                         # (2n - 1)
+const lnm6 = [-(n+1) for n in 1:6]                       # -(n + 1)
+const lnm7 = [m for m in 1:6]                            # m  
 
 # Diagonal elements of undistorted lunar mantle moment of inertia
 # See equation (37) in page 16 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract

@@ -2,8 +2,8 @@
     initialcond(N, jd0::Float64=datetime2julian(DateTime(1969,6,28,0,0,0)))
 
 Returns a vector with the initial conditions (`3N` positions [au] + `3N` velocities [au/day] + 
-3 lunar mantle Euler angles [rad] + 3 mantle angular velocity [rad/day] +
-3 lunar core Euler angles [rad] + 3 core angular velocity [rad/day] +
+3 lunar mantle Euler angles [rad] + 3 mantle angular velocities [rad/day] +
+3 lunar core Euler angles [rad] + 3 core angular velocities [rad/day] +
 DE430 TT-TDB at initial epoch [days]) for the integration. Two possible values of `jd0` 
 are supported:
 

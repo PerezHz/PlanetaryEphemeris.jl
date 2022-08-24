@@ -5,8 +5,8 @@
 Saves the ephemeris, contained in `sseph`, of the bodies with indexes `bodyind`, in a jld file
 named as follows
 
-    sseph + number of asteroids in sseph + ast + number of asteroids to be saved in file 
-    + p (forward integration) or n (backward integration) + y_et.jld
+    "sseph" * number of asteroids in sseph * "ast" * number of asteroids to be saved in file 
+    * "p" (forward integration) or "m" (backward integration) * "y_et.jld"
 
 # Arguments
 
@@ -20,7 +20,7 @@ function selecteph2jld(sseph::TaylorInterpolant, bodyind::AbstractVector{Int}, t
     indvec = nbodyind(N, bodyind)      # Indexes of the positions and velocities of the bodies to be saved
     nastout = length(bodyind) - 11     # Number of asteroids to be saved
     @assert nastout <= nast
-    sgn_yrs = sign(tspan) == 1.0 ? "p" : "m" # Prefix to distinguish between forward (p) / backward (m) integration
+    sgn_yrs = signbit(tspan) ? "m" : "p"     # Prefix to distinguish between forward (p) / backward (m) integration
     nyrs_int = Int(abs(tspan))               # Number of years 
     
     # Write output to jld file

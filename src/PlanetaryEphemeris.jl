@@ -29,10 +29,6 @@ using Quadmath
 
 import Base.reverse
 
-# Integration parameters
-const order = 30
-const abstol = 1.0E-20
-
 @doc raw"""
     nbodyind(N::Int, i::Int)
     nbodyind(N::Int, ivec::AbstractVector{Int})

@@ -244,16 +244,23 @@ See equation (11) in page 9 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C.
 See also [`Ry`](@ref) and [`Rz`](@ref).
 """
 function Rx(alpha::T) where {T<:Number}
+    # Allocate memmory
     res = Array{T}(undef, 3, 3)
-    res[1, 1] = one(alpha)
-    res[2, 1] = zero(alpha)
-    res[3, 1] = zero(alpha)
-    res[1, 2] = zero(alpha)
-    res[2, 2] = cos(alpha)
-    res[3, 2] = -sin(alpha)
-    res[1, 3] = zero(alpha)
-    res[2, 3] = sin(alpha)
-    res[3, 3] = cos(alpha)
+    # Local variables 
+    one_alpha = one(alpha)
+    zero_alpha = zero(alpha)
+    cos_alpha = cos(alpha)
+    sin_alpha = sin(alpha)
+    # Matrix elements 
+    res[1, 1] = one_alpha
+    res[2, 1] = zero_alpha
+    res[3, 1] = zero_alpha
+    res[1, 2] = zero_alpha
+    res[2, 2] = cos_alpha
+    res[3, 2] = -sin_alpha
+    res[1, 3] = zero_alpha
+    res[2, 3] = sin_alpha
+    res[3, 3] = cos_alpha
     return res
 end
 
@@ -283,16 +290,23 @@ in page 3 of https://ui.adsabs.harvard.edu/abs/1977A%26A....58....1L/abstract an
 See also [`Rx`](@ref) and [`Rz`](@ref).
 """
 function Ry(alpha::T) where {T<:Number}
+    # Allocate memmory
     res = Array{T}(undef, 3, 3)
-    res[1, 1] = cos(alpha)
-    res[2, 1] = zero(alpha)
-    res[3, 1] = sin(alpha)
-    res[1, 2] = zero(alpha)
-    res[2, 2] = one(alpha)
-    res[3, 2] = zero(alpha)
-    res[1, 3] = -sin(alpha)
-    res[2, 3] = zero(alpha)
-    res[3, 3] = cos(alpha)
+    # Local variables
+    one_alpha = one(alpha)
+    zero_alpha = zero(alpha)
+    cos_alpha = cos(alpha)
+    sin_alpha = sin(alpha)
+    # Matrix elements
+    res[1, 1] = cos_alpha
+    res[2, 1] = zero_alpha
+    res[3, 1] = sin_alpha
+    res[1, 2] = zero_alpha
+    res[2, 2] = one_alpha
+    res[3, 2] = zero_alpha
+    res[1, 3] = -sin_alpha
+    res[2, 3] = zero_alpha
+    res[3, 3] = cos_alpha
     return res
 end
 
@@ -317,16 +331,23 @@ See equation (13) in page 9 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C.
 See also [`Rx`](@ref) and [`Ry`](@ref).
 """
 function Rz(alpha::T) where {T<:Number}
+    # Allocate memmory
     res = Array{T}(undef, 3, 3)
-    res[1, 1] = cos(alpha)
-    res[2, 1] = -sin(alpha)
-    res[3, 1] = zero(alpha)
-    res[1, 2] = sin(alpha)
-    res[2, 2] = cos(alpha)
-    res[3, 2] = zero(alpha)
-    res[1, 3] = zero(alpha)
-    res[2, 3] = zero(alpha)
-    res[3, 3] = one(alpha)
+    # Local variables
+    one_alpha = one(alpha)
+    zero_alpha = zero(alpha)
+    cos_alpha = cos(alpha)
+    sin_alpha = sin(alpha)
+    # Matrix elements
+    res[1, 1] = cos_alpha
+    res[2, 1] = -sin_alpha
+    res[3, 1] = zero_alpha
+    res[1, 2] = sin_alpha
+    res[2, 2] = cos_alpha
+    res[3, 2] = zero_alpha
+    res[1, 3] = zero_alpha
+    res[2, 3] = zero_alpha
+    res[3, 3] = one_alpha
     return res
 end
 

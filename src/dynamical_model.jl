@@ -1,9 +1,9 @@
 # Solar System ( JPL DE430/431) dynamical model
 # Bodies considered in the model are: the Sun, the eight planets, the Moon and
-# the 343 main-belt asteroids included in the JPL DE430 ephemeris
-# effects considered are:
-# - post-Newtonian point-mass accelerations between all bodies,
-# - figure-effects (oblateness) of the Earth (J2 and J3)
+# the 343 main-belt asteroids included in the JPL DE430 ephemeris.
+# Effects considered are:
+# - Post-Newtonian point-mass accelerations between all bodies,
+# - Figure-effects (oblateness) of the Earth (J2 and J3)
 # - J2 effect of the Sun
 # - J2 and J3 effect of the Moon
 # - Kinematic model for the precession and nutation of the Earth's orientation (IAU 1976/1980 Earth orientation model)
@@ -13,7 +13,11 @@
 @doc """
     ordpres_differentiate(a::Taylor1)
 
-Auxiliary function: order-preserving differentiate.
+Returns the derivative of `a`, but preserving the order/degree of `a`. In comparison, 
+`TaylorSeries.differentiate` returns the returns a `Taylor1` object with one order/degree 
+less than the one of `a`. 
+
+See also [`TaylorSeries.differentiate`](@ref).
 """
 function ordpres_differentiate(a::Taylor1)
     res = zero(a)
@@ -33,13 +37,13 @@ ephemeris. Effects considered are:
 - Post-Newtonian point-mass accelerations between all bodies: see equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
 ```math
 \begin{align*}
-    \mathbf{a}_i & = \sum_{i\neq j}\frac{\mu_i(\mathbf{r}_i - \mathbf{r}_j)}{r_{ij}^3}
+    \mathbf{a}_i & = \sum_{j\neq i}\frac{\mu_j(\mathbf{r}_j - \mathbf{r}_i)}{r_{ij}^3}
     \left\lbrace
-    1 - \frac{4}{c^2}\sum_{i\neq l}\frac{\mu_i}{r_{il}} - \frac{1}{c^2}\sum_{j\neq k}\frac{\mu_j}{r_{jk}} + \left(\frac{\dot{s}_j}{c}\right)^2 + 2\left(\frac{\dot{s}_i}{c}\right)^2   
-    - \frac{4}{c^2}\mathbf{v}_i\cdot\mathbf{v}_j - \frac{3}{2c^2}\left[\frac{(\mathbf{r}_i - \mathbf{r}_j)\cdot\mathbf{v}_i}{r_{ij}}\right]^2 + \frac{1}{2c^2}(\mathbf{r}_i - \mathbf{r}_j)\cdot\mathbf{a}_i
+    1 - \frac{4}{c^2}\sum_{l\neq i}\frac{\mu_l}{r_{il}} - \frac{1}{c^2}\sum_{k\neq j}\frac{\mu_k}{r_{jk}} + \left(\frac{\dot{s}_i}{c}\right)^2 + 2\left(\frac{\dot{s}_j}{c}\right)^2   
+    - \frac{4}{c^2}\mathbf{v}_i\cdot\mathbf{v}_j - \frac{3}{2c^2}\left[\frac{(\mathbf{r}_i - \mathbf{r}_j)\cdot\mathbf{v}_j}{r_{ij}}\right]^2 + \frac{1}{2c^2}(\mathbf{r}_j - \mathbf{r}_i)\cdot\mathbf{a}_j
     \right\rbrace \\
-    & \hspace{0.5cm} + \frac{1}{c^2}\sum_{i\neq j} \frac{\mu_i}{r_{ij}^3}[(\mathbf{r}_i - \mathbf{r}_j)\cdot(4\mathbf{v}_i - 3\mathbf{v}_j)](\mathbf{v}_i - \mathbf{v}_j)
-    + \frac{7}{2c^2}\sum_{i\neq j}\frac{\mu_i\mathbf{a}_i}{r_{ij}},
+    & \hspace{0.5cm} + \frac{1}{c^2}\sum_{j\neq i} \frac{\mu_j}{r_{ij}^3}[(\mathbf{r}_i - \mathbf{r}_j)\cdot(4\mathbf{v}_i - 3\mathbf{v}_j)](\mathbf{v}_i - \mathbf{v}_j)
+    + \frac{7}{2c^2}\sum_{j\neq i}\frac{\mu_j\mathbf{a}_j}{r_{ij}},
 \end{align*}
 ```
 where ``\mathbf{v}_i = \dot{\mathbf{r}}_i``, ``\dot{s}_i = ||\mathbf{v}_i||^2`` and 
@@ -157,14 +161,12 @@ to interaction between the mantle and core.
     local inv_I_c_t = inv(I_c_t)                 # Inverse of lunar core I matrix
     local I_M_t = I_m_t+I_c_t                    # Total I matrix (mantle + core)
 
-    # Parameters related to speed of light, c
-    local c_p2 = 29979.063823897606              # c^2 = 29979.063823897606 au^2/d^2
-    local c_m2 = 3.3356611996764786e-5           # c^-2 = 3.3356611996764786e-5 d^2/au^2
-
     #=
     Point-mass accelerations 
     See equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
     =# 
+
+    # Note: All the following arrays are declared here in order to help @taylorize work 
 
     # Difference between two positions (\mathbf{r}_i - \mathbf{r}_j)
     X = Array{S}(undef, N, N)         # X-axis component
@@ -204,8 +206,7 @@ to interaction between the mantle and core.
     # Newtonian potential of 1 body \mu_i / r_{ij}
     newtonian1b_Potential = Array{S}(undef, N, N)
     # Newtonian potential of N bodies 
-    # \sum_{i\neq l} \frac{\mu_i}{r_{il}} or
-    # \sum_{j\neq k} \frac{\mu_j}{r_{jk}}
+    # \sum_{i\neq l} \frac{\mu_i}{r_{il}}
     newtonianNb_Potential = Array{S}(undef, N)    
 
     # Newtonian coefficient * difference between two positions, i.e.,
@@ -219,12 +220,16 @@ to interaction between the mantle and core.
     _2v2 = Array{S}(undef, N, N)           # 2 * ||\mathbf{v_i}||^2 
     vi_dot_vj = Array{S}(undef, N, N)      # Dot product of two velocities \mathbf{v}_i\cdot\mathbf{v}_j
     
+    # Second term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
+
     # Second term without (\mathbf{v}_i - \mathbf{v}_j)
     pn2 = Array{S}(undef, N, N)            # \mu_i * [(\mathbf{r_i} - \mathbf{r_j})\cdot(4\mathbf{v_i} - 3\mathbf{v_j})]
     # Full second term
     U_t_pn2 = Array{S}(undef, N, N)        # X-axis component
     V_t_pn2 = Array{S}(undef, N, N)        # Y-axis component
     W_t_pn2 = Array{S}(undef, N, N)        # Z-axis component
+
+    # Third term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
 
     # Third term without newtonian accelerations \mathbf{a}_i
     pn3 = Array{S}(undef, N, N)
@@ -233,7 +238,7 @@ to interaction between the mantle and core.
     pNY_t_pn3 = Array{S}(undef, N, N)      # Y-axis component
     pNZ_t_pn3 = Array{S}(undef, N, N)      # Z-axis component
 
-    # First term
+    # First term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
 
     _4ϕj = Array{S}(undef, N, N)            # 4*\sum term inside {}
     ϕi_plus_4ϕj = Array{S}(undef, N, N)     # 4*\sum + \sum terms inside {}
@@ -426,24 +431,6 @@ to interaction between the mantle and core.
     ω_c_CE_2 = (mantlef2coref[2,1]*q[6N+10]) + ((mantlef2coref[2,2]*q[6N+11]) + (mantlef2coref[2,3]*q[6N+12]))
     ω_c_CE_3 = (mantlef2coref[3,1]*q[6N+10]) + ((mantlef2coref[3,2]*q[6N+11]) + (mantlef2coref[3,3]*q[6N+12]))
     
-    # Numerical factors for recursion relations of Legendre polynomials
-    # See equations (175)-(178) in page 33 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
-    local fact1_jsem = [(2n-1)/n for n in 1:maximum(n1SEM)]  # (2n - 1) / n
-    local fact2_jsem = [(n-1)/n for n in 1:maximum(n1SEM)]   # (2n - 1) / n
-    local fact3_jsem = [n for n in 1:maximum(n1SEM)]         # n
-    local fact4_jsem = [n+1 for n in 1:maximum(n1SEM)]       # n + 1
-    local fact5_jsem = [(n+2) for n in 1:maximum(n1SEM)]     # n + 2
-    # Numerical factors for recursion relations of Associated Legendre polynomials
-    # See equations (180)-(183) in pages 33-34 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
-    local lnm1 = [(2n-1)/(n-m) for n in 1:6, m in 1:6]       # (2n - 1) / (n - m)
-    local lnm2 = [-(n+m-1)/(n-m) for n in 1:6, m in 1:6]     # -(n + m - 1) / (n - m)
-    local lnm3 = [-n for n in 1:6]                           # -n 
-    local lnm4 = [n+m for n in 1:6, m in 1:6]                # (n + m)
-    local lnm5 = [2n-1 for n in 1:6]                         # (2n - 1)
-    local lnm6 = [-(n+1) for n in 1:6]                       # -(n + 1)
-    local lnm7 = [m for m in 1:6]                            # m  
-    # TODO: solve differences between parsed and non-parsed
-    local RE_au = (RE/au)                              # Earth's radius in au
     # Second zonal harmonic coefficient
     # See Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     local J2E_t = (J2E + J2EDOT*(dsj2k/yr))*(RE_au^2)  # Earth (considering a linear change in time with rate J2EDOT)
@@ -546,8 +533,7 @@ to interaction between the mantle and core.
                 temp_003 = newtonZ[j] + (Z[i,j]*newtonianCoeff[i,j])  # Z-axis component
                 newtonZ[j] = temp_003
                 # Newtonian potential of N bodies 
-                # \sum_{i\neq l} \frac{\mu_i}{r_{il}} or
-                # \sum_{j\neq k} \frac{\mu_j}{r_{jk}}
+                # \sum_{i\neq l} \frac{\mu_i}{r_{il}}
                 temp_004 = newtonianNb_Potential[j] + newtonian1b_Potential[i, j]
                 newtonianNb_Potential[j] = temp_004
             end # else (i != j)
@@ -856,6 +842,9 @@ to interaction between the mantle and core.
             if i == j
                 continue
             else
+
+                # First term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
+
                 # Last term inside the {}
                 pNX_t_X[i,j] = newtonX[i]*X[i,j]   # X-axis component
                 pNY_t_Y[i,j] = newtonY[i]*Y[i,j]   # Y-axis component
@@ -867,7 +856,7 @@ to interaction between the mantle and core.
                 Y_t_pn1[i,j] = newton_acc_Y[i,j]*pn1[i,j]   # Y-axis component
                 Z_t_pn1[i,j] = newton_acc_Z[i,j]*pn1[i,j]   # Z-axis component
 
-                # Full third term 
+                # Full third term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
                 pNX_t_pn3[i,j] = newtonX[i]*pn3[i,j]   # X-axis component
                 pNY_t_pn3[i,j] = newtonY[i]*pn3[i,j]   # Y-axis component
                 pNZ_t_pn3[i,j] = newtonZ[i]*pn3[i,j]   # Z-axis component
@@ -1084,14 +1073,12 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref).
     local inv_I_c_t = inv(I_c_t)                 # Inverse of lunar core I matrix
     local I_M_t = I_m_t+I_c_t                    # Total I matrix (mantle + core)
 
-    # Parameters related to speed of light, c
-    local c_p2 = 29979.063823897606              # c^2 = 29979.063823897606 au^2/d^2
-    local c_m2 = 3.3356611996764786e-5           # c^-2 = 3.3356611996764786e-5 d^2/au^2
-
     #=
     Point-mass accelerations 
     See equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
     =# 
+
+    # Note: All the following arrays are declared here in order to help @taylorize work 
 
     # Difference between two positions (\mathbf{r}_i - \mathbf{r}_j)
     X = Array{S}(undef, N, N)         # X-axis component
@@ -1131,8 +1118,7 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref).
     # Newtonian potential of 1 body \mu_i / r_{ij}
     newtonian1b_Potential = Array{S}(undef, N, N)
     # Newtonian potential of N bodies 
-    # \sum_{i\neq l} \frac{\mu_i}{r_{il}} or
-    # \sum_{j\neq k} \frac{\mu_j}{r_{jk}}
+    # \sum_{i\neq l} \frac{\mu_i}{r_{il}}
     newtonianNb_Potential = Array{S}(undef, N)
     
     # Newtonian coefficient * difference between two positions, i.e.,
@@ -1146,12 +1132,16 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref).
     _2v2 = Array{S}(undef, N, N)           # 2 * ||\mathbf{v_i}||^2 
     vi_dot_vj = Array{S}(undef, N, N)      # Dot product of two velocities \mathbf{v}_i\cdot\mathbf{v}_j
 
+    # Second term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
+
     # Second term without (\mathbf{v}_i - \mathbf{v}_j)
     pn2 = Array{S}(undef, N, N)            # \mu_i * [(\mathbf{r_i} - \mathbf{r_j})\cdot(4\mathbf{v_i} - 3\mathbf{v_j})]
     # Full second term
     U_t_pn2 = Array{S}(undef, N, N)        # X-axis component
     V_t_pn2 = Array{S}(undef, N, N)        # Y-axis component
     W_t_pn2 = Array{S}(undef, N, N)        # Z-axis component
+
+    # Third term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
 
     # Third term without newtonian accelerations \mathbf{a}_i
     pn3 = Array{S}(undef, N, N)
@@ -1160,7 +1150,7 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref).
     pNY_t_pn3 = Array{S}(undef, N, N)      # Y-axis component
     pNZ_t_pn3 = Array{S}(undef, N, N)      # Z-axis component
 
-    # First term
+    # First term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
 
     _4ϕj = Array{S}(undef, N, N)            # 4*\sum term inside {}
     ϕi_plus_4ϕj = Array{S}(undef, N, N)     # 4*\sum + \sum terms inside {}
@@ -1353,24 +1343,6 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref).
     ω_c_CE_2 = (mantlef2coref[2,1]*q[6N+10]) + ((mantlef2coref[2,2]*q[6N+11]) + (mantlef2coref[2,3]*q[6N+12]))
     ω_c_CE_3 = (mantlef2coref[3,1]*q[6N+10]) + ((mantlef2coref[3,2]*q[6N+11]) + (mantlef2coref[3,3]*q[6N+12]))
 
-    # Numerical factors for recursion relations of Legendre polynomials
-    # See equations (175)-(178) in page 33 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
-    local fact1_jsem = [(2n-1)/n for n in 1:maximum(n1SEM)]  # (2n - 1) / n
-    local fact2_jsem = [(n-1)/n for n in 1:maximum(n1SEM)]   # (2n - 1) / n
-    local fact3_jsem = [n for n in 1:maximum(n1SEM)]         # n
-    local fact4_jsem = [n+1 for n in 1:maximum(n1SEM)]       # n + 1
-    local fact5_jsem = [(n+2) for n in 1:maximum(n1SEM)]     # n + 2
-    # Numerical factors for recursion relations of Associated Legendre polynomials
-    # See equations (180)-(183) in pages 33-34 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
-    local lnm1 = [(2n-1)/(n-m) for n in 1:6, m in 1:6]       # (2n - 1) / (n - m)
-    local lnm2 = [-(n+m-1)/(n-m) for n in 1:6, m in 1:6]     # -(n + m - 1) / (n - m)
-    local lnm3 = [-n for n in 1:6]                           # -n 
-    local lnm4 = [n+m for n in 1:6, m in 1:6]                # (n + m)
-    local lnm5 = [2n-1 for n in 1:6]                         # (2n - 1)
-    local lnm6 = [-(n+1) for n in 1:6]                       # -(n + 1)
-    local lnm7 = [m for m in 1:6]                            # m  
-    # TODO: solve differences between parsed and non-parsed
-    local RE_au = (RE/au)    
     # Second zonal harmonic coefficient
     # See Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract                          # Earth's radius in au
     local J2E_t = (J2E + J2EDOT*(dsj2k/yr))*(RE_au^2)  # Earth (considering a linear change in time with rate J2EDOT)
@@ -1471,8 +1443,7 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref).
                 temp_003 = newtonZ[j] + (Z[i,j]*newtonianCoeff[i,j])  # Z-axis component
                 newtonZ[j] = temp_003
                 # Newtonian potential of N bodies 
-                # \sum_{i\neq l} \frac{\mu_i}{r_{il}} or
-                # \sum_{j\neq k} \frac{\mu_j}{r_{jk}}
+                # \sum_{i\neq l} \frac{\mu_i}{r_{il}}
                 temp_004 = newtonianNb_Potential[j] + newtonian1b_Potential[i, j]
                 newtonianNb_Potential[j] = temp_004
             end # else (i != j)
@@ -1782,6 +1753,9 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref).
             if i == j
                 continue
             else
+
+                # First term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
+
                 # Last term inside the {}
                 pNX_t_X[i,j] = newtonX[i]*X[i,j]   # X-axis component
                 pNY_t_Y[i,j] = newtonY[i]*Y[i,j]   # Y-axis component
@@ -1793,7 +1767,7 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref).
                 Y_t_pn1[i,j] = newton_acc_Y[i,j]*pn1[i,j]   # Y-axis component
                 Z_t_pn1[i,j] = newton_acc_Z[i,j]*pn1[i,j]   # Z-axis component
 
-                # Full third term 
+                # Full third term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
                 pNX_t_pn3[i,j] = newtonX[i]*pn3[i,j]   # X-axis component
                 pNY_t_pn3[i,j] = newtonY[i]*pn3[i,j]   # Y-axis component
                 pNZ_t_pn3[i,j] = newtonZ[i]*pn3[i,j]   # Z-axis component
@@ -1985,7 +1959,7 @@ end
 @doc raw"""
     DE430!(dq, q, params, t)
 
-Solar System (JPL DE430/431) dynamical model. Includes all the effects in 
+Solar System (JPL DE430/431) dynamical model. This function uses threads and includes all the effects in 
 `NBP_pN_A_J23E_J23M_J2S!` plus
 
 - Tidal secular acceleration of Moon due to rides raised on Earth by both the Moon and the Sun: see equation (32) in page 14 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
@@ -1996,7 +1970,7 @@ Solar System (JPL DE430/431) dynamical model. Includes all the effects in
         \frac{k_{20,E}}{r_0^*\,^5}\left(\left[2z_0^*\,^2\mathbf{z} + \rho_0^*\,^2\mathbf{\rho}\right]
         - \frac{5\left[\left(zz_0^*\right)^2 + \frac{1}{2}\left(\rho\rho_0^*\right)^2\right]\mathbf{r}}{r^2}
         + r_0^*\,^2\mathbf{r} \right) \right. \\
-        & \hspace{0.5cm} + \frac{k_{21,E}}{r_1^*\,^5}\left(2\left[\left(\mathbf{\rho}\cdot\mathbf{\rho}_1^*\right)z_1^*
+        & \hspace{0.5cm} + \frac{k_{21,E}}{r_1^*\,^5}\left(2\left[\left(\mathbf{\rho}\cdot\mathbf{\rho}_1^*\right)\mathbf{z}_1^*
         + zz_1^*\mathbf{\rho}_1^*\right]
         - \frac{10zz_1^*\left(\mathbf{\rho}\cdot\mathbf{\rho}_1^*\right)\mathbf{r}}{r^2}\right) \\
         & \hspace{0.5cm} + \left. \frac{k_{22,E}}{r_2^*\,^5}\left(
@@ -2063,14 +2037,12 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
     local inv_I_c_t = inv(I_c_t)                 # Inverse of lunar core I matrix
     local I_M_t = I_m_t+I_c_t                    # Total I matrix (mantle + core)
 
-    # Parameters related to speed of light, c
-    local c_p2 = 29979.063823897606              # c^2 = 29979.063823897606 au^2/d^2
-    local c_m2 = 3.3356611996764786e-5           # c^-2 = 3.3356611996764786e-5 d^2/au^2
-
     #=
     Point-mass accelerations 
     See equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
     =# 
+
+    # Note: All the following arrays are declared here in order to help @taylorize work 
 
     # Difference between two positions (\mathbf{r}_i - \mathbf{r}_j)
     X = Array{S}(undef, N, N)         # X-axis component
@@ -2110,8 +2082,7 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
     # Newtonian potential of 1 body \mu_i / r_{ij}
     newtonian1b_Potential = Array{S}(undef, N, N)
     # Newtonian potential of N bodies 
-    # \sum_{i\neq l} \frac{\mu_i}{r_{il}} or
-    # \sum_{j\neq k} \frac{\mu_j}{r_{jk}}
+    # \sum_{i\neq l} \frac{\mu_i}{r_{il}}
     newtonianNb_Potential = Array{S}(undef, N)
     
     # Newtonian coefficient * difference between two positions, i.e.,
@@ -2125,6 +2096,8 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
     _2v2 = Array{S}(undef, N, N)           # 2 * ||\mathbf{v_i}||^2 
     vi_dot_vj = Array{S}(undef, N, N)      # Dot product of two velocities \mathbf{v}_i\cdot\mathbf{v}_j
 
+    # Second term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
+
     # Second term without (\mathbf{v}_i - \mathbf{v}_j)
     pn2 = Array{S}(undef, N, N)            # \mu_i * [(\mathbf{r_i} - \mathbf{r_j})\cdot(4\mathbf{v_i} - 3\mathbf{v_j})]
     # Full second term
@@ -2132,6 +2105,8 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
     V_t_pn2 = Array{S}(undef, N, N)        # Y-axis component
     W_t_pn2 = Array{S}(undef, N, N)        # Z-axis component
     
+    # Third term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
+
     # Third term without newtonian accelerations \mathbf{a}_i
     pn3 = Array{S}(undef, N, N)
     # Full third term of equation (35)
@@ -2139,7 +2114,7 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
     pNY_t_pn3 = Array{S}(undef, N, N)      # Y-axis component
     pNZ_t_pn3 = Array{S}(undef, N, N)      # Z-axis component
 
-    # First term
+    # First term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
 
     _4ϕj = Array{S}(undef, N, N)            # 4*\sum term inside {}
     ϕi_plus_4ϕj = Array{S}(undef, N, N)     # 4*\sum + \sum terms inside {}
@@ -2332,24 +2307,6 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
     ω_c_CE_2 = (mantlef2coref[2,1]*q[6N+10]) + ((mantlef2coref[2,2]*q[6N+11]) + (mantlef2coref[2,3]*q[6N+12]))
     ω_c_CE_3 = (mantlef2coref[3,1]*q[6N+10]) + ((mantlef2coref[3,2]*q[6N+11]) + (mantlef2coref[3,3]*q[6N+12]))
 
-    # Numerical factors for recursion relations of Legendre polynomials
-    # See equations (175)-(178) in page 33 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
-    local fact1_jsem = [(2n-1)/n for n in 1:maximum(n1SEM)]  # (2n - 1) / n
-    local fact2_jsem = [(n-1)/n for n in 1:maximum(n1SEM)]   # (2n - 1) / n
-    local fact3_jsem = [n for n in 1:maximum(n1SEM)]         # n
-    local fact4_jsem = [n+1 for n in 1:maximum(n1SEM)]       # n + 1
-    local fact5_jsem = [(n+2) for n in 1:maximum(n1SEM)]     # n + 2
-    # Numerical factors for recursion relations of Associated Legendre polynomials
-    # See equations (180)-(183) in pages 33-34 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
-    local lnm1 = [(2n-1)/(n-m) for n in 1:6, m in 1:6]       # (2n - 1) / (n - m)
-    local lnm2 = [-(n+m-1)/(n-m) for n in 1:6, m in 1:6]     # -(n + m - 1) / (n - m)
-    local lnm3 = [-n for n in 1:6]                           # -n 
-    local lnm4 = [n+m for n in 1:6, m in 1:6]                # (n + m)
-    local lnm5 = [2n-1 for n in 1:6]                         # (2n - 1)
-    local lnm6 = [-(n+1) for n in 1:6]                       # -(n + 1)
-    local lnm7 = [m for m in 1:6]                            # m  
-    # TODO: solve differences between parsed and non-parsed
-    local RE_au = (RE/au)
     # Second zonal harmonic coefficient
     # See Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract                          # Earth's radius in au
     local J2E_t = (J2E + J2EDOT*(dsj2k/yr))*(RE_au^2)  # Earth (considering a linear change in time with rate J2EDOT)
@@ -2483,8 +2440,7 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
                 temp_003 = newtonZ[j] + (Z[i,j]*newtonianCoeff[i,j])  # Z-axis component
                 newtonZ[j] = temp_003
                 # Newtonian potential of N bodies 
-                # \sum_{i\neq l} \frac{\mu_i}{r_{il}} or
-                # \sum_{j\neq k} \frac{\mu_j}{r_{jk}}
+                # \sum_{i\neq l} \frac{\mu_i}{r_{il}}
                 temp_004 = newtonianNb_Potential[j] + newtonian1b_Potential[i, j]
                 newtonianNb_Potential[j] = temp_004
             end # else (i != j)
@@ -2793,6 +2749,9 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
             if i == j
                 continue
             else
+
+                # First term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
+
                 # Last term inside the {}
                 pNX_t_X[i,j] = newtonX[i]*X[i,j]   # X-axis component
                 pNY_t_Y[i,j] = newtonY[i]*Y[i,j]   # Y-axis component
@@ -2804,7 +2763,7 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
                 Y_t_pn1[i,j] = newton_acc_Y[i,j]*pn1[i,j]   # Y-axis component
                 Z_t_pn1[i,j] = newton_acc_Z[i,j]*pn1[i,j]   # Z-axis component
 
-                # Full third term 
+                # Full third term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
                 pNX_t_pn3[i,j] = newtonX[i]*pn3[i,j]   # X-axis component
                 pNY_t_pn3[i,j] = newtonY[i]*pn3[i,j]   # Y-axis component
                 pNZ_t_pn3[i,j] = newtonZ[i]*pn3[i,j]   # Z-axis component
