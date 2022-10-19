@@ -1,4 +1,11 @@
-# Threaded version of TaylorSeries.evaluate!
+@doc raw"""
+    evaluate_threads!(x::Array{Taylor1{T},1}, δt::T,
+                      x0::Union{Array{T,1},SubArray{T,1}}) where {T<:Number}
+
+Threaded version of `TaylorSeries.evaluate!`.
+
+See also [`TaylorSeries.evaluate!`](@ref).
+"""
 function evaluate_threads!(x::Array{Taylor1{T},1}, δt::T,
         x0::Union{Array{T,1},SubArray{T,1}}) where {T<:Number}
     # @assert length(x) == length(x0)
@@ -8,7 +15,13 @@ function evaluate_threads!(x::Array{Taylor1{T},1}, δt::T,
     nothing
 end
 
-#### Threaded version of TaylorIntegration.stepsize
+@doc raw"""
+    stepsize_threads(q::AbstractArray{Taylor1{U},1}, epsilon::T) where {T<:Real, U<:Number}
+
+Threaded version of `TaylorIntegration.stepsize`.
+
+See also [`TaylorIntegration.stepsize`](@ref) and [`TaylorIntegration._second_stepsize`](@ref).
+"""
 function stepsize_threads(q::AbstractArray{Taylor1{U},1}, epsilon::T) where
         {T<:Real, U<:Number}
     R = promote_type(typeof(norm(constant_term(q[1]), Inf)), T)
@@ -30,7 +43,13 @@ function stepsize_threads(q::AbstractArray{Taylor1{U},1}, epsilon::T) where
     return h::R
 end
 
-# first step-size control from Jorba & Zou, 2005
+@doc raw"""
+    stepsize_jz05(q::AbstractArray{Taylor1{U}, N}, epsilon::T) where {T<:Real, U<:Number, N}
+
+First step-size control. See section 3.2 of https://doi.org/10.1080/10586458.2005.10128904.
+
+See also [`stepsize_threads`](@ref) and [`TaylorIntegration.stepsize`](@ref). 
+""" 
 function stepsize_jz05(q::AbstractArray{Taylor1{U}, N}, epsilon::T) where
         {T<:Real, U<:Number, N}
     nbodies = (length(q)-13)÷6
@@ -61,7 +80,7 @@ function stepsize_jz05(q::AbstractArray{Taylor1{U}, N}, epsilon::T) where
     return ρ*exp(-2.0)
 end
 
-# ##### Constant timestep method: set timestep equal to 1 day
+# Constant timestep method: set timestep equal to 1 day
 # function stepsize_threads(q::AbstractArray{Taylor1{U},1}, epsilon::T) where
 #         {T<:Real, U<:Number}
 #     R = promote_type(typeof(norm(constant_term(q[1]), Inf)), T)
@@ -70,6 +89,15 @@ end
 #     return one(h)::R
 # end
 
+@doc raw"""
+    taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}}, dx::Vector{Taylor1{U}}, 
+                        xaux::Vector{Taylor1{U}}, abstol::T, params, 
+                        parse_eqs::Bool=true) where {T<:Real, U<:Number}
+
+Threaded version of `TaylorIntegration.taylorstep`.
+
+See also [`stepsize_threads`](@ref) and [`TaylorIntegration.taylorstep`](@ref).
+"""
 function taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}},
         dx::Vector{Taylor1{U}}, xaux::Vector{Taylor1{U}}, abstol::T, params,
         parse_eqs::Bool=true) where {T<:Real, U<:Number}
@@ -87,8 +115,18 @@ function taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}},
     return δt
 end
 
+@doc raw"""
+    taylorinteg_threads(f!, q0::Array{U,1}, t0::T, tmax::T, order::Int, abstol::T,
+                        params = nothing; maxsteps::Int=500, parse_eqs::Bool=true, 
+                        dense::Bool=false) where {T<:Real, U<:Number}
+
+Threaded version of `TaylorIntegration.taylorinteg`.
+
+See also [`TaylorIntegration.taylorinteg`](@ref).
+"""
 function taylorinteg_threads(f!, q0::Array{U,1}, t0::T, tmax::T, order::Int, abstol::T,
-        params = nothing; maxsteps::Int=500, parse_eqs::Bool=true, dense::Bool=false) where {T<:Real, U<:Number}
+                             params = nothing; maxsteps::Int=500, parse_eqs::Bool=true, 
+                             dense::Bool=false) where {T<:Real, U<:Number}
 
     # Allocation
     tv = Array{T}(undef, maxsteps+1)

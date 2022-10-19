@@ -29,10 +29,14 @@ using Quadmath
 
 import Base.reverse
 
-# integration parameters
-const order = 30
-const abstol = 1.0E-20
+@doc raw"""
+    nbodyind(N::Int, i::Int)
+    nbodyind(N::Int, ivec::AbstractVector{Int})
 
+Returns the indexes of the positions and velocities of the `i`-th body (or the 
+`ivec`-th bodies) in a vector with `N` bodies. The function assumes that the vector has 
+the form: `3N` positions + `3N` velocities (+ Lunar physical librations + TT-TDB). 
+"""
 nbodyind(N::Int, i::Int) = union(3i-2:3i, 3*(N+i)-2:3*(N+i))
 
 function nbodyind(N::Int, ivec::AbstractVector{Int})
