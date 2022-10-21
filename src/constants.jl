@@ -1,3 +1,6 @@
+# PlanetaryEphemeris abbreviation
+const PE = PlanetaryEphemeris
+
 # Integration parameters
 const order = 30
 const abstol = 1.0E-20

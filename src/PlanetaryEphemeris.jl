@@ -2,7 +2,7 @@ module PlanetaryEphemeris
 
 # __precompile__(false)
 
-export au, yr, sundofs, earthdofs,
+export PE, au, yr, sundofs, earthdofs,
     c_au_per_day, μ, NBP_pN_A_J23E_J23M_J2S!,
     NBP_pN_A_J23E_J23M_J2S_threads!, DE430!,
     semimajoraxis, eccentricity, inclination,

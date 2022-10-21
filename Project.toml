@@ -1,7 +1,7 @@
 name = "PlanetaryEphemeris"
 uuid = "d83715d0-7e5f-11e9-1a59-4137b20d8363"
 authors = ["Jorge A. Pérez Hernández", "Luis Benet"]
-version = "0.1.1"
+version = "0.2.0"
 
 [deps]
 AutoHashEquals = "15f4f7f2-30c1-5605-9d31-71845cf9641f"
@@ -19,7 +19,7 @@ AutoHashEquals = "0.2"
 JLD = "0.12"
 Quadmath = "0.5"
 TaylorIntegration = "0.8"
-TaylorSeries = "0.11, 0.12"
+TaylorSeries = "0.12"
 julia = "1.6"
 
 [extras]
