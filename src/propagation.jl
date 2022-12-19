@@ -66,99 +66,104 @@ Integrates the Solar System via the Taylor method.
 - `order::Int=order`: order of the Taylor expansions to be used in the integration. 
 - `abstol::T`: absolute tolerance.
 - `parse_eqs::Bool`: whether to use the specialized method of `jetcoeffs!` (`true`) created with `@taylorize` or not.
-"""
-function propagate(maxsteps::Int, jd0::T, tspan::T; output::Bool=true, dense::Bool=false, 
-                   ephfile::String="sseph.jld", dynamics::Function=NBP_pN_A_J23E_J23M_J2S!,
-                   nast::Int=343, quadmath::Bool=false, ss16ast::Bool=true, 
-                   bodyind::AbstractVector{Int}=1:(11+nast), order::Int=order,
-                   abstol::T=abstol, parse_eqs::Bool=true) where {T<:Real}
+""" propagate
 
-    # Total number of bodies
-    N = 11+nast
-    # Get initial conditions (6N translational + 6 lunar mantle physical librations + 6 lunar core + TT-TDB)
-    _q0 = initialcond(N, jd0) # <--- length(_q0) == 6N+13
-    # Set initial time equal to zero (improves accuracy in data reductions)
-    _t0 = zero(jd0)
-    # Final time (julian days)
-    @show _tmax = zero(_t0)+tspan*yr
+for V in (:(Val{true}), :(Val{false}))
+    @eval begin
 
-    if quadmath
-        # Use quadruple precision
-        q0 = Float128.( _q0 )
-        t0 = Float128(_t0)
-        tmax = Float128(_tmax)
-        _abstol = Float128(abstol)
-        _jd0 = Float128(jd0)
-    else
-        q0 = _q0
-        t0 = _t0
-        tmax = _tmax
-        _abstol = abstol
-        _jd0 = jd0
-    end
+        function propagate(maxsteps::Int, jd0::T, tspan::T, ::$V; output::Bool=true,
+            ephfile::String="sseph.jld", dynamics::Function=NBP_pN_A_J23E_J23M_J2S!,
+            nast::Int=343, quadmath::Bool=false, ss16ast::Bool=true, 
+            bodyind::AbstractVector{Int}=1:(11+nast), order::Int=order,
+            abstol::T=abstol, parse_eqs::Bool=true) where {T<:Real}
 
-    # N: Total number of bodies
-    # jd0: Initial Julian date
-    params = (N, _jd0)
+            # Total number of bodies
+            N = 11+nast
+            # Get initial conditions (6N translational + 6 lunar mantle physical librations + 6 lunar core + TT-TDB)
+            _q0 = initialcond(N, jd0) # <--- length(_q0) == 6N+13
+            # Set initial time equal to zero (improves accuracy in data reductions)
+            _t0 = zero(jd0)
+            # Final time (julian days)
+            @show _tmax = zero(_t0)+tspan*yr
 
-    # Do integration
-    if dense
-        # @time sol_ = taylorinteg(dynamics, q0, t0, tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
-        @time sol_ = taylorinteg_threads(dynamics, q0, t0, tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense, parse_eqs=parse_eqs)
-        # Parameters for TaylorInterpolant
-        if quadmath  # with quadruple precision
-            # Initial time (seconds)
-            et0 = (jd0-J2000)*daysec
-            # Vector of times (seconds)
-            etv = Float64.( sol_.t[:]*daysec )
-            # Vector of Taylor polynomials
-            sseph_x_et = map( x->x(Taylor1(order)/daysec), map(x->Taylor1(Float64.(x.coeffs)), sol_.x[:,:]) )
-        else
-            # Initial time (seconds)
-            et0 = (jd0-J2000)*daysec
-            # Vector of times (seconds)
-            etv = sol_.t[:]*daysec
-            # Vector of Taylor polynomials
-            sseph_x_et = map(x->x(Taylor1(order)/daysec), sol_.x[:,:])
-        end
-        # Save ephemeris in TaylorInterpolant object
-        sseph = TaylorInterpolant(et0, etv, sseph_x_et)
-        sol = (sseph=sseph,)
-    else
-        # @time sol_ = taylorinteg(dynamics, q0, t0, tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense)
-        @time sol_ = taylorinteg_threads(dynamics, q0, t0, tmax, order, _abstol, params, maxsteps=maxsteps, dense=dense, parse_eqs=parse_eqs)
-        sol = (t=sol_[1][:], x=sol_[2][:,:])
-    end
+            if quadmath
+                # Use quadruple precision
+                q0 = Float128.( _q0 )
+                t0 = Float128(_t0)
+                tmax = Float128(_tmax)
+                _abstol = Float128(abstol)
+                _jd0 = Float128(jd0)
+            else
+                q0 = _q0
+                t0 = _t0
+                tmax = _tmax
+                _abstol = abstol
+                _jd0 = jd0
+            end
 
-    # Write solution to .jld files
-    if output
-        if dense && ss16ast
-            selecteph2jld(sseph, bodyind, tspan, N)
-        else
-            println("Saving solution to file: $ephfile")
-            # Open file
-            jldopen(ephfile, "w") do file
-                addrequire(file, TaylorSeries)        # Require TaylorSeries
-                addrequire(file, PlanetaryEphemeris)  # Require PlanetaryEphemeris
-                # Write variables to jld file
-                for ind in eachindex(sol)
-                    varname = string(ind)
-                    println("Saving variable: ", varname)
-                    write(file, varname, sol[ind])
+            # N: Total number of bodies
+            # jd0: Initial Julian date
+            params = (N, _jd0)
+
+            # Do integration
+            if $V == Val{true}
+                @time sol_ = taylorinteg_threads(dynamics, q0, t0, tmax, order, _abstol, Val(true), params, maxsteps=maxsteps, parse_eqs=parse_eqs)
+                # Parameters for TaylorInterpolant
+                if quadmath  # with quadruple precision
+                    # Initial time (seconds)
+                    et0 = (jd0-J2000)*daysec
+                    # Vector of times (seconds)
+                    etv = Float64.( sol_.t[:]*daysec )
+                    # Vector of Taylor polynomials
+                    sseph_x_et = map( x->x(Taylor1(order)/daysec), map(x->Taylor1(Float64.(x.coeffs)), sol_.x[:,:]) )
+                else
+                    # Initial time (seconds)
+                    et0 = (jd0-J2000)*daysec
+                    # Vector of times (seconds)
+                    etv = sol_.t[:]*daysec
+                    # Vector of Taylor polynomials
+                    sseph_x_et = map(x->x(Taylor1(order)/daysec), sol_.x[:,:])
                 end
+                # Save ephemeris in TaylorInterpolant object
+                sseph = TaylorInterpolant(et0, etv, sseph_x_et)
+                sol = (sseph=sseph,)
+            elseif $V == Val{false}
+                @time sol_ = taylorinteg_threads(dynamics, q0, t0, tmax, order, _abstol, Val(false), params, maxsteps=maxsteps, parse_eqs=parse_eqs)
+                sol = (t=sol_[1][:], x=sol_[2][:,:])
             end
-            # Check that recovered variables are equal to original variables
-            for ind in eachindex(sol)
-                varname = string(ind)
-                # Read varname from jld file and assign recovered variable to recovered_sol_i
-                recovered_sol_i = load(ephfile, varname)
-                # Check that recovered variable is equal to original variable
-                @show recovered_sol_i == sol[ind]
+
+            # Write solution to .jld files
+            if output
+                if dense && ss16ast
+                    selecteph2jld(sseph, bodyind, tspan, N)
+                else
+                    println("Saving solution to file: $ephfile")
+                    # Open file
+                    jldopen(ephfile, "w") do file
+                        addrequire(file, TaylorSeries)        # Require TaylorSeries
+                        addrequire(file, PlanetaryEphemeris)  # Require PlanetaryEphemeris
+                        # Write variables to jld file
+                        for ind in eachindex(sol)
+                            varname = string(ind)
+                            println("Saving variable: ", varname)
+                            write(file, varname, sol[ind])
+                        end
+                    end
+                    # Check that recovered variables are equal to original variables
+                    for ind in eachindex(sol)
+                        varname = string(ind)
+                        # Read varname from jld file and assign recovered variable to recovered_sol_i
+                        recovered_sol_i = load(ephfile, varname)
+                        # Check that recovered variable is equal to original variable
+                        @show recovered_sol_i == sol[ind]
+                    end
+                end
+                println("Saved solution")
+                return nothing
+            else
+                return sol
             end
         end
-        println("Saved solution")
-        return nothing
-    else
-        return sol
+
     end
 end

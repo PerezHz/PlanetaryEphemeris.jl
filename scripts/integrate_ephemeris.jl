@@ -9,12 +9,12 @@ using PlanetaryEphemeris
 using Dates
 
 #script parameters (TODO: use ArgParse.jl instead)
-const maxsteps = 1000000
+const maxsteps = 100 # 1000000
 # jd0 = datetime2julian(DateTime(1969,6,28,0,0,0)) #starting time of integration
 const jd0 = datetime2julian(DateTime(2000,1,1,12)) #starting time of integration
 const nyears = 2031.0 - year(julian2datetime(jd0))
 @show jd0, J2000, jd0-J2000
-const dense = true #false
+const dense = Val(true) # Val(false)
 const dynamics = DE430!
 @show dynamics
 const nast = 343 #16 # number of asteroid perturbers
@@ -27,9 +27,9 @@ const order = 25
 const abstol = 1.0E-20
 
 #integrator warmup
-PlanetaryEphemeris.propagate(1, jd0, nyears, output=false, dense=dense, dynamics=dynamics, nast=nast, quadmath=quadmath, bodyind=bodyind, order=order, abstol=abstol)
+PlanetaryEphemeris.propagate(1, jd0, nyears, dense, output=false, dynamics=dynamics, nast=nast, quadmath=quadmath, bodyind=bodyind, order=order, abstol=abstol)
 println("*** Finished warmup")
 
 # perform full integration
-PlanetaryEphemeris.propagate(maxsteps, jd0, nyears, dense=dense, dynamics=dynamics, nast=nast, quadmath=quadmath, bodyind=bodyind, order=order, abstol=abstol)
+PlanetaryEphemeris.propagate(maxsteps, jd0, nyears, dense, dynamics=dynamics, nast=nast, quadmath=quadmath, bodyind=bodyind, order=order, abstol=abstol)
 println("*** Finished full integration")
