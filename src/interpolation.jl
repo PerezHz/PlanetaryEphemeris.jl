@@ -10,30 +10,29 @@ time ``x(t)``; or a lunar core Euler angle as a function of time ``\theta_c(t)``
 # Fields
 
 - `t0::T`: Start time.
-- `t::AbstractVector{T}`: Vector of time instances when the timespan of the ``i``-th element of `x` ends and the ``(i+1)``-th element of `x` starts being valid. 
-- `x::AbstractArray{Taylor1{U},N}`: Vector of Taylor polynomials that interpolate the dependent variable as a function of the independent variable.
+- `t::Vector{T}`: Vector of time instances when the timespan of the ``i``-th element of `x` ends and the ``(i+1)``-th element of `x` starts being valid. 
+- `x::Array{Taylor1{U},N}`: Vector of Taylor polynomials that interpolate the dependent variable as a function of the independent variable.
 """
 @auto_hash_equals struct TaylorInterpolant{T,U,N}
     t0::T
-    t::AbstractVector{T}
-    x::AbstractArray{Taylor1{U},N}
+    t::Vector{T}
+    x::Array{Taylor1{U}, N}
     # Inner constructor
-    function TaylorInterpolant{T,U,N}(
-        t0::T,
-        t::AbstractVector{T},
-        x::AbstractArray{Taylor1{U},N}
-    ) where {T<:Real, U<:Number, N}
+    function TaylorInterpolant{T,U,N}(t0::T, t::Vector{T}, x::Array{Taylor1{U},N}) where {T<:Real, U<:Number, N}
         @assert size(x)[1] == length(t)-1
-        @assert issorted(t) || issorted(t, rev=true)
-        return new{T,U,N}(t0, t, x)
+        @assert issorted(t) || issorted(t, rev = true)
+        return new{T, U, N}(t0, t, x)
     end
 end
 
-# Outer constructor
-function TaylorInterpolant(t0::T, t::AbstractVector{T},
-        x::AbstractArray{Taylor1{U},N}) where {T<:Real, U<:Number, N}
-    return TaylorInterpolant{T,U,N}(t0, t, x)
+# Outer constructors
+function TaylorInterpolant(t0::T, t::Vector{T}, x::Array{Taylor1{U}, N}) where {T<:Real, U<:Number, N}
+    return TaylorInterpolant{T, U, N}(t0, t, x)
 end
+
+function TaylorInterpolant(t0::T, t::SubArray{T, 1}, x::SubArray{Taylor1{U}, N}) where {T<:Real, U<:Number, N}
+    return TaylorInterpolant{T, U, N}(t0, t.parent[t.indices...], x.parent[x.indices...])
+end 
 
 @doc raw"""
     getinterpindex(tinterp::TaylorInterpolant{T,U,N}, t::V) where {T<:Real, U<:Number, V<:Number, N}
@@ -41,7 +40,7 @@ end
 Returns the index of `tinterp.t` corresponding to `t` and the time elapsed from `tinterp.t0`
 to `t`.
 """
-function getinterpindex(tinterp::TaylorInterpolant{T,U,N}, t::V) where {T<:Real, U<:Number, V<:Number, N}
+function getinterpindex(tinterp::TaylorInterpolant{T, U, N}, t::V) where {T<:Real, U<:Number, V<:Number, N}
     t00 = constant_term(constant_term(t))                # Current time
     tmin, tmax = minmax(tinterp.t[end], tinterp.t[1])    # Min and max time in tinterp
     Δt = t-tinterp.t0                                    # Time since start of tinterp

@@ -43,10 +43,9 @@ function selecteph2jld(sseph::TaylorInterpolant, bodyind::AbstractVector{Int}, t
 end
 
 @doc raw"""
-    propagate(maxsteps::Int, jd0::T, tspan::T; output::Bool=true, dense::Bool=false, 
-              ephfile::String="sseph.jld", dynamics::Function=NBP_pN_A_J23E_J23M_J2S!, 
-              nast::Int=343, quadmath::Bool=false, ss16ast::Bool=true, bodyind::AbstractVector{Int}=1:(11+nast),
-              order::Int=order, abstol::T=abstol, parse_eqs::Bool=true) where {T<:Real}
+    propagate(maxsteps::Int, jd0::T, tspan::T, ::Val{false/true}; output::Bool = true, ephfile::String = "sseph.jld", 
+              dynamics::Function = NBP_pN_A_J23E_J23M_J2S!, nast::Int = 343, quadmath::Bool = false, ss16ast::Bool = true, 
+              bodyind::AbstractVector{Int} = 1:(11+nast), order::Int = order, abstol::T = abstol, parse_eqs::Bool = true) where {T<:Real}
 
 Integrates the Solar System via the Taylor method. 
 
@@ -55,8 +54,8 @@ Integrates the Solar System via the Taylor method.
 - `maxsteps::Int`: maximum number of steps for the integration.
 - `jd0::T`: initial Julian date.
 - `tspan::T`: time span of the integration (in Julian days). 
+- `::Val{false/true}`: whether to save the Taylor polynomials at each step (`true`) or not (`false`).
 - `output::Bool`: whether to write the output to a file (`true`) or not.
-- `dense::Bool`: whether to save the Taylor polynomials at each step (`true`) or not.
 - `ephfile::String`: name of the file where to save the solution if `output` is `true` but one or both of `dense` and `ss16ast` is `false`.
 - `dynamics::Function`: dynamical model function.
 - `nast::Int`: number of asteroids to be considered in the integration.
@@ -68,25 +67,97 @@ Integrates the Solar System via the Taylor method.
 - `parse_eqs::Bool`: whether to use the specialized method of `jetcoeffs!` (`true`) created with `@taylorize` or not.
 """ propagate
 
-for V in (:(Val{true}), :(Val{false}))
+const V_true = :(Val{true})
+const V_false = :(Val{false})
+const V_true_false = (V_true, V_false)
+
+for V_quadmath in V_true_false
     @eval begin
 
-        function propagate(maxsteps::Int, jd0::T, tspan::T, ::$V; output::Bool=true,
-            ephfile::String="sseph.jld", dynamics::Function=NBP_pN_A_J23E_J23M_J2S!,
-            nast::Int=343, quadmath::Bool=false, ss16ast::Bool=true, 
-            bodyind::AbstractVector{Int}=1:(11+nast), order::Int=order,
-            abstol::T=abstol, parse_eqs::Bool=true) where {T<:Real}
-
+        function propagate(maxsteps::Int, jd0::T, tspan::T, ::$V_quadmath; output::Bool = true, ephfile::String = "sseph.jld", 
+                           dynamics::Function = NBP_pN_A_J23E_J23M_J2S!, nast::Int = 343, ss16ast::Bool = true, 
+                           bodyind::AbstractVector{Int} = 1:(11+nast), order::Int = order, abstol::T = abstol) where {T<:Real}
             # Total number of bodies
-            N = 11+nast
+            N = 11 + nast
             # Get initial conditions (6N translational + 6 lunar mantle physical librations + 6 lunar core + TT-TDB)
             _q0 = initialcond(N, jd0) # <--- length(_q0) == 6N+13
             # Set initial time equal to zero (improves accuracy in data reductions)
             _t0 = zero(jd0)
             # Final time (julian days)
-            @show _tmax = zero(_t0)+tspan*yr
 
-            if quadmath
+            println("Initial time of integration: ", julian2datetime(jd0))
+            # Final time of integration (days)
+            _tmax = zero(_t0) + tspan*yr 
+            println("Final time of integration: ", julian2datetime(jd0 + _tmax))
+
+            if $V_quadmath == Val{true}
+                # Use quadruple precision
+                q0 = Float128.( _q0 )
+                t0 = Float128(_t0)
+                tmax = Float128(_tmax)
+                _abstol = Float128(abstol)
+                _jd0 = Float128(jd0)
+            else
+                q0 = _q0
+                t0 = _t0
+                tmax = _tmax
+                _abstol = abstol
+                _jd0 = jd0
+            end
+
+            # N: Total number of bodies
+            # jd0: Initial Julian date
+            params = (N, _jd0)
+
+            @time sol_ = taylorinteg_threads(dynamics, q0, t0, tmax, order, _abstol, Val(false), params, maxsteps=maxsteps)
+            sol = (t = sol_[1][:], x = sol_[2][:,:])
+            
+            # Write solution to .jld files
+            if output
+                println("Saving solution to file: $ephfile")
+                # Open file
+                jldopen(ephfile, "w") do file
+                    addrequire(file, TaylorSeries)        # Require TaylorSeries
+                    addrequire(file, PlanetaryEphemeris)  # Require PlanetaryEphemeris
+                    # Write variables to jld file
+                    for ind in eachindex(sol)
+                        varname = string(ind)
+                        println("Saving variable: ", varname)
+                        write(file, varname, sol[ind])
+                    end
+                end
+                # Check that recovered variables are equal to original variables
+                for ind in eachindex(sol)
+                    varname = string(ind)
+                    # Read varname from jld file and assign recovered variable to recovered_sol_i
+                    recovered_sol_i = load(ephfile, varname)
+                    # Check that recovered variable is equal to original variable
+                    @show recovered_sol_i == sol[ind]
+                end
+                println("Saved solution")
+            end
+
+            return sol 
+
+        end 
+
+        function propagate_dense(maxsteps::Int, jd0::T, tspan::T, ::$V_quadmath; output::Bool = true, ephfile::String = "sseph.jld", 
+            dynamics::Function = NBP_pN_A_J23E_J23M_J2S!, nast::Int = 343, ss16ast::Bool = true, 
+            bodyind::AbstractVector{Int} = 1:(11+nast), order::Int = order, abstol::T = abstol) where {T<:Real}
+            # Total number of bodies
+            N = 11 + nast
+            # Get initial conditions (6N translational + 6 lunar mantle physical librations + 6 lunar core + TT-TDB)
+            _q0 = initialcond(N, jd0) # <--- length(_q0) == 6N+13
+            # Set initial time equal to zero (improves accuracy in data reductions)
+            _t0 = zero(jd0)
+            # Final time (julian days)
+
+            println("Initial time of integration: ", julian2datetime(jd0))
+            # Final time of integration (days)
+            _tmax = zero(_t0) + tspan*yr 
+            println("Final time of integration: ", julian2datetime(jd0 + _tmax))
+
+            if $V_quadmath == Val{true}
                 # Use quadruple precision
                 q0 = Float128.( _q0 )
                 t0 = Float128(_t0)
@@ -106,35 +177,32 @@ for V in (:(Val{true}), :(Val{false}))
             params = (N, _jd0)
 
             # Do integration
-            if $V == Val{true}
-                @time sol_ = taylorinteg_threads(dynamics, q0, t0, tmax, order, _abstol, Val(true), params, maxsteps=maxsteps, parse_eqs=parse_eqs)
-                # Parameters for TaylorInterpolant
-                if quadmath  # with quadruple precision
-                    # Initial time (seconds)
-                    et0 = (jd0-J2000)*daysec
-                    # Vector of times (seconds)
-                    etv = Float64.( sol_.t[:]*daysec )
-                    # Vector of Taylor polynomials
-                    sseph_x_et = map( x->x(Taylor1(order)/daysec), map(x->Taylor1(Float64.(x.coeffs)), sol_.x[:,:]) )
-                else
-                    # Initial time (seconds)
-                    et0 = (jd0-J2000)*daysec
-                    # Vector of times (seconds)
-                    etv = sol_.t[:]*daysec
-                    # Vector of Taylor polynomials
-                    sseph_x_et = map(x->x(Taylor1(order)/daysec), sol_.x[:,:])
-                end
-                # Save ephemeris in TaylorInterpolant object
-                sseph = TaylorInterpolant(et0, etv, sseph_x_et)
-                sol = (sseph=sseph,)
-            elseif $V == Val{false}
-                @time sol_ = taylorinteg_threads(dynamics, q0, t0, tmax, order, _abstol, Val(false), params, maxsteps=maxsteps, parse_eqs=parse_eqs)
-                sol = (t=sol_[1][:], x=sol_[2][:,:])
+            @time sol_ = taylorinteg_threads(dynamics, q0, t0, tmax, order, _abstol, Val(true), params, maxsteps = maxsteps)
+            # Parameters for TaylorInterpolant
+            if $V_quadmath == Val{true}  # with quadruple precision
+                # Initial time (seconds)
+                et0 = (jd0-J2000)*daysec
+                # Vector of times (seconds)
+                etv = Float64.( sol_.t[:]*daysec )
+                # Vector of Taylor polynomials
+                sseph_x_et = map( x->x(Taylor1(order)/daysec), map(x->Taylor1(Float64.(x.coeffs)), sol_.x[:,:]) )
+            else
+                # Initial time (seconds)
+                et0 = (jd0-J2000)*daysec
+                # Vector of times (seconds)
+                etv = sol_.t[:]*daysec
+
+                # Vector of Taylor polynomials
+                sseph_x_et = map(x->x(Taylor1(order)/daysec), sol_.x[:,:])
             end
+            U = eltype(_q0)
+            # Save ephemeris in TaylorInterpolant object
+            sseph = TaylorInterpolant{T, U, 2}(et0, etv, sseph_x_et)
+            sol = (sseph=sseph,)
 
             # Write solution to .jld files
             if output
-                if dense && ss16ast
+                if ss16ast
                     selecteph2jld(sseph, bodyind, tspan, N)
                 else
                     println("Saving solution to file: $ephfile")
@@ -159,11 +227,11 @@ for V in (:(Val{true}), :(Val{false}))
                     end
                 end
                 println("Saved solution")
-                return nothing
-            else
-                return sol
             end
-        end
 
-    end
-end
+            return sol 
+
+        end 
+
+    end 
+end 

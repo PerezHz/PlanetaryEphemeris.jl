@@ -1,13 +1,11 @@
 @doc raw"""
-    evaluate_threads!(x::Array{Taylor1{T},1}, δt::T,
-                      x0::Union{Array{T,1},SubArray{T,1}}) where {T<:Number}
+    evaluate_threads!(x::Array{Taylor1{T},1}, δt::T, x0::Union{Array{T,1},SubArray{T,1}}) where {T<:Number}
 
 Threaded version of `TaylorSeries.evaluate!`.
 
 See also [`TaylorSeries.evaluate!`](@ref).
 """
-function evaluate_threads!(x::Array{Taylor1{T},1}, δt::T,
-        x0::Union{Array{T,1},SubArray{T,1}}) where {T<:Number}
+function evaluate_threads!(x::Array{Taylor1{T},1}, δt::T, x0::Union{Array{T,1},SubArray{T,1}}) where {T<:Number}
     # @assert length(x) == length(x0)
     Threads.@threads for i in eachindex(x, x0)
         x0[i] = evaluate( x[i], δt )
@@ -22,8 +20,7 @@ Threaded version of `TaylorIntegration.stepsize`.
 
 See also [`TaylorIntegration.stepsize`](@ref) and [`TaylorIntegration._second_stepsize`](@ref).
 """
-function stepsize_threads(q::AbstractArray{Taylor1{U},1}, epsilon::T) where
-        {T<:Real, U<:Number}
+function stepsize_threads(q::AbstractArray{Taylor1{U},1}, epsilon::T) where {T<:Real, U<:Number}
     R = promote_type(typeof(norm(constant_term(q[1]), Inf)), T)
     h = convert(R, Inf)
     #= Threads.@threads =# for i in eachindex(q)
@@ -90,17 +87,17 @@ end
 # end
 
 @doc raw"""
-    taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}}, dx::Vector{Taylor1{U}}, 
-                        xaux::Vector{Taylor1{U}}, abstol::T, params, 
-                        parse_eqs::Bool=true) where {T<:Real, U<:Number}
+    taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}}, dx::Vector{Taylor1{U}}, xaux::Vector{Taylor1{U}}, 
+                        abstol::T, params, parse_eqs::Bool=true) where {T<:Real, U<:Number}
+    taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}}, dx::Vector{Taylor1{U}}, abstol::T, params,
+                        rv::TaylorIntegration.RetAlloc{Taylor1{U}}) where {T<:Real, U<:Number}
 
 Threaded version of `TaylorIntegration.taylorstep`.
 
 See also [`stepsize_threads`](@ref) and [`TaylorIntegration.taylorstep`](@ref).
 """
-function taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}},
-    dx::Vector{Taylor1{U}}, xaux::Vector{Taylor1{U}}, abstol::T, params) where
-    {T<:Real, U<:Number}
+function taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}}, dx::Vector{Taylor1{U}}, xaux::Vector{Taylor1{U}}, 
+                             abstol::T, params) where {T<:Real, U<:Number}
 
     # Compute the Taylor coefficients
     TaylorIntegration.__jetcoeffs!(Val(false), f!, t, x, dx, xaux, params)
@@ -111,9 +108,8 @@ function taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}},
     return δt
 end
 
-function taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}},
-    dx::Vector{Taylor1{U}}, abstol::T, params,
-    rv::TaylorIntegration.RetAlloc{Taylor1{U}}) where {T<:Real, U<:Number}
+function taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}}, dx::Vector{Taylor1{U}}, abstol::T, params,
+                             rv::TaylorIntegration.RetAlloc{Taylor1{U}}) where {T<:Real, U<:Number}
 
     # Compute the Taylor coefficients
     TaylorIntegration.__jetcoeffs!(Val(true), f!, t, x, dx, params, rv)
@@ -132,7 +128,7 @@ end
 Threaded version of `TaylorIntegration.taylorinteg`.
 
 See also [`TaylorIntegration.taylorinteg`](@ref).
-"""
+""" taylorinteg_threads
 
 for V in (:(Val{true}), :(Val{false}))
     @eval begin
@@ -157,11 +153,9 @@ for V in (:(Val{true}), :(Val{false}))
                 # Re-initialize the Taylor1 expansions
                 t = t0 + Taylor1( T, order )
                 x .= Taylor1.( q0, order )
-                return _taylorinteg_threads!(f!, t, x, dx, q0, t0, tmax, abstol, rv,
-                    $V(), params, maxsteps=maxsteps)
+                return _taylorinteg_threads!(f!, t, x, dx, q0, t0, tmax, abstol, rv, $V(), params, maxsteps = maxsteps)
             else
-                return _taylorinteg_threads!(f!, t, x, dx, q0, t0, tmax, abstol,
-                    $V(), params, maxsteps=maxsteps)
+                return _taylorinteg_threads!(f!, t, x, dx, q0, t0, tmax, abstol, $V(), params, maxsteps=maxsteps)
             end
 
         end
@@ -220,14 +214,14 @@ for V in (:(Val{true}), :(Val{false}))
             end
 
             if $V == Val{true}
-                return TaylorInterpolant(tv[1], view(tv.-tv[1],1:nsteps), view(transpose(view(polynV,:,1:nsteps-1)),1:nsteps-1,:))
+                return TaylorInterpolant(tv[1], view(tv.-tv[1],1:nsteps), view(transpose(view(polynV,:,2:nsteps)),1:nsteps-1,:))
             elseif $V == Val{false}
                 return view(tv,1:nsteps), view(transpose(view(xv,:,1:nsteps)),1:nsteps,:)
             end
         end
 
         function _taylorinteg_threads!(f!, t::Taylor1{T}, x::Array{Taylor1{U},1}, dx::Array{Taylor1{U},1}, q0::Array{U,1}, t0::T, 
-                               tmax::T, abstol::T, rv::TaylorIntegration.RetAlloc{Taylor1{U}}, ::$V, params; maxsteps::Int=500) where {T<:Real, U<:Number}
+                                       tmax::T, abstol::T, rv::TaylorIntegration.RetAlloc{Taylor1{U}}, ::$V, params; maxsteps::Int=500) where {T<:Real, U<:Number}
 
             # Initialize the vector of Taylor1 expansions
             dof = length(q0)
@@ -260,6 +254,7 @@ for V in (:(Val{true}), :(Val{false}))
                     # Store the Taylor polynomial solution
                     @inbounds polynV[:,nsteps+1] .= deepcopy.(x)
                 end
+
                 @inbounds Threads.@threads for i in eachindex(x0)
                     x[i][0] = x0[i]
                     dx[i][0] = zero(x0[i])
@@ -278,8 +273,7 @@ for V in (:(Val{true}), :(Val{false}))
             end
 
             if $V == Val{true}
-                return view(tv,1:nsteps), view(transpose(view(xv,:,1:nsteps)),1:nsteps,:),
-                    view(transpose(view(polynV, :, 1:nsteps)), 1:nsteps, :)
+                return TaylorInterpolant(tv[1], view(tv.-tv[1],1:nsteps), view(transpose(view(polynV,:,2:nsteps)),1:nsteps-1,:))
             elseif $V == Val{false}
                 return view(tv,1:nsteps), view(transpose(view(xv,:,1:nsteps)),1:nsteps,:)
             end
