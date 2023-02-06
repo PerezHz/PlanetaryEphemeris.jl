@@ -25,9 +25,9 @@ const order = 25
 const abstol = 1.0E-20
 
 # Integrator warmup
-propagate_dense(1, jd0, nyears, Val(quadmath); output = false, dynamics=dynamics, nast=nast, bodyind=bodyind, order=order, abstol=abstol)
+propagate(1, jd0, nyears, Val(true); output = false, dynamics=dynamics, nast=nast, bodyind=bodyind, order=order, abstol=abstol)
 println("*** Finished warmup")
 
 # Perform full integration
-propagate_dense(maxsteps, jd0, nyears, Val(quadmath); dynamics=dynamics, nast=nast, bodyind=bodyind, order=order, abstol=abstol)
+propagate(maxsteps, jd0, nyears, Val(true); dynamics=dynamics, nast=nast, bodyind=bodyind, order=order, abstol=abstol)
 println("*** Finished full integration")

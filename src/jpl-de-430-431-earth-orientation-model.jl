@@ -7,8 +7,6 @@
 # an estimated linear correction and on a modified IAU 1980 nutation model \* including
 # only terms with a period of 18.6 years.
 
-export t2c_jpl_de430, c2t_jpl_de430, pole_rotation
-
 @doc raw"""
     Ω(t)
 
@@ -135,8 +133,8 @@ See also [`pole_frame`](@ref).
 """
 phi_x(t) = deg2rad( (phi_x0 + (t/yr)*Dt_phi_x)/3600 )
 
-phi_x0 = 5.6754203322893470E-03     # x-axis rotation at J2000.0 (arcseconds)
-Dt_phi_x = 2.7689915574483550E-04   # Negative obliquity rate correction (arcseconds/year)
+const phi_x0 = 5.6754203322893470E-03     # x-axis rotation at J2000.0 (arcseconds)
+const Dt_phi_x = 2.7689915574483550E-04   # Negative obliquity rate correction (arcseconds/year)
 
 @doc raw"""
     phi_y(t)
@@ -155,8 +153,8 @@ See also [`pole_frame`](@ref).
 """
 phi_y(t) = deg2rad( (phi_y0 + (t/yr)*Dt_phi_y)/3600 )
 
-phi_y0 = -1.7022656914989530E-02     # y-axis rotation at J2000.0 (arcseconds)
-Dt_phi_y = -1.2118591216559240E-03   # Precession rate correction times sine of obliquity (arcseconds/year)
+const phi_y0 = -1.7022656914989530E-02     # y-axis rotation at J2000.0 (arcseconds)
+const Dt_phi_y = -1.2118591216559240E-03   # Precession rate correction times sine of obliquity (arcseconds/year)
 
 @doc raw"""
     Zeta(t)

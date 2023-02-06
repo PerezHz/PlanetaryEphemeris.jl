@@ -1,6 +1,9 @@
 # PlanetaryEphemeris abbreviation
 const PE = PlanetaryEphemeris
 
+# Path to PlanetaryEphemeris src directory 
+const src_path = dirname(pathof(PlanetaryEphemeris))
+
 # Integration parameters
 const order = 30
 const abstol = 1.0E-20

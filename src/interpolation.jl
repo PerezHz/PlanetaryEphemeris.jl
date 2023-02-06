@@ -1,7 +1,7 @@
 # This file is part of the TaylorIntegration.jl package; MIT licensed
 
 @doc raw"""
-    TaylorInterpolant{T,U,N}
+    TaylorInterpolant{T, U, N}
  
 Collection of Taylor polynomials that interpolate a dependent variable as a function of 
 an independent variable. For example, the ``x``-axis position of the Earth as a function of 
@@ -13,12 +13,12 @@ time ``x(t)``; or a lunar core Euler angle as a function of time ``\theta_c(t)``
 - `t::Vector{T}`: Vector of time instances when the timespan of the ``i``-th element of `x` ends and the ``(i+1)``-th element of `x` starts being valid. 
 - `x::Array{Taylor1{U},N}`: Vector of Taylor polynomials that interpolate the dependent variable as a function of the independent variable.
 """
-@auto_hash_equals struct TaylorInterpolant{T,U,N}
+@auto_hash_equals struct TaylorInterpolant{T, U, N}
     t0::T
     t::Vector{T}
     x::Array{Taylor1{U}, N}
     # Inner constructor
-    function TaylorInterpolant{T,U,N}(t0::T, t::Vector{T}, x::Array{Taylor1{U},N}) where {T<:Real, U<:Number, N}
+    function TaylorInterpolant{T, U, N}(t0::T, t::Vector{T}, x::Array{Taylor1{U}, N}) where {T <: Real, U <: Number, N}
         @assert size(x)[1] == length(t)-1
         @assert issorted(t) || issorted(t, rev = true)
         return new{T, U, N}(t0, t, x)
@@ -26,12 +26,25 @@ time ``x(t)``; or a lunar core Euler angle as a function of time ``\theta_c(t)``
 end
 
 # Outer constructors
-function TaylorInterpolant(t0::T, t::Vector{T}, x::Array{Taylor1{U}, N}) where {T<:Real, U<:Number, N}
+function TaylorInterpolant(t0::T, t::Vector{T}, x::Array{Taylor1{U}, N}) where {T <: Real, U <: Number, N}
     return TaylorInterpolant{T, U, N}(t0, t, x)
 end
 
-function TaylorInterpolant(t0::T, t::SubArray{T, 1}, x::SubArray{Taylor1{U}, N}) where {T<:Real, U<:Number, N}
+function TaylorInterpolant(t0::T, t::SubArray{T, 1}, x::SubArray{Taylor1{U}, N}) where {T <: Real, U <: Number, N}
     return TaylorInterpolant{T, U, N}(t0, t.parent[t.indices...], x.parent[x.indices...])
+end 
+
+@doc raw"""
+    convert(::Type{T}, interp::TaylorInterpolant) where {T <: Real}
+
+Convert `inter.t0`, `inter.t` and coefficients of `interp.x` to type `T`. 
+"""
+function convert(::Type{T}, interp::TaylorInterpolant) where {T <: Real}
+    return TaylorInterpolant(
+        T(interp.t0), 
+        T.(interp.t), 
+        map( x -> Taylor1( T.(x.coeffs) ), interp.x)
+    )
 end 
 
 @doc raw"""

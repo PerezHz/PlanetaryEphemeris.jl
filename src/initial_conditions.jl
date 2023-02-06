@@ -1,3 +1,6 @@
+# Special method for Float128
+julian2datetime(jd::Float128) = julian2datetime(Float64(jd))
+
 @doc raw"""
     initialcond(N, jd0::Float64=datetime2julian(DateTime(1969,6,28,0,0,0)))
 
@@ -16,17 +19,16 @@ Moon positions and velocities), Table 7 in page 49 (lunar mantle and core librat
 angles/rates) and Table 13 in pages 60-74 (asteroids positions and velocities) of 
 https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract.
 """
-function initialcond(N, jd0::Float64=datetime2julian(DateTime(1969,6,28,0,0,0)))
+function initialcond(N, jd0::T = datetime2julian(DateTime(1969,6,28,0,0,0))) where {T <: Real}
     # Output from JPL Horizons
 
-    q0 = Array{Float64}(undef, 6N+13)     # Initial conditions array
+    q0 = Array{T}(undef, 6N+13)     # Initial conditions array
     dt0 = julian2datetime(jd0)            # Convert jd0 to DateTime
     dt0_1969 = DateTime(1969,6,28,0,0,0)  # 1969-Jun-28 (TDB)
     dt0_2000 = DateTime(2000,1,1,12)      # 2000-Jan-1.5 (TDB)
 
     # 1969-Jun-28 (TDB)
     if dt0 == dt0_1969
-        println("Initial conditions: 1969-Jun-28.0 (TDB)")
         ss_ic_filename = "ss11ic_1969Jun28.txt"     # Planets (+ Sun & Moon) initial conditions file
         ast_ic_filename = "ast343ic_1969Jun28.txt"  # Asteroids initial conditions file
         # Initial conditions for lunar mantle and core libration angles/rates
@@ -39,7 +41,6 @@ function initialcond(N, jd0::Float64=datetime2julian(DateTime(1969,6,28,0,0,0)))
         q0[6N+13] = -0.00016266592104301078 
     # 2000-Jan-1.5 (TDB)
     elseif dt0 == dt0_2000
-        println("Initial conditions: 2000-Jan-1.5 (TDB)")
         ss_ic_filename = "ss11ic.txt"               # Planets (+ Sun & Moon) initial conditions file
         ast_ic_filename = "ast343ic.txt"            # Asteroids initial conditions file
         # Initial conditions for lunar mantle and core libration angles/rates
@@ -52,20 +53,21 @@ function initialcond(N, jd0::Float64=datetime2julian(DateTime(1969,6,28,0,0,0)))
         q0[6N+13] = 9.930292723454279e-5 
     # Neither 1969-Jun-28 (TDB) or 2000-Jan-1.5 (TDB)
     else
-        @assert(false, "Initial time must either correspond to $(dt0_1969) or $(dt0_2000).")
+        #@assert(false, "Initial time must either correspond to $(dt0_1969) or $(dt0_2000).")
+        throw(string("Initial time must either correspond to ", dt0_1969, " or ", dt0_2000, "."))
     end
 
     # Fill initial conditions for Sun, Moon, planets and Pluto
     # Order is the following:
     # Sun, Mercury, Venus, Earth-Moon barycenter, Moon (wrt geocenter), Mars, Jupiter, Saturn, Uranus, Neptune, Pluto
-    smppic = readdlm( joinpath(dirname(pathof(PlanetaryEphemeris)), ss_ic_filename) )
+    smppic::Matrix{T} = readdlm( joinpath(src_path, ss_ic_filename) )
     for i in 1:11
         ith_body_ind = nbodyind(N, i)             # Indices of the i-th body
         q0[ith_body_ind[1:3]] .= smppic[i, 1:3]   # Position vector
         q0[ith_body_ind[4:6]] .= smppic[i, 4:6]   # Velocity vector
     end
     # Fill initial conditions for 343 asteroids used in integration of JPL DE430 ephemeris
-    ast343ic = readdlm( joinpath(dirname(pathof(PlanetaryEphemeris)), ast_ic_filename) )
+    ast343ic::Matrix{T} = readdlm( joinpath(src_path, ast_ic_filename) )
     for i in 12:N
         ith_body_ind = nbodyind(N, i)                  # Indices of the i-th body
         q0[ith_body_ind[1:3]] .= ast343ic[i-11, 1:3]   # Position vector
