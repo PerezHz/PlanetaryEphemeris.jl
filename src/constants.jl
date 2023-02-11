@@ -601,6 +601,11 @@ const lnm5 = [2n-1 for n in 1:6]                         # (2n - 1)
 const lnm6 = [-(n+1) for n in 1:6]                       # -(n + 1)
 const lnm7 = [m for m in 1:6]                            # m  
 
+# Number of bodies in extended-body accelerations
+const N_ext = 11     
+# Number of bodies in backward integration
+const N_bwd = 11                   
+
 # Diagonal elements of undistorted lunar mantle moment of inertia
 # See equation (37) in page 16 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 const A_T = (2(1-β_L*γ_L)/(2β_L-γ_L+β_L*γ_L))*J2_M_und
@@ -652,6 +657,10 @@ const τ_2p = -0.1000          # Orbital time-lag for semi-diurnal deformation, 
 const τ_0 = 0.0                    # Rotational time-lag for long-period deformation, days
 const τ_1 = 7.3632190228041890E-03 # Rotational time-lag for diurnal deformation, days
 const τ_2 = 2.5352978633388720E-03 # Rotational time-lag for semi-diurnal deformation, days
+
+# Tidal acceleration auxiliaries
+const μ_mo_div_μ_ea = μ[mo]/μ[ea]                # Ratio of Moon and Earth mass parameters
+const tid_num_coeff = 1.5*(1.0 + μ_mo_div_μ_ea)  # Overall numerical factor in equation (32)
 
 # Standard value of nominal mean angular velocity of Earth (rad/day), 
 # See Explanatory Supplement to the Astronomical Almanac 2014, section 7.4.3.3,
