@@ -442,6 +442,26 @@ const c_cm_per_sec = 100_000*clightkms         # Speed of light in cm per sec
 const c_p2 = 29979.063823897606                # Speed of light^2 in au^2/day^2
 const c_m2 = 3.3356611996764786e-5             # Speed of light^-2 in day^2/au^2
 
+@doc raw"""
+    nbodyind(N::Int, i::Int)
+    nbodyind(N::Int, ivec::AbstractVector{Int})
+
+Returns the indexes of the positions and velocities of the `i`-th body (or the 
+`ivec`-th bodies) in a vector with `N` bodies. The function assumes that the vector has 
+the form: `3N` positions + `3N` velocities (+ Lunar physical librations + TT-TDB). 
+"""
+nbodyind(N::Int, i::Int) = union(3i-2:3i, 3*(N+i)-2:3*(N+i))
+
+function nbodyind(N::Int, ivec::T) where {T <: AbstractVector{Int}}
+    a = Vector{Int}(undef, 0)
+    for i in ivec
+        i > N && continue
+        a = union(a, nbodyind(N, i))
+    end
+    
+    return sort(a)
+end
+
 const sundofs = nbodyind(length(μ), su)        # Sun's position and velocity indices
 const earthdofs = nbodyind(length(μ), ea)      # Earth's position and velocity indices
 

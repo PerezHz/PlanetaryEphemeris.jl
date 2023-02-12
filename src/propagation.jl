@@ -1,62 +1,84 @@
 @doc raw"""
-    selecteph2jld2(sseph::TaylorInterpolant, bodyind::AbstractVector{Int}, tspan::Number, N::Int)
+    Taylor1Serialization{T}
 
-Save the ephemeris, contained in `sseph`, of the bodies with indexes `bodyind`, in a `jld2` file
-named as follows
+Specialized struct to save `Taylor1{T}` objects to `.jld2` files. 
+"""
+struct Taylor1Serialization{T}
+    x::Vector{T}
+end
 
-    "sseph" * number of asteroids in sseph * "ast" * number of asteroids to be saved in file 
-    * "p" (forward integration) or "m" (backward integration) * "y_et.jld2"
+# Tell JLD2 to save Taylor1{T} as Taylor1Serialization{T}
+writeas(::Type{Taylor1{T}}) where {T} = Taylor1Serialization{T}
+# Convert method to write .jld2 files 
+convert(::Type{Taylor1Serialization{T}}, a::Taylor1{T}) where {T} = Taylor1Serialization{T}(a.coeffs)
+# Convert method to read .jld2 files 
+convert(::Type{Taylor1{T}}, a::Taylor1Serialization{T}) where {T} = Taylor1{T}(a.x, length(a.x) - 1)
+
+@doc raw"""
+    selecteph2jld2(sseph::TaylorInterpolant, bodyind::T, tspan::S, N::Int) where {T <: AbstractVector{Int}, S <: Number}
+
+Save the ephemeris, contained in `sseph`, of the bodies with indexes `bodyind`, in a `.jld2` file named as follows
+
+    "sseph" * number of asteroids in sseph * "ast" * number of asteroids to be saved in file * "_"
+    * "p" / "m" (forward / backward integration) * number of years in sseph *  "y_et.jld2"
 
 # Arguments
 
 - `sseph::TaylorInterpolant`: ephemeris of all the bodies. 
-- `bodyind::AbstractVector{Int}`: indexes of the bodies to be saved.
-- `tspan::Number`: time span of the integration (positive -> forward integration / negative -> backward integration).
+- `bodyind::T`: indexes of the bodies to be saved.
+- `tspan::S`: time span of the integration (positive -> forward integration / negative -> backward integration).
 - `N::Int`: total number of bodies.
 """
-function selecteph2jld2(sseph::TaylorInterpolant, bodyind::AbstractVector{Int}, tspan::Number, N::Int)
+function selecteph2jld2(sseph::TaylorInterpolant, bodyind::T, tspan::S, N::Int) where {T <: AbstractVector{Int}, S <: Number}
+    
     # Number of asteroids in sseph
     nast = N - 11                 
     # Indexes of the positions and velocities of the bodies to be saved
     indvec = nbodyind(N, bodyind)      
     # Number of asteroids to be saved
     nastout = length(bodyind) - 11     
+    # Check nastout <= nast
     @assert nastout <= nast "Cannot save $nastout asteroids from ephemeris with $nast asteroids"
     # Prefix to distinguish between forward (p) / backward (m) integration
     sgn_yrs = signbit(tspan) ? "m" : "p"     
     # Number of years
     nyrs_int = Int(abs(tspan))                
     
-    # Write output to jld2 file
+    # Write output to .jld2 file
 
     # Name of the file
-    ss16ast_fname = "sseph$(lpad(nast,3,'0'))ast$(lpad(nastout,3,'0'))_"*sgn_yrs*"$(nyrs_int)y_et.jld2"
-    # TaylorInterpolant with only the information of the bodies to be saved 
-    # + Lunar orientation + TT-TDB
+    ss16ast_fname = "sseph$(lpad(nast,3,'0'))ast$(lpad(nastout,3,'0'))_" * sgn_yrs * "$(nyrs_int)y_et.jld2"
+
+    # TaylorInterpolant with only the information of the bodies to be saved + Lunar orientation + TT-TDB
     ss16ast_eph = TaylorInterpolant(sseph.t0, sseph.t, sseph.x[:, union(indvec, 6N+1:6N+13)])
+
+    println("Saving solution to file: ", ss16ast_fname)
+
     # Open file 
     JLD2.jldopen(ss16ast_fname, "w") do file
         # Write the ephemeris to file 
         write(file, "ss16ast_eph", ss16ast_eph) 
     end
     # Check that written output is equal to original variable ss16ast_eph
-    recovered_sol_i = load(ss16ast_fname, "ss16ast_eph")
+    recovered_sol_i = JLD2.load(ss16ast_fname, "ss16ast_eph")
     if recovered_sol_i == ss16ast_eph
-        println("ss16ast_eph variable saved correctly")
+        println("Solution saved correctly")
+    else
+        println("Saved and recovered solution are not equal")
     end 
-
-    println("Saved solution")
 
     return nothing
 end
 
 @doc raw"""
-    save2jld2andcheck(outfilename, sol)
+    save2jld2andcheck(outfilename::String, sol)
 
-Save `sol` in `outfilename` (.jld2). 
+Save `sol` in `outfilename` (.jld2) and check that recovered solution equals `sol`. 
 """
-function save2jld2andcheck(outfilename, sol)
-    println("Saving solution to file: $outfilename")
+function save2jld2andcheck(outfilename::String, sol)
+
+    println("Saving solution to file: ", outfilename)
+
     # Open file 
     JLD2.jldopen(outfilename, "w") do file
         # Loop over solution variables
@@ -68,8 +90,10 @@ function save2jld2andcheck(outfilename, sol)
             write(file, varname, sol[ind])
         end
     end
+
     # Check that saved solution is equal to the original 
     println("Checking that all variables were saved correctly...")
+
     # Loop over solution variables
     for ind in eachindex(sol)
         # Name of the variable 
@@ -79,41 +103,44 @@ function save2jld2andcheck(outfilename, sol)
         # Check that varname was recovered succesfully
         if recovered_sol_i == sol[ind]
             println("Variable ", varname, " saved correctly" )
+        else 
+            println("Recovered variable ", varname, " is not equal to the original" )
         end 
     end
+
     println("Saved solution")
-    return outfilename
+
+    return nothing
 end
 
 @doc raw"""
-    propagate_params(jd0::T, nast::Int = 343) where {T <: Real}
+    day2sec(x::Matrix{Taylor1{U}}) where {U <: Number}
 
-Return initial time, initial conditions and the parameters necessary for the integration of the Solar System. 
+Convert `x` from days to seconds. 
 """
-function propagate_params(jd0::T, nast::Int = 343) where {T <: Real}
+function day2sec(x::Matrix{Taylor1{U}}) where {U <: Number}
+    
+    # Order of Taylor polynomials 
+    order = x[1, 1].order
+    # Matrix dimensions 
+    m, n = size(x)
+    # Taylor conversion variable 
+    t = Taylor1(order) / daysec
+    # Allocate memory 
+    res = Matrix{Taylor1{U}}(undef, m, n)
+    # Iterate over the matrix 
+    for j in 1:n
+        for i in 1:m
+            @inbounds res[i, j] = x[i, j](t)
+        end
+    end
 
-    # Total number of bodies
-    N = 11 + nast
-
-    # Get initial conditions (6N translational + 6 lunar mantle physical librations + 6 lunar core + TT-TDB)
-    q0 = initialcond(N, jd0) # length(_q0) == 6N + 13
-
-    # Set initial time equal to zero (improves accuracy in data reductions)
-    t0 = zero(T)
-
-    # N: Total number of bodies
-    # jd0: Initial Julian date
-    params = (N, jd0)
-
-    return t0, q0, params 
-
-end 
+    return res 
+end
 
 @doc raw"""
-    propagate(maxsteps::Int, jd0::T, tspan::T, ::Val{false/true}; output::Bool = true, ephfile::String = "sseph.jld2", 
-              dynamics::Function = NBP_pN_A_J23E_J23M_J2S!, nast::Int = 343, ss16ast::Bool = true, 
-              bodyind::AbstractVector{Int} = 1:(11+nast), order::Int = order, abstol::T = abstol,
-              parse_eqs::Bool = true) where {T <: Real}
+    propagate(maxsteps::Int, jd0::T, tspan::T, ::Val{false/true}; dynamics::Function = NBP_pN_A_J23E_J23M_J2S!, 
+              nast::Int = 343, order::Int = order, abstol::T = abstol, parse_eqs::Bool = true) where {T <: Real}
 
 Integrate the Solar System via the Taylor method. 
 
@@ -134,79 +161,69 @@ Integrate the Solar System via the Taylor method.
 - `parse_eqs::Bool`: whether to use the specialized method of `jetcoeffs!` (`true`) created with `@taylorize` or not.
 """ propagate
 
-for V_dense in (true, false)
+for V_dense in (:(Val{true}), :(Val{false}))
     @eval begin
 
-        function propagate(maxsteps::Int, jd0::T, tspan::T, ::Val{$V_dense}; output::Bool = true, ephfile::String = "sseph.jld2", 
-                           dynamics::Function = NBP_pN_A_J23E_J23M_J2S!, nast::Int = 343, ss16ast::Bool = true, 
-                           bodyind::AbstractVector{Int} = 1:(11+nast), order::Int = order, abstol::T = abstol,
-                           parse_eqs::Bool = true) where {T <: Real}
+        function propagate(maxsteps::Int, jd0::T, tspan::T, ::$V_dense; dynamics::Function = NBP_pN_A_J23E_J23M_J2S!, 
+                           nast::Int = 343, order::Int = order, abstol::T = abstol, parse_eqs::Bool = true) where {T <: Real}
 
-            t0, q0, params = propagate_params(jd0, nast)
+            # Total number of bodies (Sun + 8 planets + Moon + Pluto + Asteroid)
+            N = 11 + nast
+
+            # Get 6N + 13 initial conditions (3N positions + 3N velocities + 6 lunar mantle angles + 6 lunar core angles + TT-TDB)
+            q0 = initialcond(N, jd0)
+
+            # Set initial time equal to zero (improves accuracy in data reductions)
+            t0 = zero(T)
+
+            # Parameters for dynamical function
+            params = (N, jd0)
         
-            # Final time (julian days)
-            println("Initial time of integration: ", julian2datetime(jd0))
+            println( "Initial time of integration: ", string(julian2datetime(jd0)) )
             # Final time of integration (days)
             tmax = t0 + tspan*yr
-            println("Final time of integration: ", julian2datetime(jd0 + tmax))
-        
-            # Integration 
-            @time sol_ = taylorinteg_threads(dynamics, q0, t0, tmax, order, abstol, Val($V_dense), params, maxsteps = maxsteps,
-                                            parse_eqs = parse_eqs)
-
-            if $V_dense 
+            println( "Final time of integration: ", string(julian2datetime(jd0 + tmax)) )
+            
+            # Integration
+            sol_ = @time taylorinteg_threads(dynamics, q0, t0, tmax, order, abstol, $V_dense(), params, maxsteps = maxsteps,
+                                             parse_eqs = parse_eqs)
+            
+            if $V_dense == Val{true}  
 
                 # Parameters for TaylorInterpolant
 
-                # Initial time (seconds)
-                et0 = T( (jd0 - J2000) * daysec )
+                # Initial time [ days -> seconds ]
+                et0 = ( (jd0 - J2000) * daysec ) :: T
 
-                # Vector of times (seconds)
-                etv = T.( sol_.t[:]*daysec )
-                
-                # Vector of Taylor polynomials
-                sseph_x_et = map( x -> x(Taylor1(order)/daysec), map(x -> Taylor1(T.(x.coeffs)), sol_.x[:, :]) )
+                # Vector of times [ days -> seconds ]
+                etv = (sol_.t * daysec) :: Vector{T}
 
-                # Element type of initial conditions 
-                U = eltype(q0)
+                # Vector of Taylor polynomials [ days -> seconds ]
+                sseph_x_et = day2sec(sol_.x) :: Matrix{Taylor1{T}}
 
                 # Save ephemeris in TaylorInterpolant object
-                sseph = TaylorInterpolant{T, U, 2}(et0, etv, sseph_x_et)
+                sseph = TaylorInterpolant{T, T, 2}(et0, etv, sseph_x_et)
 
-                sol = (sseph = sseph,)
+                return sseph 
 
             else
                 
                 sol = (t = sol_[1][:], x = sol_[2][:, :])
 
+                return sol 
+
             end 
-
-            # Write solution to .jld2 files
-            if output
-                if $V_dense 
-                    if ss16ast
-                        selecteph2jld2(sseph, bodyind, tspan, params[1])
-                    else
-                        _ = save2jldandcheck(ephfile, sol)
-                    end
-                else
-                    _ = save2jldandcheck(ephfile, sol)
-                end
-            end
-
-            return sol 
-
+            
         end 
 
-        function propagate(maxsteps::Int, jd0::T1, tspan::T2, ::Val{$V_dense}; output::Bool = true, ephfile::String = "sseph.jld", 
-                           dynamics::Function = NBP_pN_A_J23E_J23M_J2S!, nast::Int = 343, ss16ast::Bool = true, 
-                           bodyind::AbstractVector{Int} = 1:(11+nast), order::Int = order, abstol::T3 = abstol,
-                           parse_eqs::Bool = true) where {T1, T2, T3 <: Real}
+        function propagate(maxsteps::Int, jd0::T1, tspan::T2, ::$V_dense; dynamics::Function = NBP_pN_A_J23E_J23M_J2S!, 
+                           nast::Int = 343, order::Int = order, abstol::T3 = abstol, parse_eqs::Bool = true) where {T1, T2, T3 <: Real}
             
             _jd0, _tspan, _abstol = promote(jd0, tspan, abstol)                           
 
-            return propagate(maxsteps, _jd0, _tspan, Val($V_dense); output = output, ephfile = ephfile, dynamics = dynamics, 
-                             nast = nast, ss16ast = ss16ast, bodyind = bodyind, order = order, abstol = abstol, parse_eqs = parse_eqs)
+            return propagate(maxsteps, _jd0, _tspan, $V_dense(); dynamics = dynamics, nast = nast, order = order, 
+                             abstol = abstol, parse_eqs = parse_eqs)
+
         end 
 
     end

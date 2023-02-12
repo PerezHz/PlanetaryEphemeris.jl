@@ -23,10 +23,6 @@ function parse_commandline()
             help = "Number of years"
             arg_type = Float64
             default = 31.0
-        "--dense"
-            help = "Whether to output the Taylor polynomial solutions obtained at each time step or not"
-            arg_type = Bool
-            default = true
         "--dynamics"
             help = "Dynamical model function"
             arg_type = Function
@@ -35,15 +31,6 @@ function parse_commandline()
             help = "Number of asteroid perturbers"
             arg_type = Int
             default = 343 # 16
-        "--quadmath"
-            help = "Whether to use quadruple precision or not"
-            arg_type = Bool
-            default = false
-        "--bodyind"
-            help = "Body indices in output"
-            arg_type = UnitRange{Int}
-            default = 1:(11+16) # 1:(11+nast)
-            # bodyind = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 23, 25, 27, 28, 30, 40, 41, 46, 55, 62, 73, 113, 115, 277, 322] # SS + 25 ast perturbers
         "--order"
             help = "Order of Taylor polynomials expansions during integration"
             arg_type = Int
@@ -56,6 +43,11 @@ function parse_commandline()
             help = "Whether to use the taylorized method of jetcoeffs or not"
             arg_type = Bool
             default = true 
+        "--bodyind"
+            help = "Body indices in output"
+            arg_type = UnitRange{Int}
+            default = 1:(11+16) # 1:(11+nast)
+            # bodyind = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 23, 25, 27, 28, 30, 40, 41, 46, 55, 62, 73, 113, 115, 277, 322] # SS + 25 ast perturbers
     end
 
     s.epilog = """
@@ -80,28 +72,29 @@ function main()
     jd0_datetime = parsed_args["jd0"] :: DateTime
     jd0 = datetime2julian(jd0_datetime) 
     nyears = parsed_args["nyears"] :: Float64
-    dense = parsed_args["dense"] :: Bool
     dynamics = parsed_args["dynamics"] :: Function
     nast = parsed_args["nast"] :: Int 
-    quadmath = parsed_args["quadmath"] :: Bool
     bodyind = parsed_args["bodyind"] :: UnitRange{Int}
     order = parsed_args["order"] :: Int
     abstol = parsed_args["abstol"] :: Float64
     parse_eqs = parsed_args["parse_eqs"] :: Bool
+    N = 11 + nast
 
     println("*** Integrate Ephemeris ***")
     println("Number of threads: ", Threads.nthreads())
     println("Dynamical function: ", dynamics) 
 
     println("*** Integrator warmup ***")
-    propagate(1, jd0, nyears, Val(dense), output = false, dynamics = dynamics, nast = nast, bodyind = bodyind, 
-              order = order, abstol = abstol, parse_eqs = parse_eqs)
+    _ = propagate(1, jd0, nyears, Val(true), dynamics = dynamics, nast = nast, order = order, abstol = abstol, 
+                  parse_eqs = parse_eqs)
     println("*** Finished warmup ***")
 
     println("*** Full integration ***")
-    propagate(maxsteps, jd0, nyears, Val(dense), dynamics = dynamics, nast = nast, bodyind = bodyind, 
-              order = order, abstol = abstol, parse_eqs = parse_eqs)
+    sol = propagate(maxsteps, jd0, nyears, Val(true), dynamics = dynamics, nast = nast, order = order, abstol = abstol, 
+                    parse_eqs = parse_eqs)
     println("*** Finished full integration ***")
+
+    selecteph2jld2(sol, bodyind, nyears, N)
 
 end
 
