@@ -5,11 +5,12 @@ Threaded version of `TaylorSeries.evaluate!`.
 
 See also [`TaylorSeries.evaluate!`](@ref).
 """
-function evaluate_threads!(x::Array{Taylor1{T},1}, δt::T, x0::Union{Array{T,1},SubArray{T,1}}) where {T<:Number}
-    # @assert length(x) == length(x0)
-    Threads.@threads for i in eachindex(x, x0)
+function evaluate_threads!(x::Vector{Taylor1{T}}, δt::T, x0::Vector{T}) where { T<: Number}
+    
+    Threads.@threads for i in eachindex(x)
         x0[i] = evaluate( x[i], δt )
     end
+    
     nothing
 end
 
@@ -20,7 +21,7 @@ Threaded version of `TaylorIntegration.stepsize`.
 
 See also [`TaylorIntegration.stepsize`](@ref) and [`TaylorIntegration._second_stepsize`](@ref).
 """
-function stepsize_threads(q::AbstractArray{Taylor1{U},1}, epsilon::T) where {T<:Real, U<:Number}
+function stepsize_threads(q::Vector{Taylor1{U}}, epsilon::T) where {T<:Real, U<:Number}
     R = promote_type(typeof(norm(constant_term(q[1]), Inf)), T)
     h = convert(R, Inf)
     #= Threads.@threads =# for i in eachindex(q)
@@ -121,6 +122,55 @@ function taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}}, dx::Vecto
 end
 
 @doc raw"""
+    jetcoeffswith(t::Type, f::Function)
+
+Check if `f` hasta a method with first argument of type `t`. 
+"""
+function jetcoeffswith(t::Type, f::Function)
+    flag = false 
+    m = methods(f)
+    
+    for i in eachindex(m)
+        s = unwrap_unionall(m[i].sig)
+        if s.parameters[2] == t
+            flag = true
+            break
+        end 
+    end 
+
+    return flag 
+end 
+
+@doc raw"""
+    __determine_parsing!(parse_eqs::Bool, f, t, x, dx, params)
+
+Specialized method of `TaylorIntegration._determine_parsing!` to avoid invalidations.
+
+See also [`TaylorIntegration._determine_parsing!`](@ref).
+"""
+function __determine_parsing!(parse_eqs::Bool, f, t, x, dx, params)
+
+    parse_eqs = parse_eqs && jetcoeffswith(Val{f}, TaylorIntegration.jetcoeffs!) &&
+                             jetcoeffswith(Val{f}, TaylorIntegration._allocate_jetcoeffs!)
+
+    rv = TaylorIntegration._allocate_jetcoeffs!(t, x, dx, params)
+
+    if parse_eqs
+        try
+            rv = TaylorIntegration._allocate_jetcoeffs!(Val(f), t, x, dx, params)
+            TaylorIntegration.jetcoeffs!(Val(f), t, x, dx, params, rv)
+        catch
+            @warn("""Unable to use the parsed method of `jetcoeffs!` for `$f`,
+            despite of having `parse_eqs=true`, due to some internal error.
+            Using `parse_eqs = false`.""")
+            parse_eqs = false
+        end
+    end
+
+    return parse_eqs, rv
+end
+
+@doc raw"""
     taylorinteg_threads(f!, q0::Array{U,1}, t0::T, tmax::T, order::Int, abstol::T,
                         params = nothing; maxsteps::Int=500, parse_eqs::Bool=true, 
                         dense::Bool=false) where {T<:Real, U<:Number}
@@ -133,8 +183,8 @@ See also [`TaylorIntegration.taylorinteg`](@ref).
 for V in (:(Val{true}), :(Val{false}))
     @eval begin
 
-        function taylorinteg_threads(f!, q0::Array{U,1}, t0::T, tmax::T, order::Int, abstol::T, ::$V, params = nothing;
-                                     maxsteps::Int=500, parse_eqs::Bool=true) where {T<:Real, U<:Number}
+        function taylorinteg_threads(f!, q0::Array{U, 1}, t0::T, tmax::T, order::Int, abstol::T, ::$V, params = nothing;
+                                     maxsteps::Int = 500, parse_eqs::Bool = true) where {T <: Real, U <: Number}
 
             # Initialize the vector of Taylor1 expansions
             dof = length(q0)
@@ -147,21 +197,21 @@ for V in (:(Val{true}), :(Val{false}))
             end
 
             # Determine if specialized jetcoeffs! method exists
-            parse_eqs, rv = TaylorIntegration._determine_parsing!(parse_eqs, f!, t, x, dx, params)
-            
+            parse_eqs, rv = __determine_parsing!(parse_eqs, f!, t, x, dx, params)
+
             if parse_eqs
                 # Re-initialize the Taylor1 expansions
                 t = t0 + Taylor1( T, order )
                 x .= Taylor1.( q0, order )
                 return _taylorinteg_threads!(f!, t, x, dx, q0, t0, tmax, abstol, rv, $V(), params, maxsteps = maxsteps)
             else
-                return _taylorinteg_threads!(f!, t, x, dx, q0, t0, tmax, abstol, $V(), params, maxsteps=maxsteps)
+                return _taylorinteg_threads!(f!, t, x, dx, q0, t0, tmax, abstol, $V(), params, maxsteps = maxsteps)
             end
-
+            
         end
 
-        function _taylorinteg_threads!(f!, t::Taylor1{T}, x::Array{Taylor1{U},1}, dx::Array{Taylor1{U},1}, q0::Array{U,1}, t0::T, 
-                               tmax::T, abstol::T, ::$V, params; maxsteps::Int=500) where {T<:Real, U<:Number}
+        function _taylorinteg_threads!(f!, t::Taylor1{T}, x::Array{Taylor1{U}, 1}, dx::Array{Taylor1{U}, 1}, q0::Array{U, 1}, t0::T, 
+                                       tmax::T, abstol::T, ::$V, params; maxsteps::Int = 500) where {T <: Real, U <: Number}
 
             # Initialize the vector of Taylor1 expansions
             dof = length(q0)
@@ -220,8 +270,8 @@ for V in (:(Val{true}), :(Val{false}))
             end
         end
 
-        function _taylorinteg_threads!(f!, t::Taylor1{T}, x::Array{Taylor1{U},1}, dx::Array{Taylor1{U},1}, q0::Array{U,1}, t0::T, 
-                                       tmax::T, abstol::T, rv::TaylorIntegration.RetAlloc{Taylor1{U}}, ::$V, params; maxsteps::Int=500) where {T<:Real, U<:Number}
+        function _taylorinteg_threads!(f!, t::Taylor1{T}, x::Array{Taylor1{U}, 1}, dx::Array{Taylor1{U}, 1}, q0::Array{U, 1}, t0::T, 
+                                       tmax::T, abstol::T, rv::TaylorIntegration.RetAlloc{Taylor1{U}}, ::$V, params; maxsteps::Int = 500) where {T <: Real, U <: Number}
 
             # Initialize the vector of Taylor1 expansions
             dof = length(q0)
@@ -255,7 +305,7 @@ for V in (:(Val{true}), :(Val{false}))
                     @inbounds polynV[:,nsteps+1] .= deepcopy.(x)
                 end
 
-                @inbounds Threads.@threads for i in eachindex(x0)
+                Threads.@threads for i in eachindex(x0)
                     x[i][0] = x0[i]
                     dx[i][0] = zero(x0[i])
                 end

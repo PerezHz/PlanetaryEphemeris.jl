@@ -1,6 +1,24 @@
 # Special method for Float128
 julian2datetime(jd::Float128) = julian2datetime(Float64(jd))
 
+# ss_ic_filename = "ss11ic_1969Jun28.txt"     # Planets (+ Sun & Moon) initial conditions file
+# ast_ic_filename = "ast343ic_1969Jun28.txt"  # Asteroids initial conditions file
+
+const ssic_1969_fname = joinpath( src_path, "ss11ic_1969Jun28.txt" )
+const ssic_1969 = readdlm( ssic_1969_fname )
+
+const astic_1969_fname = joinpath( src_path, "ast343ic_1969Jun28.txt" )
+const astic_1969 = readdlm( astic_1969_fname )
+
+# ss_ic_filename = "ss11ic.txt"               # Planets (+ Sun & Moon) initial conditions file
+# ast_ic_filename = "ast343ic.txt"            # Asteroids initial conditions file
+
+const ssic_2000_fname = joinpath( src_path, "ss11ic.txt" )
+const ssic_2000 = readdlm( ssic_2000_fname )
+
+const astic_2000_fname = joinpath( src_path, "ast343ic.txt" )
+const astic_2000 = readdlm( astic_2000_fname )
+
 @doc raw"""
     initialcond(N, jd0::Float64=datetime2julian(DateTime(1969,6,28,0,0,0)))
 
@@ -22,15 +40,15 @@ https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract.
 function initialcond(N, jd0::T = datetime2julian(DateTime(1969,6,28,0,0,0))) where {T <: Real}
     # Output from JPL Horizons
 
-    q0 = Array{T}(undef, 6N+13)     # Initial conditions array
+    q0 = Array{T}(undef, 6N+13)           # Initial conditions array
     dt0 = julian2datetime(jd0)            # Convert jd0 to DateTime
     dt0_1969 = DateTime(1969,6,28,0,0,0)  # 1969-Jun-28 (TDB)
     dt0_2000 = DateTime(2000,1,1,12)      # 2000-Jan-1.5 (TDB)
 
     # 1969-Jun-28 (TDB)
     if dt0 == dt0_1969
-        ss_ic_filename = "ss11ic_1969Jun28.txt"     # Planets (+ Sun & Moon) initial conditions file
-        ast_ic_filename = "ast343ic_1969Jun28.txt"  # Asteroids initial conditions file
+        smppic = ssic_1969
+        ast343ic = astic_1969
         # Initial conditions for lunar mantle and core libration angles/rates
         # See Table 7 in page 49 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
         q0[6N+1:6N+3] .= [0.00512830031411853500, 0.38239278420173690000, 1.29416700274878300000]      # Lunar mantle Euler angles
@@ -41,8 +59,8 @@ function initialcond(N, jd0::T = datetime2julian(DateTime(1969,6,28,0,0,0))) whe
         q0[6N+13] = -0.00016266592104301078 
     # 2000-Jan-1.5 (TDB)
     elseif dt0 == dt0_2000
-        ss_ic_filename = "ss11ic.txt"               # Planets (+ Sun & Moon) initial conditions file
-        ast_ic_filename = "ast343ic.txt"            # Asteroids initial conditions file
+        smppic = ssic_2000
+        ast343ic = astic_2000
         # Initial conditions for lunar mantle and core libration angles/rates
         q0[6N+1:6N+3] .= [-0.05414766382529318, 0.42485573826608863, 2564.2582726674223]       # Lunar mantle Euler angles
         q0[6N+4:6N+6] .= [2.3013404932266894e-6, -6.600217715260397e-5, 0.22999341817950175]   # Lunar mantle angular velocity vector (mantle frame)
@@ -60,18 +78,17 @@ function initialcond(N, jd0::T = datetime2julian(DateTime(1969,6,28,0,0,0))) whe
     # Fill initial conditions for Sun, Moon, planets and Pluto
     # Order is the following:
     # Sun, Mercury, Venus, Earth-Moon barycenter, Moon (wrt geocenter), Mars, Jupiter, Saturn, Uranus, Neptune, Pluto
-    smppic::Matrix{T} = readdlm( joinpath(src_path, ss_ic_filename) )
     for i in 1:11
         ith_body_ind = nbodyind(N, i)             # Indices of the i-th body
-        q0[ith_body_ind[1:3]] .= smppic[i, 1:3]   # Position vector
-        q0[ith_body_ind[4:6]] .= smppic[i, 4:6]   # Velocity vector
+        q0[ith_body_ind[1:3]] = smppic[i, 1:3]   # Position vector
+        q0[ith_body_ind[4:6]] = smppic[i, 4:6]   # Velocity vector
     end
+
     # Fill initial conditions for 343 asteroids used in integration of JPL DE430 ephemeris
-    ast343ic::Matrix{T} = readdlm( joinpath(src_path, ast_ic_filename) )
     for i in 12:N
         ith_body_ind = nbodyind(N, i)                  # Indices of the i-th body
-        q0[ith_body_ind[1:3]] .= ast343ic[i-11, 1:3]   # Position vector
-        q0[ith_body_ind[4:6]] .= ast343ic[i-11, 4:6]   # Velocity vector
+        q0[ith_body_ind[1:3]] = ast343ic[i-11, 1:3]   # Position vector
+        q0[ith_body_ind[4:6]] = ast343ic[i-11, 4:6]   # Velocity vector
     end
 
     return q0
