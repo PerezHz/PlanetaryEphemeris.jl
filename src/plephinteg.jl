@@ -1,11 +1,11 @@
 @doc raw"""
-    evaluate_threads!(x::Array{Taylor1{T},1}, δt::T, x0::Union{Array{T,1},SubArray{T,1}}) where {T<:Number}
+    evaluate_threads!(x::Vector{Taylor1{T}}, δt::T, x0::Vector{T}) where { T <: Number}
 
 Threaded version of `TaylorSeries.evaluate!`.
 
 See also [`TaylorSeries.evaluate!`](@ref).
 """
-function evaluate_threads!(x::Vector{Taylor1{T}}, δt::T, x0::Vector{T}) where { T<: Number}
+function evaluate_threads!(x::Vector{Taylor1{T}}, δt::T, x0::Vector{T}) where { T <: Number}
     
     Threads.@threads for i in eachindex(x)
         x0[i] = evaluate( x[i], δt )
@@ -15,13 +15,13 @@ function evaluate_threads!(x::Vector{Taylor1{T}}, δt::T, x0::Vector{T}) where {
 end
 
 @doc raw"""
-    stepsize_threads(q::AbstractArray{Taylor1{U},1}, epsilon::T) where {T<:Real, U<:Number}
+    stepsize_threads(q::Vector{Taylor1{U}}, epsilon::T) where {T <: Real, U <: Number}
 
 Threaded version of `TaylorIntegration.stepsize`.
 
 See also [`TaylorIntegration.stepsize`](@ref) and [`TaylorIntegration._second_stepsize`](@ref).
 """
-function stepsize_threads(q::Vector{Taylor1{U}}, epsilon::T) where {T<:Real, U<:Number}
+function stepsize_threads(q::Vector{Taylor1{U}}, epsilon::T) where {T <: Real, U <: Number}
     R = promote_type(typeof(norm(constant_term(q[1]), Inf)), T)
     h = convert(R, Inf)
     #= Threads.@threads =# for i in eachindex(q)
@@ -148,9 +148,8 @@ function __determine_parsing!(parse_eqs::Bool, f, t, x, dx, params)
 end
 
 @doc raw"""
-    taylorinteg_threads(f!, q0::Array{U,1}, t0::T, tmax::T, order::Int, abstol::T,
-                        params = nothing; maxsteps::Int=500, parse_eqs::Bool=true, 
-                        dense::Bool=false) where {T<:Real, U<:Number}
+    taylorinteg_threads(f!, q0::Array{U,1}, t0::T, tmax::T, order::Int, abstol::T, Val(true/false),
+                        params = nothing; maxsteps::Int=500, parse_eqs::Bool=true) where {T<:Real, U<:Number}
 
 Threaded version of `TaylorIntegration.taylorinteg`.
 

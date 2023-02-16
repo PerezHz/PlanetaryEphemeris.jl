@@ -10,7 +10,6 @@ export PE, au, yr, sundofs, earthdofs, c_au_per_day, μ, NBP_pN_A_J23E_J23M_J2S!
        τ_2p, τ_0, τ_1, τ_2, ω_E, EMRAT, TaylorInterpolant, selecteph2jld, ssb_posvel_pN, nbodyind, propagate, t2c_jpl_de430, 
        c2t_jpl_de430, pole_rotation, selecteph2jld2, save2jld2andcheck
 
-using Base: unwrap_unionall
 using AutoHashEquals
 using TaylorIntegration, LinearAlgebra
 using Printf
