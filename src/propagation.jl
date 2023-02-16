@@ -179,10 +179,9 @@ for V_dense in (:(Val{true}), :(Val{false}))
             # Parameters for dynamical function
             params = (N, jd0)
         
-            println( "Initial time of integration: ", string(julian2datetime(jd0)) )
+            
             # Final time of integration (days)
             tmax = t0 + tspan*yr
-            println( "Final time of integration: ", string(julian2datetime(jd0 + tmax)) )
             
             # Integration
             sol_ = @time taylorinteg_threads(dynamics, q0, t0, tmax, order, abstol, $V_dense(), params, maxsteps = maxsteps,

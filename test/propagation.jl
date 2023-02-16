@@ -3,7 +3,9 @@
 using PlanetaryEphemeris
 using Dates 
 using Quadmath
-using TaylorIntegration 
+using TaylorIntegration
+using TaylorSeries 
+using JLD2
 using Test
 
 using PlanetaryEphemeris: initialcond
@@ -100,5 +102,21 @@ end
 
     @test typeof(convert(Float64, interp_t128)) == typeof(interp_t64)
     @test typeof(convert(Float64, interp_f128)) == typeof(interp_f64)
+
+end 
+
+@testset "Read/write .jld2 files" begin
+    
+    # Create a matrix of random Taylor series
+    M = Matrix{Taylor1{Float64}}(undef, 100, 100)
+    for i in eachindex(M)
+        M[i] = Taylor1(rand(25), 25)
+    end 
+
+    JLD2.save("test.jld2", "M", M)
+    recovered_M = JLD2.load("test.jld2", "M")
+    rm("test.jld2")
+
+    @test M == recovered_M
 
 end 

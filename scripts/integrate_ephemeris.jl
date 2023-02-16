@@ -17,8 +17,7 @@ function parse_commandline()
         "--jd0"
             help = "Starting time of integration"
             arg_type = DateTime
-            # default = DateTime(1969,6,28,0,0,0)
-            default = DateTime(2000, 1, 1, 12)
+            default = DateTime(2000, 1, 1, 12) # DateTime(1969, 6, 28, 0, 0, 0)
         "--nyears"
             help = "Number of years"
             arg_type = Float64
@@ -54,7 +53,7 @@ function parse_commandline()
         examples:\n
         \n
         # Multi-threaded\n
-        julia -t 4 --project integrate_ephemeris.jl --maxsteps 100 --jd0 "2000-1-1" \n
+        julia -t 4 --project integrate_ephemeris.jl --maxsteps 100 --jd0 "2000-1-1"\n
         \n
         # Single-threaded\n
         julia --project integrate_ephemeris.jl --maxsteps 100 --jd0 "2000-1-1"\n
@@ -78,24 +77,29 @@ function main()
     order = parsed_args["order"] :: Int
     abstol = parsed_args["abstol"] :: Float64
     parse_eqs = parsed_args["parse_eqs"] :: Bool
+
+    # Total number of bodies (Sun + 8 Planets + Moon + Pluto + Asteroids)
     N = 11 + nast
 
     println("*** Integrate Ephemeris ***")
     println("Number of threads: ", Threads.nthreads())
     println("Dynamical function: ", dynamics) 
-
+    
+    println( "Initial time of integration: ", string(jd0_datetime) )
+    println( "Final time of integration: ", string(julian2datetime(jd0 + nyears*yr)) )
+    
     println("*** Integrator warmup ***")
     _ = propagate(1, jd0, nyears, Val(true), dynamics = dynamics, nast = nast, order = order, abstol = abstol, 
                   parse_eqs = parse_eqs)
     println("*** Finished warmup ***")
-
+    
     println("*** Full integration ***")
     sol = propagate(maxsteps, jd0, nyears, Val(true), dynamics = dynamics, nast = nast, order = order, abstol = abstol, 
                     parse_eqs = parse_eqs)
     println("*** Finished full integration ***")
 
     selecteph2jld2(sol, bodyind, nyears, N)
-
+    
 end
 
 main()

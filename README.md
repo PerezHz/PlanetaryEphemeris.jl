@@ -26,11 +26,11 @@ The current development version of this package may be installed in Julia via:
 numerical integration. The file `integrate_ephemeris.jl` in the `scripts` directory
 contains an example script. This script may be called as:
 
-`julia --project=@. integrate_ephemeris.jl`
+`julia --project integrate_ephemeris.jl --help`
 
-`PlanetaryEphemeris.propagate_dense` also supports multi-threading:
+`PlanetaryEphemeris.propagate` also supports multi-threading:
 
-`julia -t <number-of-threads> --project=@. integrate_ephemeris.jl`
+`julia -t <number-of-threads> --project integrate_ephemeris.jl --help`
 
 ## Acknowledgments
 

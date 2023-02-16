@@ -122,26 +122,6 @@ function taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}}, dx::Vecto
 end
 
 @doc raw"""
-    jetcoeffswith(t::Type, f::Function)
-
-Check if `f` hasta a method with first argument of type `t`. 
-"""
-function jetcoeffswith(t::Type, f::Function)
-    flag = false 
-    m = methods(f)
-    
-    for i in eachindex(m)
-        s = unwrap_unionall(m[i].sig)
-        if s.parameters[2] == t
-            flag = true
-            break
-        end 
-    end 
-
-    return flag 
-end 
-
-@doc raw"""
     __determine_parsing!(parse_eqs::Bool, f, t, x, dx, params)
 
 Specialized method of `TaylorIntegration._determine_parsing!` to avoid invalidations.
@@ -149,9 +129,6 @@ Specialized method of `TaylorIntegration._determine_parsing!` to avoid invalidat
 See also [`TaylorIntegration._determine_parsing!`](@ref).
 """
 function __determine_parsing!(parse_eqs::Bool, f, t, x, dx, params)
-
-    parse_eqs = parse_eqs && jetcoeffswith(Val{f}, TaylorIntegration.jetcoeffs!) &&
-                             jetcoeffswith(Val{f}, TaylorIntegration._allocate_jetcoeffs!)
 
     rv = TaylorIntegration._allocate_jetcoeffs!(t, x, dx, params)
 

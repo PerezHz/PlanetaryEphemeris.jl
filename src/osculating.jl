@@ -1,7 +1,7 @@
 @doc raw"""
     semimajoraxis(x, y, z, u, v, w, m1, m2)
 
-Calculates semimajor axis for the two body problem defined by the relative position 
+Calculate semimajor axis for the two body problem defined by the relative position 
 `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies with masses `m1` and `m2`.
 """
 function semimajoraxis(x, y, z, u, v, w, m1, m2)
@@ -14,7 +14,7 @@ end
 @doc raw"""
     eccentricity(x, y, z, u, v, w, m1, m2)
 
-Calculates eccentricity for the two body problem defined by the relative position 
+Calculate eccentricity for the two body problem defined by the relative position 
 `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies with masses `m1` and `m2`.
 """
 function eccentricity(x, y, z, u, v, w, m1, m2)
@@ -29,7 +29,7 @@ end
 @doc raw"""
     inclination(x, y, z, u, v, w)
 
-Calculates inclination for the two body problem defined by the relative position 
+Calculate inclination for the two body problem defined by the relative position 
 `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies."""
 function inclination(x, y, z, u, v, w)
     # h: Angular momentum per unit mass
@@ -41,7 +41,7 @@ end
 @doc raw"""
     aei(x, y, z, u, v, w, m1, m2)
 
-Returns semimajor axis `a`, eccentricity `e` and inclination `inc` for the two-body
+Return semimajor axis `a`, eccentricity `e` and inclination `inc` for the two-body
 problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)`vectors
 between two bodies with masses `m1` and `m2`.
 
@@ -66,7 +66,7 @@ end
 @doc """
     ae(x, y, z, u, v, w)
 
-Returns semimajor axis `a` and eccentricity `e` for the two-body problem defined
+Return semimajor axis `a` and eccentricity `e` for the two-body problem defined
 by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between two
 bodies with masses `m1` and `m2`.
 
@@ -87,7 +87,7 @@ end
 @doc raw"""
     longascnode(x, y, z, u, v, w)
 
-Calculates longitude of ascending node for the two body problem defined by the relative 
+Calculate longitude of ascending node for the two body problem defined by the relative 
 position `(x,y,z)` and velocity `(u,v,w)` vectors between two bodies.
 """
 function longascnode(x, y, z, u, v, w)
@@ -109,7 +109,7 @@ end
 @doc raw"""
     argperi(x, y, z, u, v, w, m1, m2)
 
-Calculates the instantaneous (osculating) argument of pericentre for the two
+Calculate the instantaneous (osculating) argument of pericentre for the two
 body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors 
 between two bodies with masses `m1` and `m2`.
 """
@@ -133,7 +133,7 @@ end
 @doc raw"""
     longperi(x, y, z, u, v, w, m1, m2)
 
-Calculates the instantaneous (osculating) longitude of pericentre for the two
+Calculate the instantaneous (osculating) longitude of pericentre for the two
 body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors 
 between two bodies with masses `m1` and `m2`.
 """
@@ -145,7 +145,7 @@ end
 @doc raw"""
     trueanomaly(x, y, z, u, v, w, m1, m2)
 
-Calculates the instantaneous (osculating) true anomaly for the two
+Calculate the instantaneous (osculating) true anomaly for the two
 body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors 
 between two bodies with masses `m1` and `m2`.
 """
@@ -182,7 +182,7 @@ end
 @doc raw"""
     ecanomaly(x, y, z, u, v, w, m1, m2)
 
-Calculates the instantaneous (osculating) eccentric anomaly for the two
+Calculate the instantaneous (osculating) eccentric anomaly for the two
 body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors 
 between two bodies with masses `m1` and `m2`.
 
@@ -208,7 +208,7 @@ end
 @doc """
     meananomaly(x, y, z, u, v, w, m1, m2)
 
-Calculates the instantaneous (osculating) mean anomaly for the two 
+Calculate the instantaneous (osculating) mean anomaly for the two 
 body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors 
 between two bodies with masses `m1` and `m2`.
 
@@ -225,7 +225,7 @@ end
 @doc """
     timeperipass(t, x, y, z, u, v, w, m1, m2)
 
-Calculates the instantaneous (osculating) time of pericentre passage, at time `t`, for the two
+Calculate the instantaneous (osculating) time of pericentre passage, at time `t`, for the two
 body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors between
 two bodies with masses `m1` and `m2`.
 
@@ -243,7 +243,7 @@ end
 @doc """
     rungelenzx(x, y, z, u, v, w, m1, m2)
 
-Calculates the instantaneous (osculating) x-component of the Laplace-Runge-Lenz vector for the
+Calculate the instantaneous (osculating) x-component of the Laplace-Runge-Lenz vector for the
 two body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors 
 between two bodies with masses `m1` and `m2`.
 
@@ -266,7 +266,7 @@ end
 @doc raw"""
     rungelenzy(x, y, z, u, v, w, m1, m2)
 
-Calculates the instantaneous (osculating) y-component of the Laplace-Runge-Lenz vector for the
+Calculate the instantaneous (osculating) y-component of the Laplace-Runge-Lenz vector for the
 two body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors 
 between two bodies with masses `m1` and `m2`.
 
@@ -289,7 +289,7 @@ end
 @doc raw"""
     rungelenzz(x, y, z, u, v, w, m1, m2)
 
-Calculates the instantaneous (osculating) z-component of the Laplace-Runge-Lenz vector for the
+Calculate the instantaneous (osculating) z-component of the Laplace-Runge-Lenz vector for the
 two body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors 
 between two bodies with masses `m1` and `m2`.
 
@@ -312,7 +312,7 @@ end
 @doc raw"""
     rungelenzmag(x, y, z, u, v, w, m1, m2)
 
-Calculates the instantaneous (osculating) magnitude of the Laplace-Runge-Lenz vector for the
+Calculate the instantaneous (osculating) magnitude of the Laplace-Runge-Lenz vector for the
 two body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` vectors 
 between two bodies with masses `m1` and `m2`.
 
@@ -338,7 +338,7 @@ end
 @doc raw"""
     lrlvec(x, y, z, u, v, w, m1, m2)
 
-Calculates the instantaneous (osculating) cartesian components of the Laplace-Runge-Lenz vector
+Calculate the instantaneous (osculating) cartesian components of the Laplace-Runge-Lenz vector
 for the two body problem defined by the relative position `(x,y,z)` and velocity `(u,v,w)` 
 vectors between two bodies with masses `m1` and `m2`.
 

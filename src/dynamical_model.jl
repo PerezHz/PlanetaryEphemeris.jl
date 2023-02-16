@@ -40,6 +40,7 @@ function special_eval(x::Vector{Taylor1{T}}, t::Taylor1{T}) where {T <: Number}
     return res
 end
 
+
 @doc raw"""
     NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
 
@@ -1064,7 +1065,6 @@ Threaded version of `NBP_pN_A_J23E_J23M_J2S!`.
 
 See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref).
 """ NBP_pN_A_J23E_J23M_J2S_threads!
-
 function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     # N: number of bodies
     # jd0: initial Julian date
@@ -2002,7 +2002,6 @@ the acceleration of the Moon with respect to Earth, for each tide-raising body.
 
 See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!`](@ref).
 """ DE430!
-
 function DE430!(dq, q, params, t)
     # N: number of bodies
     # jd0: initial Julian date
@@ -3146,4 +3145,4 @@ function DE430!(dq, q, params, t)
     dq[6N+13] = zero_q_1
 
     nothing
-end 
+end

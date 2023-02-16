@@ -1,7 +1,7 @@
 @doc raw"""
     μ_star_fun(μ, q, i)
 
-Returns the mass parameter of the `i`-th body with relativistic corrections up to order ``1/c^2``
+Return the mass parameter of the `i`-th body with relativistic corrections up to order ``1/c^2``
 ```math
 \mu_i^* = \mu_i\left(1 + \frac{v_i^2}{2c^2} - \frac{1}{2c^2}\sum_{j\neq i}\frac{\mu_j}{r_{ij}}\right),
 ```
@@ -51,7 +51,7 @@ end
 @doc raw"""
     ssb_posvel_pN(μ, q)
 
-Returns the two sums needed to determine the Solar System Barycenter (SSB)
+Return the two sums needed to determine the Solar System Barycenter (SSB)
 ```math
 \left\lbrace
 \begin{array}{l}
@@ -102,7 +102,7 @@ end
 @doc raw"""
     sun_posvel_pN(μ, q)
 
-Solves
+Solve
 ```math
 \left\lbrace
 \begin{array}{l}

@@ -1,28 +1,24 @@
 # Special method for Float128
 julian2datetime(jd::Float128) = julian2datetime(Float64(jd))
 
-# ss_ic_filename = "ss11ic_1969Jun28.txt"     # Planets (+ Sun & Moon) initial conditions file
-# ast_ic_filename = "ast343ic_1969Jun28.txt"  # Asteroids initial conditions file
-
+# Planets (+ Sun & Moon) initial conditions file
 const ssic_1969_fname = joinpath( src_path, "ss11ic_1969Jun28.txt" )
 const ssic_1969 = readdlm( ssic_1969_fname )
-
+# Asteroids initial conditions file
 const astic_1969_fname = joinpath( src_path, "ast343ic_1969Jun28.txt" )
 const astic_1969 = readdlm( astic_1969_fname )
 
-# ss_ic_filename = "ss11ic.txt"               # Planets (+ Sun & Moon) initial conditions file
-# ast_ic_filename = "ast343ic.txt"            # Asteroids initial conditions file
-
+# Planets (+ Sun & Moon) initial conditions file
 const ssic_2000_fname = joinpath( src_path, "ss11ic.txt" )
 const ssic_2000 = readdlm( ssic_2000_fname )
-
+# Asteroids initial conditions file
 const astic_2000_fname = joinpath( src_path, "ast343ic.txt" )
 const astic_2000 = readdlm( astic_2000_fname )
 
 @doc raw"""
     initialcond(N, jd0::Float64=datetime2julian(DateTime(1969,6,28,0,0,0)))
 
-Returns a vector with the initial conditions (`3N` positions [au] + `3N` velocities [au/day] + 
+Return a vector with the initial conditions (`3N` positions [au] + `3N` velocities [au/day] + 
 3 lunar mantle Euler angles [rad] + 3 mantle angular velocities [rad/day] +
 3 lunar core Euler angles [rad] + 3 core angular velocities [rad/day] +
 DE430 TT-TDB at initial epoch [days]) for the integration. Two possible values of `jd0` 

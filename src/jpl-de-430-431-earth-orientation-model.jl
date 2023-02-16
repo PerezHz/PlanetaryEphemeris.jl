@@ -10,7 +10,7 @@
 @doc raw"""
     Ω(t)
 
-Returns the longitude (in radians) of the mean ascending node of the lunar orbit on the 
+Return the longitude (in radians) of the mean ascending node of the lunar orbit on the 
 ecliptic, measured from the mean equinox of date 
 ```math
 \Omega(t) = 125^\circ 02' 40''.280 - \left(1934^\circ 8' 10''.539\right) T + 7''.455 T^2 + 0''.008 T^3,
@@ -24,7 +24,7 @@ See equation (5-64) in page 5-27 of https://doi.org/10.1002/0471728470.
 @doc raw"""
     Delta_psi(t)
 
-Returns the nutation in longitude (in radians) 
+Return the nutation in longitude (in radians) 
 ```math
 \Delta\psi(t) = -17''.1996 \sin\Omega,
 ```
@@ -40,7 +40,7 @@ Delta_psi(t) = deg2rad( (-17.1996/3600)*sin(Ω(t)) )
 @doc raw"""
     Delta_epsilon(t)
 
-Returns the nutation in obliquity (in radians) 
+Return the nutation in obliquity (in radians) 
 ```math
 \Delta\epsilon(t) = 9''.2025 \cos\Omega,
 ```
@@ -56,7 +56,7 @@ Delta_epsilon(t) = deg2rad( (9.2025/3600)*cos(Ω(t)) )
 @doc raw"""
     pole_date(t)
 
-Returns the true pole of date unit vector ``\mathbf{p}_\mathrm{d}``, computed by rotating the Earth-fixed pole vector by the effect of the 18.6-year nutation term. ``t`` is the TDB time in Julian days from J2000.0.
+Return the true pole of date unit vector ``\mathbf{p}_\mathrm{d}``, computed by rotating the Earth-fixed pole vector by the effect of the 18.6-year nutation term. ``t`` is the TDB time in Julian days from J2000.0.
 
 See equation (23) in page 11 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract.
 
@@ -78,7 +78,7 @@ end
 @doc raw"""
     ϵ̄(t)
 
-Returns the mean obliquity (in radians) 
+Return the mean obliquity (in radians) 
 ```math
 \bar{\epsilon}(t) = 84,381''.448 - 46''.8150 T - 0''.00059 T^2 + 0''.001813 T^3,
 ```
@@ -91,7 +91,7 @@ See equation (5-153) in page 5-61 of https://doi.org/10.1002/0471728470.
 @doc raw"""
     pole_frame(t)
     
-Returns the pole unit vector in the inertial frame ``\mathbf{p}_\mathrm{E}``, computed by 
+Return the pole unit vector in the inertial frame ``\mathbf{p}_\mathrm{E}``, computed by 
 precessing the pole of date with an estimated linear correction
 ```math
 \mathbf{p}_\mathrm{E} = R_z(\zeta_A)R_y(-\theta_A)R_z(z_A)R_x(-\phi_x)R_y(-\phi_y)\mathbf{p}_\mathrm{d},
@@ -119,7 +119,7 @@ end
 @doc raw"""
     phi_x(t)
 
-Returns the X-axis linear correction to precession (in radians)
+Return the X-axis linear correction to precession (in radians)
 ```math
 \phi_x = \phi_{x0} + 100T\times \frac{d\phi_x}{dt},
 ```
@@ -139,7 +139,7 @@ const Dt_phi_x = 2.7689915574483550E-04   # Negative obliquity rate correction (
 @doc raw"""
     phi_y(t)
 
-Returns the Y-axis linear correction to precession (in radians)
+Return the Y-axis linear correction to precession (in radians)
 ```math
 \phi_y = \phi_{y0} + 100T\times \frac{d\phi_y}{dt},
 ```
@@ -159,7 +159,7 @@ const Dt_phi_y = -1.2118591216559240E-03   # Precession rate correction times si
 @doc raw"""
     Zeta(t)
     
-Returns the ``\zeta_A`` equatorial precession angle (in radians)
+Return the ``\zeta_A`` equatorial precession angle (in radians)
 ```math
 \zeta_A(t) = 2306''.2181 T + 0''.30188 T^2 + 0''.017998 T^3,
 ```
@@ -180,7 +180,7 @@ end
 @doc raw"""
     Theta(t)
     
-Returns the ``\theta_A`` equatorial precession angle (in radians)
+Return the ``\theta_A`` equatorial precession angle (in radians)
 ```math
 \theta_A(t) = 2004''.3109 T - 0''.42665 T^2 - 0''.041833 T^3,
 ```
@@ -201,7 +201,7 @@ end
 @doc raw"""
     zeta(t)
     
-Returns the ``z_A`` equatorial precession angle (in radians)
+Return the ``z_A`` equatorial precession angle (in radians)
 ```math
 z_A(t) = 2306''.2181 T + 1''.09468 T^2 + 0''.018203 T^3,
 ```
@@ -224,7 +224,7 @@ end
 @doc raw"""
     Rx(alpha::T) where {T<:Number}
 
-Returns the rotation matrix around the x-axis
+Return the rotation matrix around the x-axis
 ```math
 R_x(\alpha) = 
 \left[
@@ -265,7 +265,7 @@ end
 @doc raw"""
     Ry(alpha::T) where {T<:Number}
 
-Returns the rotation matrix around the y-axis
+Return the rotation matrix around the y-axis
 ```math
 R_y(\alpha) = 
 \left[
@@ -311,7 +311,7 @@ end
 @doc raw"""
     Rz(alpha::T) where {T<:Number}
 
-Returns the rotation matrix around the z-axis
+Return the rotation matrix around the z-axis
 ```math
 R_z(\alpha) = 
 \left[
@@ -355,7 +355,7 @@ end
 @doc raw"""
     pole_ra(t)
 
-Returns the right ascension (in radians) of the pole unit vector in the inertial frame ``\mathbf{p}_\mathrm{E}(t)``
+Return the right ascension (in radians) of the pole unit vector in the inertial frame ``\mathbf{p}_\mathrm{E}(t)``
 ```math
 \alpha = \arctan\left(\frac{p_\mathrm{Ey}(t)}{p_\mathrm{Ex}(t)}\right) + \pi,
 ```
@@ -371,7 +371,7 @@ end
 @doc raw"""
     pole_dec(t)
 
-Returns the declination (in radians) of the pole unit vector in the inertial frame ``\mathbf{p}_\mathrm{E}(t)``
+Return the declination (in radians) of the pole unit vector in the inertial frame ``\mathbf{p}_\mathrm{E}(t)``
 ```math
 \delta = \arctan\left(\frac{p_\mathrm{Ez}(t)}{\sqrt{p_\mathrm{Ex}^2(t) + p_\mathrm{Ey}^2(t)}}\right),
 ```
@@ -387,7 +387,7 @@ end
 @doc raw"""
     pole_radec(t)
 
-Returns the right ascension and declination (both in radians) of the pole unit vector in the inertial frame ``\mathbf{p}_\mathrm{E}(t)``
+Return the right ascension and declination (both in radians) of the pole unit vector in the inertial frame ``\mathbf{p}_\mathrm{E}(t)``
 ```math
 \begin{align*}
     \alpha & = \arctan\left(\frac{p_\mathrm{Ey}(t)}{p_\mathrm{Ex}(t)}\right) + \pi \\
@@ -408,7 +408,7 @@ end
 @doc raw"""
     pole_rotation(α::T, δ::T, W::T=zero(α)) where {T <: Number}
 
-Returns the rotation matrix from the inertial frame to the frame with pole at right 
+Return the rotation matrix from the inertial frame to the frame with pole at right 
 ascension ``\alpha``, declination ``\delta`` and prime meridian at ``W``
 ```math
 A = R_z(W + \Delta W)R_x\left(\frac{\pi}{2} - \delta - \Delta\delta\right)R_z\left(\alpha + \Delta\alpha + \frac{\pi}{2}\right).
@@ -428,7 +428,7 @@ end
 @doc raw"""
     earth_pole_rotation(t)
 
-Returns the rotation matrix from inertial frame to Earth pole at time t (days) since J2000.0.
+Return the rotation matrix from inertial frame to Earth pole at time t (days) since J2000.0.
 
 See also [`pole_radec`](@ref) and [`pole_rotation`](@ref).
 """
@@ -442,7 +442,7 @@ end
 @doc raw"""
     nutation_iau80(t)
 
-Returns the IAU 1980 nutation matrix (Explanatory Supplement to the Astronomical Almanac 1992)
+Return the IAU 1980 nutation matrix (Explanatory Supplement to the Astronomical Almanac 1992)
 ```math
 N = R_x(-\bar{\epsilon}(t) - \Delta\epsilon(t))R_z(-\Delta\psi(t))R_x(\bar{\epsilon}(t)),
 ```
@@ -465,7 +465,7 @@ end
 @doc raw"""
     t2c_jpl_de430(t)
 
-Returns the matrix for terrestrial-to-celestial coordinate transformation, according to JPL DE 430/431 Earth orientation model
+Return the matrix for terrestrial-to-celestial coordinate transformation, according to JPL DE 430/431 Earth orientation model
 ```math
 \texttt{t2c_jpl_de430}(t) = \texttt{c2t_jpl_de430}^T(t),
 ```
@@ -486,7 +486,7 @@ end
 @doc raw"""
     c2t_jpl_de430(t)
 
-Returns the matrix for celestial-to-terrestrial coordinate transformation, according to 
+Return the matrix for celestial-to-terrestrial coordinate transformation, according to 
 JPL DE 430/431 Earth orientation model
 ```math
 \texttt{c2t_jpl_de430}(t) = A\times C\times N,
@@ -513,7 +513,7 @@ end
 @doc raw"""
     moon_omega(ϕ::Taylor1, θ::Taylor1, ψ::Taylor1)
     
-Returns the Moon's angular velocity, computed by differentiating the Euler angles 
+Return the Moon's angular velocity, computed by differentiating the Euler angles 
 ``(\phi, \theta, \psi)``
 ```math
 \begin{align*}
@@ -536,7 +536,7 @@ end
 @doc raw"""
     ITM1(x::T, y::T, z::T) where {T <: Number}
 
-Returns the first term of the time-dependent part of lunar total moment of intertia
+Return the first term of the time-dependent part of lunar total moment of intertia
 ```math
 -\frac{k_{2,M} m_E R_M^5}{r^5}
 \left[
@@ -577,7 +577,7 @@ end
 @doc raw"""
     ITM2(ωx::T, ωy::T, ωz::T) where {T <: Number}
 
-Returns the second term of the time-dependent part of lunar total moment of intertia
+Return the second term of the time-dependent part of lunar total moment of intertia
 ```math
 \frac{k_{2,M} R_M^5}{3G}
 \left[
@@ -624,7 +624,7 @@ end
 @doc raw"""
     ITM(q::Vector{T}, eulang::Vector{T}, ω_m::Vector{T}) where {T <: Number}
 
-Returns lunar mantle inertia tensor
+Return lunar mantle inertia tensor
 ```math
 \mathbf{I}_m(t) = \tilde{\mathbf{I}}_m 
 -

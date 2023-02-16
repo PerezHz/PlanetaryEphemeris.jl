@@ -50,7 +50,7 @@ end
 @doc raw"""
     getinterpindex(tinterp::TaylorInterpolant{T,U,N}, t::V) where {T<:Real, U<:Number, V<:Number, N}
 
-Returns the index of `tinterp.t` corresponding to `t` and the time elapsed from `tinterp.t0`
+Return the index of `tinterp.t` corresponding to `t` and the time elapsed from `tinterp.t0`
 to `t`.
 """
 function getinterpindex(tinterp::TaylorInterpolant{T, U, N}, t::V) where {T<:Real, U<:Number, V<:Number, N}
@@ -79,7 +79,7 @@ end
     (tinterp::TaylorInterpolant{T,U,1})(t::V) where {T<:Real, U<:Number, V<:Number}
     (tinterp::TaylorInterpolant{T,U,2})(t::V) where {T<:Real, U<:Number, V<:Number}
 
-Evaluates `tinterp.x` at time `t`.
+Evaluate `tinterp.x` at time `t`.
 
 See also [`getinterpindex`](@ref).
 """
@@ -104,7 +104,7 @@ end
 @doc raw"""
     reverse(tinterp::TaylorInterpolant{T,U,N}) where {T<:Real, U<:Number, N}
 
-Returns a `TaylorInterpolant` object with the same information as `tinterp` but 
+Return a `TaylorInterpolant` object with the same information as `tinterp` but 
 the independent variable reversed.
 
 See also [`TaylorInterpolant`](@ref).
