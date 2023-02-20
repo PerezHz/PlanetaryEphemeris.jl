@@ -34,6 +34,14 @@ function TaylorInterpolant(t0::T, t::SubArray{T, 1}, x::SubArray{Taylor1{U}, N})
     return TaylorInterpolant{T, U, N}(t0, t.parent[t.indices...], x.parent[x.indices...])
 end 
 
+# Custom print 
+function show(io::IO, interp::TaylorInterpolant{T, U, 2}) where {T, U}
+    t_range = minmax(interp.t0 + interp.t[1], interp.t0 + interp.t[end])
+    N = size(interp.x, 2)
+    S = eltype(interp.x)
+    print(io, "t: ", t_range, ", x: ", N, " ", S, " variables")
+end 
+
 @doc raw"""
     convert(::Type{T}, interp::TaylorInterpolant) where {T <: Real}
 
@@ -119,3 +127,16 @@ function reverse(tinterp::TaylorInterpolant{T,U,N}) where {T<:Real, U<:Number, N
     # Return reversed TaylorInterpolant
     return TaylorInterpolant(tinterp_rev_t0, tinterp_rev_t, tinterp_rev_x)
 end
+
+function join(bwd::TaylorInterpolant{T, U, 2}, fwd::TaylorInterpolant{T, U, 2}) where {T, U}
+    @assert bwd.t0 == fwd.t0 "Initial time must be the same for both TaylorInterpolant"
+    order_bwd = get_order(bwd.x[1, 1])
+    order_fwd = get_order(fwd.x[1, 1])
+    @assert order_bwd == order_fwd "Expansion order must be the same for both TaylorInterpolant"
+
+    t0 = pre.t0
+    t = vcat(reverse(pre.t), post.t[2, :])
+    x = vcat(reverse(pre.x, dims = 1), post.x)
+
+    return TaylorInterpolant(t0, t, x)
+end 

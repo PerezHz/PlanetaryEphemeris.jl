@@ -462,6 +462,10 @@ function nbodyind(N::Int, ivec::T) where {T <: AbstractVector{Int}}
     return sort(a)
 end
 
+numberofbodies(L::Int) = (L - 13) ÷ 6
+numberofbodies(v::Vector{T}) where {T} = numberofbodies(length(v))
+numberofbodies(m::Matrix{T}) where {T} = numberofbodies(size(m, 2))
+
 const sundofs = nbodyind(length(μ), su)        # Sun's position and velocity indices
 const earthdofs = nbodyind(length(μ), ea)      # Earth's position and velocity indices
 
