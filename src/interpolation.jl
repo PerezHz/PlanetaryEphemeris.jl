@@ -81,11 +81,15 @@ function getinterpindex(tinterp::TaylorInterpolant{T, U, N}, t::V) where {T<:Rea
     return ind, Δt
 end
 
+numberofbodies(interp::TaylorInterpolant{T, U, 2}) where {T, U} = numberofbodies(size(interp.x, 2))
+
 # Function-like (callability) methods
 
 @doc raw"""
     (tinterp::TaylorInterpolant{T,U,1})(t::V) where {T<:Real, U<:Number, V<:Number}
     (tinterp::TaylorInterpolant{T,U,2})(t::V) where {T<:Real, U<:Number, V<:Number}
+    (tinterp::TaylorInterpolant{T,U,2})(target::Int, t::V) where {T<:Real, U<:Number, V<:Number}
+    (tinterp::TaylorInterpolant{T,U,2})(target::Int, observer::Int, t::V) where {T<:Real, U<:Number, V<:Number}
 
 Evaluate `tinterp.x` at time `t`.
 
@@ -108,6 +112,21 @@ function (tinterp::TaylorInterpolant{T,U,2})(t::V) where {T<:Real, U<:Number, V<
     # Evaluate tinterp.x[ind] at δt
     return tinterp.x[ind,:](δt)
 end
+
+function (tinterp::TaylorInterpolant{T,U,2})(target::Int, observer::Int, t::V) where {T<:Real, U<:Number, V<:Number}
+    # Number of bodies in tinterp
+    N = numberofbodies(tinterp)
+    # Ephemeris at time t
+    eph_t = tinterp(t)
+    # Relative state vector 
+    if observer == 0
+        return eph_t[nbodyind(N, target)]
+    else
+        return eph_t[nbodyind(N, target)] - eph_t[nbodyind(N, observer)]
+    end 
+end
+
+(tinterp::TaylorInterpolant{T,U,2})(target::Int, t::V) where {T<:Real, U<:Number, V<:Number} = tinterp(target, 0, t)
 
 @doc raw"""
     reverse(tinterp::TaylorInterpolant{T,U,N}) where {T<:Real, U<:Number, N}
@@ -140,3 +159,25 @@ function join(bwd::TaylorInterpolant{T, U, 2}, fwd::TaylorInterpolant{T, U, 2}) 
 
     return TaylorInterpolant(t0, t, x)
 end 
+
+@doc raw"""
+    kmsec2auday(pv)
+Convert a `[x, y, z, v_x, v_y, v_z]` state vector from km, km/sec to au, au/day.
+See also [`auday2kmsec`](@ref).
+"""
+function kmsec2auday(pv)
+    pv /= au          # (km, km/sec) -> (au, au/sec)
+    pv[4:6] *= daysec # (au, au/sec) -> (au, au/day)
+    return pv
+end
+
+@doc raw"""
+    auday2kmsec(pv)
+Convert a `[x, y, z, v_x, v_y, v_z]` state vector from au, au/day to km, km/sec.
+See also [`kmsec2auday`](@ref).
+"""
+function auday2kmsec(pv)
+    pv *= au          # (au, au/day) -> (km, km/day)
+    pv[4:6] /= daysec # (km, km/day) -> (km, km/sec)
+    return pv
+end
