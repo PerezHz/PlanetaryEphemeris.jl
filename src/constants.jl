@@ -8,7 +8,7 @@ const src_path = dirname(pathof(PlanetaryEphemeris))
 const order = 30
 const abstol = 1.0E-20
 
-# Important bodies indexes 
+# Important bodies indices 
 const su = 1 # Sun's index
 const ea = 4 # Earth's index
 const mo = 5 # Moon's index
@@ -446,7 +446,7 @@ const c_m2 = 3.3356611996764786e-5             # Speed of light^-2 in day^2/au^2
     nbodyind(N::Int, i::Int)
     nbodyind(N::Int, ivec::AbstractVector{Int})
 
-Returns the indexes of the positions and velocities of the `i`-th body (or the 
+Return the indices of the positions and velocities of the `i`-th body (or the 
 `ivec`-th bodies) in a vector with `N` bodies. The function assumes that the vector has 
 the form: `3N` positions + `3N` velocities (+ Lunar physical librations + TT-TDB). 
 """
@@ -465,6 +465,7 @@ end
 numberofbodies(L::Int) = (L - 13) ÷ 6
 numberofbodies(v::Vector{T}) where {T} = numberofbodies(length(v))
 numberofbodies(m::Matrix{T}) where {T} = numberofbodies(size(m, 2))
+numberofbodies(interp::TaylorInterpolant{T, U, 2}) where {T, U} = numberofbodies(size(interp.x, 2))
 
 const sundofs = nbodyind(length(μ), su)        # Sun's position and velocity indices
 const earthdofs = nbodyind(length(μ), ea)      # Earth's position and velocity indices

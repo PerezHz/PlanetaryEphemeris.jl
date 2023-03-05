@@ -30,7 +30,7 @@ end
 @doc raw"""
     special_eval(x::Vector{Taylor1{T}}, t::Taylor1{T}) where {T <: Number}
 
-Evaluate each element of `x` in `t`. 
+Evaluate each element of `x` at time `t`. 
 """
 function special_eval(x::Vector{Taylor1{T}}, t::Taylor1{T}) where {T <: Number}
     res = Vector{Taylor1{T}}(undef, length(x))

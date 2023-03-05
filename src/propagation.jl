@@ -17,7 +17,7 @@ convert(::Type{Taylor1{T}}, a::Taylor1Serialization{T}) where {T} = Taylor1{T}(a
 @doc raw"""
     selecteph2jld2(sseph::TaylorInterpolant, bodyind::T, tspan::S, N::Int) where {T <: AbstractVector{Int}, S <: Number}
 
-Save the ephemeris, contained in `sseph`, of the bodies with indexes `bodyind`, in a `.jld2` file named as follows
+Save the ephemeris, contained in `sseph`, of the bodies with indices `bodyind`, in a `.jld2` file named as follows
 
     "sseph" * number of asteroids in sseph * "ast" * number of asteroids to be saved in file * "_"
     * "p" / "m" (forward / backward integration) * number of years in sseph *  "y_et.jld2"
@@ -25,7 +25,7 @@ Save the ephemeris, contained in `sseph`, of the bodies with indexes `bodyind`, 
 # Arguments
 
 - `sseph::TaylorInterpolant`: ephemeris of all the bodies. 
-- `bodyind::T`: indexes of the bodies to be saved.
+- `bodyind::T`: indices of the bodies to be saved.
 - `tspan::S`: time span of the integration (positive -> forward integration / negative -> backward integration).
 - `N::Int`: total number of bodies.
 """
@@ -33,7 +33,7 @@ function selecteph2jld2(sseph::TaylorInterpolant, bodyind::T, tspan::S, N::Int) 
     
     # Number of asteroids in sseph
     nast = N - 11                 
-    # Indexes of the positions and velocities of the bodies to be saved
+    # indices of the positions and velocities of the bodies to be saved
     indvec = nbodyind(N, bodyind)      
     # Number of asteroids to be saved
     nastout = length(bodyind) - 11     
@@ -155,7 +155,7 @@ Integrate the Solar System via the Taylor method.
 - `dynamics::Function`: dynamical model function.
 - `nast::Int`: number of asteroids to be considered in the integration.
 - `ss16ast::Bool`: whether to save the solution using `selecteph2jld2` (`true`) or not.
-- `bodyind::AbstractVector{Int}`: indexes of the bodies to be saved.
+- `bodyind::AbstractVector{Int}`: indices of the bodies to be saved.
 - `order::Int=order`: order of the Taylor expansions to be used in the integration. 
 - `abstol::T`: absolute tolerance.
 - `parse_eqs::Bool`: whether to use the specialized method of `jetcoeffs!` (`true`) created with `@taylorize` or not.

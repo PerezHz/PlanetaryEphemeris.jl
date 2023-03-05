@@ -15,7 +15,7 @@ function parse_commandline()
             arg_type = Int
             default = 1_000_000 
         "--jd0"
-            help = "Starting time of integration"
+            help = "Starting time of integration; options are: \"2000-01-01T12:00:00\" or \"1969-06-28T00:00:00\""
             arg_type = DateTime
             default = DateTime(2000, 1, 1, 12) # DateTime(1969, 6, 28, 0, 0, 0)
         "--nyears"
@@ -39,7 +39,7 @@ function parse_commandline()
             arg_type = Float64
             default = 1.0E-20
         "--parse_eqs"
-            help = "Whether to use the taylorized method of jetcoeffs or not"
+            help = "Whether to use the taylorized method of jetcoeffs (a-priori faster) or not"
             arg_type = Bool
             default = true 
         "--bodyind"
@@ -53,10 +53,10 @@ function parse_commandline()
         examples:\n
         \n
         # Multi-threaded\n
-        julia -t 4 --project integrate_ephemeris.jl --maxsteps 100 --jd0 "2000-1-1"\n
+        julia -t 4 --project integrate_ephemeris.jl --maxsteps 100 --jd0 \"2000-01-01T12:00:00\"\n
         \n
         # Single-threaded\n
-        julia --project integrate_ephemeris.jl --maxsteps 100 --jd0 "2000-1-1"\n
+        julia --project integrate_ephemeris.jl --maxsteps 100 --jd0 "2000-01-01T12:00:00"\n
         \n
     """
 

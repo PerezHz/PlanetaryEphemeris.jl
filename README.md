@@ -15,7 +15,7 @@ Instituto de Ciencias Físicas, Universidad Nacional Autónoma de México (UNAM)
 
 ## Installation
 
-The current development version of this package may be installed in Julia via:
+The current version of this package may be installed in Julia pkg manager via:
 ```
 ] add PlanetaryEphemeris
 ```
