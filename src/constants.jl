@@ -627,7 +627,8 @@ const lnm7 = [m for m in 1:6]                            # m
 
 # Number of bodies in extended-body accelerations
 const N_ext = 11     
-# Number of bodies in backward integration
+# Number of bodies in short backward integration used to compute 
+# time-delayed tidal interactions
 const N_bwd = 11                   
 
 # Diagonal elements of undistorted lunar mantle moment of inertia

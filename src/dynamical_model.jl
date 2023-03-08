@@ -2006,22 +2006,32 @@ function DE430!(dq, q, params, t)
     # N: number of bodies
     # jd0: initial Julian date
     local N, jd0 = params
-    local S = eltype(q)   # Type of positions/velocities components
-    
-    # Parameters for backward integration
-    local params_bwd = (N_bwd, jd0)    
-    # Positions for backward integration
-    local qq_bwd = Taylor1.(constant_term.(  q[ union(nbodyind(N,1:N_bwd),6N+1:6N+13) ]), t.order )::Vector{S}
-    # Velocities for backward integration
-    local dqq_bwd = similar(qq_bwd)    
-    # Vector of auxiliaries for backward integration
-    local xaux_bwd = similar(qq_bwd)
-    # Function for backward integration
-    local jc = TaylorIntegration.jetcoeffs!(NBP_pN_A_J23E_J23M_J2S_threads!, t, qq_bwd, dqq_bwd, xaux_bwd, params_bwd)
-    
     # Time Taylor variable
     local __t = Taylor1(t.order)
-    # Positions delayed
+    # Type of positions/velocities components
+    local S = eltype(q) 
+    # Zero of type S
+    local zero_q_1 = zero(q[1]) \
+    # One of the same type as time t                 
+    local one_t = one(t)                         
+    # Days since J2000.0 (TDB)  
+    local dsj2k = t+(jd0-J2000)                  
+    
+    # Short backward integration needed to evaluate time-delayed tidal interactions 
+
+    # Parameters
+    local params_bwd = (N_bwd, jd0)    
+    # Positions
+    local qq_bwd = Taylor1.(constant_term.(  q[ union(nbodyind(N,1:N_bwd),6N+1:6N+13) ]), t.order )::Vector{S}
+    # Velocities
+    local dqq_bwd = similar(qq_bwd)    
+    # Vector of auxiliaries
+    local xaux_bwd = similar(qq_bwd)
+    # Backward integration
+    # TO DO: Used taylorized method instead of default jetcoeffs!
+    local jc = TaylorIntegration.jetcoeffs!(NBP_pN_A_J23E_J23M_J2S_threads!, t, qq_bwd, dqq_bwd, xaux_bwd, params_bwd)
+    
+    # Evaluation of time-delayed positions 
     local q_del_τ_M = special_eval(qq_bwd, __t-τ_M)   # τ_M
     local q_del_τ_0 = special_eval(qq_bwd, __t-τ_0p)  # τ_0p
     local q_del_τ_1 = special_eval(qq_bwd, __t-τ_1p)  # τ_1p
@@ -2031,9 +2041,6 @@ function DE430!(dq, q, params, t)
     # Lunar mantle angular velocity delayed τ_M
     local ω_m_del_τ_M = q_del_τ_M[6N_bwd+4:6N_bwd+6]::Vector{S}
     
-    local zero_q_1 = zero(q[1])                  # Zero of type S
-    local one_t = one(t)                         # One of the same type as time t
-    local dsj2k = t+(jd0-J2000)                  # Days since J2000.0 (TDB)
     # Matrix elements of lunar mantle moment of inertia at time t-τ_M (including tidal distortion)
     # See equations (36) to (41) in pages 16-17 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     local I_m_t = ITM(q_del_τ_M, eulang_del_τ_M, ω_m_del_τ_M)::Matrix{S}
