@@ -63,28 +63,14 @@ function parse_commandline()
     return parse_args(s)
 end
 
-function main()
-
-    parsed_args = parse_commandline()
-
-    maxsteps = parsed_args["maxsteps"] :: Int
-    jd0_datetime = parsed_args["jd0"] :: DateTime
-    jd0 = datetime2julian(jd0_datetime) 
-    nyears = parsed_args["nyears"] :: Float64
-    dynamics = parsed_args["dynamics"] :: Function
-    nast = parsed_args["nast"] :: Int 
-    bodyind = parsed_args["bodyind"] :: UnitRange{Int}
-    order = parsed_args["order"] :: Int
-    abstol = parsed_args["abstol"] :: Float64
-    parse_eqs = parsed_args["parse_eqs"] :: Bool
-
-    # Total number of bodies (Sun + 8 Planets + Moon + Pluto + Asteroids)
-    N = 11 + nast
+function main(N_threads::Int, maxsteps::Int, jd0_datetime::DateTime, nyears::Float64, dynamics::Function, nast::Int,
+              bodyind::UnitRange{Int}, order::Int, abstol::Float64, parse_eqs::Bool)
 
     println("*** Integrate Ephemeris ***")
-    println("Number of threads: ", Threads.nthreads())
+    println("Number of threads: ", N_threads)
     println("Dynamical function: ", dynamics) 
     
+    jd0 = datetime2julian(jd0_datetime) 
     println( "Initial time of integration: ", string(jd0_datetime) )
     println( "Final time of integration: ", string(julian2datetime(jd0 + nyears*yr)) )
     
@@ -98,7 +84,31 @@ function main()
                     parse_eqs = parse_eqs)
     println("*** Finished full integration ***")
 
+    # Total number of bodies (Sun + 8 Planets + Moon + Pluto + Asteroids)
+    N = 11 + nast
+
     selecteph2jld2(sol, bodyind, nyears, N)
+
+    nothing 
+end 
+
+function main()
+
+    N_threads = Threads.nthreads() 
+
+    parsed_args = parse_commandline()
+
+    maxsteps = parsed_args["maxsteps"] :: Int
+    jd0_datetime = parsed_args["jd0"] :: DateTime
+    nyears = parsed_args["nyears"] :: Float64
+    dynamics = parsed_args["dynamics"] :: Function
+    nast = parsed_args["nast"] :: Int 
+    bodyind = parsed_args["bodyind"] :: UnitRange{Int}
+    order = parsed_args["order"] :: Int
+    abstol = parsed_args["abstol"] :: Float64
+    parse_eqs = parsed_args["parse_eqs"] :: Bool
+
+    main(N_threads, maxsteps, jd0_datetime, nyears, dynamics, nast, bodyind, order, abstol, parse_eqs)
     
 end
 

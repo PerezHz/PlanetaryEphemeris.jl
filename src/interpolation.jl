@@ -10,15 +10,15 @@ time ``x(t)``; or a lunar core Euler angle as a function of time ``\theta_c(t)``
 # Fields
 
 - `t0::T`: Start time.
-- `t::Vector{T}`: Vector of time instances when the timespan of the ``i``-th element of `x` ends and the ``(i+1)``-th element of `x` starts being valid. 
-- `x::Array{Taylor1{U},N}`: Vector of Taylor polynomials that interpolate the dependent variable as a function of the independent variable.
+- `t::AbstractVector{T}`: Vector of time instances when the timespan of the ``i``-th element of `x` ends and the ``(i+1)``-th element of `x` starts being valid. 
+- `x::AbstractArray{Taylor1{U},N}`: Array of Taylor polynomials that interpolate the dependent variable as a function of the independent variable.
 """
 @auto_hash_equals struct TaylorInterpolant{T, U, N}
     t0::T
-    t::Vector{T}
-    x::Array{Taylor1{U}, N}
+    t::AbstractVector{T}
+    x::AbstractArray{Taylor1{U}, N}
     # Inner constructor
-    function TaylorInterpolant{T, U, N}(t0::T, t::Vector{T}, x::Array{Taylor1{U}, N}) where {T <: Real, U <: Number, N}
+    function TaylorInterpolant{T, U, N}(t0::T, t::AbstractVector{T}, x::AbstractArray{Taylor1{U}, N}) where {T <: Real, U <: Number, N}
         @assert size(x)[1] == length(t)-1
         @assert issorted(t) || issorted(t, rev = true)
         return new{T, U, N}(t0, t, x)
@@ -26,7 +26,7 @@ time ``x(t)``; or a lunar core Euler angle as a function of time ``\theta_c(t)``
 end
 
 # Outer constructors
-function TaylorInterpolant(t0::T, t::Vector{T}, x::Array{Taylor1{U}, N}) where {T <: Real, U <: Number, N}
+function TaylorInterpolant(t0::T, t::AbstractVector{T}, x::AbstractArray{Taylor1{U}, N}) where {T <: Real, U <: Number, N}
     return TaylorInterpolant{T, U, N}(t0, t, x)
 end
 
