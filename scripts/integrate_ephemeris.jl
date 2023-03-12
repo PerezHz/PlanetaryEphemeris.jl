@@ -53,7 +53,7 @@ function parse_commandline()
         examples:\n
         \n
         # Multi-threaded\n
-        julia -t 4 --project integrate_ephemeris.jl --maxsteps 100 --jd0 \"2000-01-01T12:00:00\"\n
+        julia -t 4 --project integrate_ephemeris.jl --maxsteps 100 --jd0 "2000-01-01T12:00:00"\n
         \n
         # Single-threaded\n
         julia --project integrate_ephemeris.jl --maxsteps 100 --jd0 "2000-01-01T12:00:00"\n

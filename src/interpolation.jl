@@ -153,8 +153,9 @@ function join(bwd::TaylorInterpolant{T, U, 2}, fwd::TaylorInterpolant{T, U, 2}) 
     order_fwd = get_order(fwd.x[1, 1])
     @assert order_bwd == order_fwd "Expansion order must be the same for both TaylorInterpolant"
 
-    t0 = bwd.t0
-    t = vcat(reverse(bwd.t), fwd.t[2, :])
+    t0 = bwd.t0 + bwd.t[end]
+    t_1 = abs.(bwd.t)
+    t = vcat(t_1, t_1[end] .+ fwd.t[2:end])
     x = vcat(reverse(bwd.x, dims = 1), fwd.x)
 
     return TaylorInterpolant(t0, t, x)
