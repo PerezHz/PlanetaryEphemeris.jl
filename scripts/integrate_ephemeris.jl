@@ -63,11 +63,11 @@ function parse_commandline()
     return parse_args(s)
 end
 
-function main(N_threads::Int, maxsteps::Int, jd0_datetime::DateTime, nyears::Float64, dynamics::Function, nast::Int,
+function main(maxsteps::Int, jd0_datetime::DateTime, nyears::Float64, dynamics::Function, nast::Int,
               bodyind::UnitRange{Int}, order::Int, abstol::Float64, parse_eqs::Bool)
 
     println("*** Integrate Ephemeris ***")
-    println("Number of threads: ", N_threads)
+    println("Number of threads: ", Threads.nthreads())
     println("Dynamical function: ", dynamics) 
     
     jd0 = datetime2julian(jd0_datetime) 
@@ -94,8 +94,6 @@ end
 
 function main()
 
-    N_threads = Threads.nthreads() 
-
     parsed_args = parse_commandline()
 
     maxsteps = parsed_args["maxsteps"] :: Int
@@ -108,7 +106,7 @@ function main()
     abstol = parsed_args["abstol"] :: Float64
     parse_eqs = parsed_args["parse_eqs"] :: Bool
 
-    main(N_threads, maxsteps, jd0_datetime, nyears, dynamics, nast, bodyind, order, abstol, parse_eqs)
+    main(maxsteps, jd0_datetime, nyears, dynamics, nast, bodyind, order, abstol, parse_eqs)
     
 end
 
