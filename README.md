@@ -8,10 +8,12 @@ ephemeris dynamical model (Folkner et al., 2014), based on
 
 ## Authors
 
-- [Jorge A. Pérez](https://www.linkedin.com/in/perezhz),
+- [Jorge A. Pérez Hernández](https://github.com/PerezHz),
 Instituto de Ciencias Físicas, Universidad Nacional Autónoma de México (UNAM)
 - [Luis Benet](http://www.cicc.unam.mx/~benet/),
 Instituto de Ciencias Físicas, Universidad Nacional Autónoma de México (UNAM)
+- [Luis Eduardo Ramírez Montoya](https://github.com/LuEdRaMo),
+Facultad de Ciencias, Universidad Nacional Autónoma de México (UNAM)
 
 ## Installation
 
