@@ -19,13 +19,27 @@ less than the one of `a`.
 
 See also [`TaylorSeries.differentiate`](@ref).
 """
-function ordpres_differentiate(a::Taylor1)
+function ordpres_differentiate(a::Taylor1{T}) where {T}
     res = zero(a)
     for ord in eachindex(res)
         TaylorSeries.differentiate!(res, a, ord)
     end
     return res
 end
+
+@doc raw"""
+    special_eval(x::Vector{Taylor1{T}}, t::Taylor1{T}) where {T <: Number}
+
+Evaluate each element of `x` at time `t`. 
+"""
+function special_eval(x::Vector{Taylor1{T}}, t::Taylor1{T}) where {T <: Number}
+    res = Vector{Taylor1{T}}(undef, length(x))
+    for i in eachindex(res)
+        res[i] = x[i](t)
+    end
+    return res
+end
+
 
 @doc raw"""
     NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
@@ -146,8 +160,7 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     # jd0: initial Julian date
     local N, jd0 = params
     local S = eltype(q)   # Type of positions/velocities components 
-    local N_ext = 11      # Number of bodies in extended-body accelerations
-
+    
     local zero_q_1 = zero(q[1])                  # Zero of type S
     local one_t = one(t)                         # One of the same type as time t
     local dsj2k = t+(jd0-J2000)                  # Days since J2000.0 (TDB)
@@ -1052,14 +1065,12 @@ Threaded version of `NBP_pN_A_J23E_J23M_J2S!`.
 
 See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref).
 """ NBP_pN_A_J23E_J23M_J2S_threads!
-
 function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     # N: number of bodies
     # jd0: initial Julian date
     local N, jd0 = params
     local S = eltype(q)   # Type of positions/velocities components 
-    local N_ext = 11      # Number of bodies in extended-body accelerations
-
+    
     local zero_q_1 = zero(q[1])                  # Zero of type S
     local one_t = one(t)                         # One of the same type as time t
     local dsj2k = t+(jd0-J2000)                  # Days since J2000.0 (TDB)
@@ -1991,46 +2002,48 @@ the acceleration of the Moon with respect to Earth, for each tide-raising body.
 
 See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!`](@ref).
 """ DE430!
-
 function DE430!(dq, q, params, t)
     # N: number of bodies
     # jd0: initial Julian date
     local N, jd0 = params
-    local S = eltype(q)   # Type of positions/velocities components 
-    local N_ext = 11      # Number of bodies in extended-body accelerations    
-
-    local N_bwd = 11                   # Number of bodies in backward integration
-    local params_bwd = (N_bwd, jd0)    # Parameters for backward integration
-    # Positions for backward integration
-    local qq_bwd = Taylor1.(constant_term.(  q[ union(nbodyind(N,1:N_bwd),6N+1:6N+13) ]), t.order )
-    # Velocities for backward integration
-    local dqq_bwd = similar(qq_bwd)    
-    # Vector of auxiliaries for backward integration
-    local xaux_bwd = similar(qq_bwd)
-    # Function for backward integration
-    # local jc = TaylorIntegration.__jetcoeffs!(Val(false), NBP_pN_A_J23E_J23M_J2S_threads!, t, qq_bwd, dqq_bwd, xaux_bwd, params_bwd)
-    # local jc = TaylorIntegration.__jetcoeffs!(Val(true), NBP_pN_A_J23E_J23M_J2S_threads!, t, qq_bwd, dqq_bwd, xaux_bwd, params_bwd)
-    local jc = TaylorIntegration.jetcoeffs!(NBP_pN_A_J23E_J23M_J2S_threads!, t, qq_bwd, dqq_bwd, xaux_bwd, params_bwd)
-    # local jc = TaylorIntegration.jetcoeffs!(Val(NBP_pN_A_J23E_J23M_J2S_threads!), t, qq_bwd, dqq_bwd, params_bwd)
-
     # Time Taylor variable
     local __t = Taylor1(t.order)
-    # Positions delayed
-    local q_del_τ_M = qq_bwd(__t-τ_M)   # τ_M
-    local q_del_τ_0 = qq_bwd(__t-τ_0p)  # τ_0p
-    local q_del_τ_1 = qq_bwd(__t-τ_1p)  # τ_1p
-    local q_del_τ_2 = qq_bwd(__t-τ_2p)  # τ_2p
-    # Lunar mantle euler angles delayed τ_M
-    local eulang_del_τ_M = q_del_τ_M[6N_bwd+1:6N_bwd+3]
-    # Lunar mantle angular velocity delayed τ_M
-    local ω_m_del_τ_M = q_del_τ_M[6N_bwd+4:6N_bwd+6]
+    # Type of positions/velocities components
+    local S = eltype(q) 
+    # Zero of type S
+    local zero_q_1 = zero(q[1]) \
+    # One of the same type as time t                 
+    local one_t = one(t)                         
+    # Days since J2000.0 (TDB)  
+    local dsj2k = t+(jd0-J2000)                  
     
-    local zero_q_1 = zero(q[1])                  # Zero of type S
-    local one_t = one(t)                         # One of the same type as time t
-    local dsj2k = t+(jd0-J2000)                  # Days since J2000.0 (TDB)
+    # Short backward integration needed to evaluate time-delayed tidal interactions 
+
+    # Parameters
+    local params_bwd = (N_bwd, jd0)    
+    # Positions
+    local qq_bwd = Taylor1.(constant_term.(  q[ union(nbodyind(N,1:N_bwd),6N+1:6N+13) ]), t.order )::Vector{S}
+    # Velocities
+    local dqq_bwd = similar(qq_bwd)    
+    # Vector of auxiliaries
+    local xaux_bwd = similar(qq_bwd)
+    # Backward integration
+    # TO DO: Used taylorized method instead of default jetcoeffs!
+    local jc = TaylorIntegration.jetcoeffs!(NBP_pN_A_J23E_J23M_J2S_threads!, t, qq_bwd, dqq_bwd, xaux_bwd, params_bwd)
+    
+    # Evaluation of time-delayed positions 
+    local q_del_τ_M = special_eval(qq_bwd, __t-τ_M)   # τ_M
+    local q_del_τ_0 = special_eval(qq_bwd, __t-τ_0p)  # τ_0p
+    local q_del_τ_1 = special_eval(qq_bwd, __t-τ_1p)  # τ_1p
+    local q_del_τ_2 = special_eval(qq_bwd, __t-τ_2p)  # τ_2p
+    # Lunar mantle euler angles delayed τ_M
+    local eulang_del_τ_M = q_del_τ_M[6N_bwd+1:6N_bwd+3]::Vector{S}
+    # Lunar mantle angular velocity delayed τ_M
+    local ω_m_del_τ_M = q_del_τ_M[6N_bwd+4:6N_bwd+6]::Vector{S}
+    
     # Matrix elements of lunar mantle moment of inertia at time t-τ_M (including tidal distortion)
     # See equations (36) to (41) in pages 16-17 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    local I_m_t = ITM(q_del_τ_M, eulang_del_τ_M, ω_m_del_τ_M)
+    local I_m_t = ITM(q_del_τ_M, eulang_del_τ_M, ω_m_del_τ_M)::Matrix{S}
     local dI_m_t = ordpres_differentiate.(I_m_t) # Time-derivative of lunar mantle I at time t-τ_M
     local inv_I_m_t = inv(I_m_t)                 # Inverse of lunar mantle I matrix at time t-τ_M
     local I_c_t = I_c.*one_t                     # Lunar core I matrix, see equation (39)
@@ -2322,10 +2335,6 @@ function DE430!(dq, q, params, t)
     Tidal accelerations
     See equation (32) in page 14 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     =#
-
-    # Tidal acceleration auxiliaries
-    local μ_mo_div_μ_ea = μ[mo]/μ[ea]                # Ratio of Moon and Earth mass parameters
-    local tid_num_coeff = 1.5*(1.0 + μ_mo_div_μ_ea)  # Overall numerical factor in equation (32)
 
     # Time-delayed geocentric Moon position
     # See equation (31) in page 14 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract

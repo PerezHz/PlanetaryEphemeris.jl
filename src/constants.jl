@@ -1,11 +1,14 @@
 # PlanetaryEphemeris abbreviation
 const PE = PlanetaryEphemeris
 
+# Path to PlanetaryEphemeris src directory 
+const src_path = dirname(pathof(PlanetaryEphemeris))
+
 # Integration parameters
 const order = 30
 const abstol = 1.0E-20
 
-# Important bodies indexes 
+# Important bodies indices 
 const su = 1 # Sun's index
 const ea = 4 # Earth's index
 const mo = 5 # Moon's index
@@ -439,6 +442,30 @@ const c_cm_per_sec = 100_000*clightkms         # Speed of light in cm per sec
 const c_p2 = 29979.063823897606                # Speed of light^2 in au^2/day^2
 const c_m2 = 3.3356611996764786e-5             # Speed of light^-2 in day^2/au^2
 
+@doc raw"""
+    nbodyind(N::Int, i::Int)
+    nbodyind(N::Int, ivec::AbstractVector{Int})
+
+Return the indices of the positions and velocities of the `i`-th body (or the 
+`ivec`-th bodies) in a vector with `N` bodies. The function assumes that the vector has 
+the form: `3N` positions + `3N` velocities (+ Lunar physical librations + TT-TDB). 
+"""
+nbodyind(N::Int, i::Int) = union(3i-2:3i, 3*(N+i)-2:3*(N+i))
+
+function nbodyind(N::Int, ivec::T) where {T <: AbstractVector{Int}}
+    a = Vector{Int}(undef, 0)
+    for i in ivec
+        i > N && continue
+        a = union(a, nbodyind(N, i))
+    end
+    
+    return sort(a)
+end
+
+numberofbodies(L::Int) = (L - 13) ÷ 6
+numberofbodies(v::Vector{T}) where {T} = numberofbodies(length(v))
+numberofbodies(m::Matrix{T}) where {T} = numberofbodies(size(m, 2))
+
 const sundofs = nbodyind(length(μ), su)        # Sun's position and velocity indices
 const earthdofs = nbodyind(length(μ), ea)      # Earth's position and velocity indices
 
@@ -598,6 +625,11 @@ const lnm5 = [2n-1 for n in 1:6]                         # (2n - 1)
 const lnm6 = [-(n+1) for n in 1:6]                       # -(n + 1)
 const lnm7 = [m for m in 1:6]                            # m  
 
+# Number of bodies in extended-body accelerations
+const N_ext = 11     
+# Number of bodies used to compute time-delayed tidal interactions
+const N_bwd = 11                   
+
 # Diagonal elements of undistorted lunar mantle moment of inertia
 # See equation (37) in page 16 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 const A_T = (2(1-β_L*γ_L)/(2β_L-γ_L+β_L*γ_L))*J2_M_und
@@ -649,6 +681,10 @@ const τ_2p = -0.1000          # Orbital time-lag for semi-diurnal deformation, 
 const τ_0 = 0.0                    # Rotational time-lag for long-period deformation, days
 const τ_1 = 7.3632190228041890E-03 # Rotational time-lag for diurnal deformation, days
 const τ_2 = 2.5352978633388720E-03 # Rotational time-lag for semi-diurnal deformation, days
+
+# Tidal acceleration auxiliaries
+const μ_mo_div_μ_ea = μ[mo]/μ[ea]                # Ratio of Moon and Earth mass parameters
+const tid_num_coeff = 1.5*(1.0 + μ_mo_div_μ_ea)  # Overall numerical factor in equation (32)
 
 # Standard value of nominal mean angular velocity of Earth (rad/day), 
 # See Explanatory Supplement to the Astronomical Almanac 2014, section 7.4.3.3,

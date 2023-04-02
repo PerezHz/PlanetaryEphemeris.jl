@@ -15,23 +15,22 @@ Instituto de Ciencias Físicas, Universidad Nacional Autónoma de México (UNAM)
 
 ## Installation
 
-The current development version of this package may be installed in Julia via:
+The current version of this package may be installed in Julia pkg manager via:
 ```
-import Pkg
-Pkg.add(Pkg.PackageSpec(url="https://github.com/PerezHz/PlanetaryEphemeris.jl.git", rev="main"))
+] add PlanetaryEphemeris
 ```
 
 ## Usage
 
-`PlanetaryEphemeris.propagate` is a high-level function which performs the
+`PlanetaryEphemeris.propagate_dense` is a high-level function which performs the
 numerical integration. The file `integrate_ephemeris.jl` in the `scripts` directory
 contains an example script. This script may be called as:
 
-`julia --project=@. integrate_ephemeris.jl`
+`julia --project integrate_ephemeris.jl --help`
 
 `PlanetaryEphemeris.propagate` also supports multi-threading:
 
-`JULIA_NUM_THREADS=<number-of-threads> julia --project=@. integrate_ephemeris.jl`
+`julia -t <number-of-threads> --project integrate_ephemeris.jl --help`
 
 ## Acknowledgments
 
