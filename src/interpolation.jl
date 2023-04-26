@@ -153,17 +153,13 @@ end
 @doc raw"""
     selecteph(eph::TaylorInterpolant{T, U, N}, i::Int) where {T <: Real, U <: Number, N}
 
-Return a `TaylorInterpolant` with only the ephemeris from body `i`. 
+Return a `TaylorInterpolant` with only the ephemeris of the `i`-th body. 
 """
-function selecteph(eph::TaylorInterpolant{T, U, N}, idxs::AbstractVector{Int}) where {T <: Real, U <: Number, N}
-    x = eph.x[:, idxs]
-    return TaylorInterpolant(eph.t0, eph.t, x)
-end 
-
 function selecteph(eph::TaylorInterpolant{T, U, N}, i::Int) where {T <: Real, U <: Number, N}
     N = numberofbodies(eph)
     idxs = nbodyind(N, i)
-    return selecteph(eph, idxs)
+    x = eph.x[:, idxs]
+    return TaylorInterpolant(eph.t0, eph.t, x)
 end 
 
 function join(bwd::TaylorInterpolant{T, U, 2}, fwd::TaylorInterpolant{T, U, 2}) where {T, U}
