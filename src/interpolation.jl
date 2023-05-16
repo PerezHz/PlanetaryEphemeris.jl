@@ -151,11 +151,11 @@ function reverse(tinterp::TaylorInterpolant{T,U,N}) where {T<:Real, U<:Number, N
 end
 
 @doc raw"""
-    selecteph(eph::TaylorInterpolant{T, U, N}, i::Int) where {T <: Real, U <: Number, N}
+    selecteph(eph::TaylorInterpolant{T, U, 2}, i::Int) where {T <: Real, U <: Number}
 
 Return a `TaylorInterpolant` with only the ephemeris of the `i`-th body. 
 """
-function selecteph(eph::TaylorInterpolant{T, U, N}, i::Int) where {T <: Real, U <: Number, N}
+function selecteph(eph::TaylorInterpolant{T, U, 2}, i::Int) where {T <: Real, U <: Number}
     N = numberofbodies(eph)
     idxs = nbodyind(N, i)
     x = eph.x[:, idxs]
