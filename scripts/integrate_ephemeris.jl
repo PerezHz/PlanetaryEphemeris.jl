@@ -63,26 +63,26 @@ function parse_commandline()
     return parse_args(s)
 end
 
+function print_header(header::String)
+    L = length(header)
+    println(repeat("-", L))
+    println(header)
+    println(repeat("-", L))
+end 
+
 function main(maxsteps::Int, jd0_datetime::DateTime, nyears::Float64, dynamics::Function, nast::Int,
               bodyind::UnitRange{Int}, order::Int, abstol::Float64, parse_eqs::Bool)
-
-    println("*** Integrate Ephemeris ***")
-    println("Number of threads: ", Threads.nthreads())
-    println("Dynamical function: ", dynamics) 
     
     jd0 = datetime2julian(jd0_datetime) 
-    println( "Initial time of integration: ", string(jd0_datetime) )
-    println( "Final time of integration: ", string(julian2datetime(jd0 + nyears*yr)) )
-    
-    println("*** Integrator warmup ***")
+    print_header("Integrator warmup")
     _ = propagate(1, jd0, nyears, Val(true), dynamics = dynamics, nast = nast, order = order, abstol = abstol, 
                   parse_eqs = parse_eqs)
-    println("*** Finished warmup ***")
     
-    println("*** Full integration ***")
+    print_header("Full integration")
+    println( "Initial time of integration: ", string(jd0_datetime) )
+    println( "Final time of integration: ", string(julian2datetime(jd0 + nyears*yr)) )
     sol = propagate(maxsteps, jd0, nyears, Val(true), dynamics = dynamics, nast = nast, order = order, abstol = abstol, 
                     parse_eqs = parse_eqs)
-    println("*** Finished full integration ***")
 
     # Total number of bodies (Sun + 8 Planets + Moon + Pluto + Asteroids)
     N = 11 + nast
@@ -94,17 +94,43 @@ end
 
 function main()
 
+    # Parse arguments from commandline 
     parsed_args = parse_commandline()
 
-    maxsteps = parsed_args["maxsteps"] :: Int
-    jd0_datetime = parsed_args["jd0"] :: DateTime
-    nyears = parsed_args["nyears"] :: Float64
-    dynamics = parsed_args["dynamics"] :: Function
-    nast = parsed_args["nast"] :: Int 
-    bodyind = parsed_args["bodyind"] :: UnitRange{Int}
-    order = parsed_args["order"] :: Int
-    abstol = parsed_args["abstol"] :: Float64
-    parse_eqs = parsed_args["parse_eqs"] :: Bool
+    print_header("Integrate Ephemeris")
+    print_header("General parameters")
+
+    # Number of threads 
+    println("• Number of threads: ", Threads.nthreads())
+
+    # Dynamical function 
+    dynamics = parsed_args["dynamics"]
+    println("• Dynamical function: ", dynamics)
+
+    # Maximum number of steps 
+    maxsteps = parsed_args["maxsteps"]
+    println("• Maximum number of steps: ", maxsteps)
+
+    # Order of Taylor polynomials
+    order = parsed_args["order"]
+    println("• Order of Taylor polynomials: ", order)
+
+    # Absolute tolerance
+    abstol = parsed_args["abstol"]
+    println("• Absolute tolerance: ", abstol)
+
+    # Wheter to use @taylorize or not 
+    parse_eqs = parsed_args["parse_eqs"]
+    println("• Use @taylorize: ", parse_eqs)
+
+    # Initial date o fintegration 
+    jd0_datetime = parsed_args["jd0"]
+    # Number of years to be integrated 
+    nyears = parsed_args["nyears"]
+    # Number of asteroids to be saved 
+    nast = parsed_args["nast"]
+    # Indexes of bodies to be saved 
+    bodyind = parsed_args["bodyind"]
 
     main(maxsteps, jd0_datetime, nyears, dynamics, nast, bodyind, order, abstol, parse_eqs)
     
