@@ -81,6 +81,9 @@ function getinterpindex(tinterp::TaylorInterpolant{T, U, N}, t::V) where {T<:Rea
     return ind, Δt
 end
 
+numberofbodies(L::Int) = (L - 13) ÷ 6
+numberofbodies(v::Vector{T}) where {T} = numberofbodies(length(v))
+numberofbodies(m::Matrix{T}) where {T} = numberofbodies(size(m, 2))
 numberofbodies(interp::TaylorInterpolant{T, U, 2}) where {T, U} = numberofbodies(size(interp.x, 2))
 
 # Function-like (callability) methods
@@ -146,6 +149,18 @@ function reverse(tinterp::TaylorInterpolant{T,U,N}) where {T<:Real, U<:Number, N
     # Return reversed TaylorInterpolant
     return TaylorInterpolant(tinterp_rev_t0, tinterp_rev_t, tinterp_rev_x)
 end
+
+@doc raw"""
+    selecteph(eph::TaylorInterpolant{T, U, 2}, i::Int) where {T <: Real, U <: Number}
+
+Return a `TaylorInterpolant` with only the ephemeris of the `i`-th body. 
+"""
+function selecteph(eph::TaylorInterpolant{T, U, 2}, i::Int) where {T <: Real, U <: Number}
+    N = numberofbodies(eph)
+    idxs = nbodyind(N, i)
+    x = eph.x[:, idxs]
+    return TaylorInterpolant(eph.t0, eph.t, x)
+end 
 
 function join(bwd::TaylorInterpolant{T, U, 2}, fwd::TaylorInterpolant{T, U, 2}) where {T, U}
     @assert bwd.t0 == fwd.t0 "Initial time must be the same for both TaylorInterpolant"
