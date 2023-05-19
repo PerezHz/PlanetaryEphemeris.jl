@@ -1,20 +1,4 @@
 @doc raw"""
-    Taylor1Serialization{T}
-
-Specialized struct to save `Taylor1{T}` objects to `.jld2` files.
-"""
-struct Taylor1Serialization{T}
-    x::Vector{T}
-end
-
-# Tell JLD2 to save Taylor1{T} as Taylor1Serialization{T}
-writeas(::Type{Taylor1{T}}) where {T} = Taylor1Serialization{T}
-# Convert method to write .jld2 files
-convert(::Type{Taylor1Serialization{T}}, a::Taylor1{T}) where {T} = Taylor1Serialization{T}(a.coeffs)
-# Convert method to read .jld2 files
-convert(::Type{Taylor1{T}}, a::Taylor1Serialization{T}) where {T} = Taylor1{T}(a.x, length(a.x) - 1)
-
-@doc raw"""
     selecteph2jld2(sseph::TaylorInterpolant, bodyind::T, tspan::S, N::Int) where {T <: AbstractVector{Int}, S <: Number}
 
 Save the ephemeris, contained in `sseph`, of the bodies with indices `bodyind`, in a `.jld2` file named as follows
