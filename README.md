@@ -24,7 +24,7 @@ The current version of this package may be installed in Julia pkg manager via:
 
 ## Usage
 
-`PlanetaryEphemeris.propagate_dense` is a high-level function which performs the
+`PlanetaryEphemeris.propagate` is a high-level function which performs the
 numerical integration. The file `integrate_ephemeris.jl` in the `scripts` directory
 contains an example script. This script may be called as:
 
