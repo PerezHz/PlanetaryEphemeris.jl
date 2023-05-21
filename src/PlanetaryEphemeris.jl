@@ -32,6 +32,6 @@ include("plephinteg.jl")
 include("propagation.jl")
 include("osculating.jl")
 include("barycenter.jl")
-#include("precompile.jl")
+include("precompile.jl")
 
 end # module
