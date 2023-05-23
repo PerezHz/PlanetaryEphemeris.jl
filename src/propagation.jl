@@ -26,7 +26,7 @@ function selecteph2jld2(sseph::TaylorInterpolant, bodyind::T, tspan::S, N::Int) 
     # Prefix to distinguish between forward (p) / backward (m) integration
     sgn_yrs = signbit(tspan) ? "m" : "p"
     # Number of years
-    nyrs_int = Int(abs(tspan))
+    nyrs_int = floor(Int, abs(tspan))
 
     # Write output to .jld2 file
 
