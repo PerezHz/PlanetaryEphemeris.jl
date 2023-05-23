@@ -13,9 +13,9 @@
 @doc """
     ordpres_differentiate(a::Taylor1)
 
-Returns the derivative of `a`, but preserving the order/degree of `a`. In comparison, 
-`TaylorSeries.differentiate` returns the returns a `Taylor1` object with one order/degree 
-less than the one of `a`. 
+Returns the derivative of `a`, but preserving the order/degree of `a`. In comparison,
+`TaylorSeries.differentiate` returns the returns a `Taylor1` object with one order/degree
+less than the one of `a`.
 
 See also [`TaylorSeries.differentiate`](@ref).
 """
@@ -30,7 +30,7 @@ end
 @doc raw"""
     special_eval(x::Vector{Taylor1{T}}, t::Taylor1{T}) where {T <: Number}
 
-Evaluate each element of `x` at time `t`. 
+Evaluate each element of `x` at time `t`.
 """
 function special_eval(x::Vector{Taylor1{T}}, t::Taylor1{T}) where {T <: Number}
     res = Vector{Taylor1{T}}(undef, length(x))
@@ -44,8 +44,8 @@ end
 @doc raw"""
     NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
 
-Solar System (JPL DE430/431) dynamical model. Bodies considered in the model are: the Sun, 
-the eight planets, the Moon and the 343 main-belt asteroids included in the JPL DE430 
+Solar System (JPL DE430/431) dynamical model. Bodies considered in the model are: the Sun,
+the eight planets, the Moon and the 343 main-belt asteroids included in the JPL DE430
 ephemeris. Effects considered are:
 
 - Post-Newtonian point-mass accelerations between all bodies: see equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
@@ -53,14 +53,14 @@ ephemeris. Effects considered are:
 \begin{align*}
     \mathbf{a}_i & = \sum_{j\neq i}\frac{\mu_j(\mathbf{r}_j - \mathbf{r}_i)}{r_{ij}^3}
     \left\lbrace
-    1 - \frac{4}{c^2}\sum_{l\neq i}\frac{\mu_l}{r_{il}} - \frac{1}{c^2}\sum_{k\neq j}\frac{\mu_k}{r_{jk}} + \left(\frac{\dot{s}_i}{c}\right)^2 + 2\left(\frac{\dot{s}_j}{c}\right)^2   
+    1 - \frac{4}{c^2}\sum_{l\neq i}\frac{\mu_l}{r_{il}} - \frac{1}{c^2}\sum_{k\neq j}\frac{\mu_k}{r_{jk}} + \left(\frac{\dot{s}_i}{c}\right)^2 + 2\left(\frac{\dot{s}_j}{c}\right)^2
     - \frac{4}{c^2}\mathbf{v}_i\cdot\mathbf{v}_j - \frac{3}{2c^2}\left[\frac{(\mathbf{r}_i - \mathbf{r}_j)\cdot\mathbf{v}_j}{r_{ij}}\right]^2 + \frac{1}{2c^2}(\mathbf{r}_j - \mathbf{r}_i)\cdot\mathbf{a}_j
     \right\rbrace \\
     & \hspace{0.5cm} + \frac{1}{c^2}\sum_{j\neq i} \frac{\mu_j}{r_{ij}^3}[(\mathbf{r}_i - \mathbf{r}_j)\cdot(4\mathbf{v}_i - 3\mathbf{v}_j)](\mathbf{v}_i - \mathbf{v}_j)
     + \frac{7}{2c^2}\sum_{j\neq i}\frac{\mu_j\mathbf{a}_j}{r_{ij}},
 \end{align*}
 ```
-where ``\mathbf{v}_i = \dot{\mathbf{r}}_i``, ``\dot{s}_i = ||\mathbf{v}_i||^2`` and 
+where ``\mathbf{v}_i = \dot{\mathbf{r}}_i``, ``\dot{s}_i = ||\mathbf{v}_i||^2`` and
 ``\mathbf{a}_i = \ddot{\mathbf{r}}_i``.
 
 - Figure-effects (oblateness) of the Earth (``J_2`` and ``J_3``),
@@ -86,7 +86,7 @@ where ``\mathbf{v}_i = \dot{\mathbf{r}}_i``, ``\dot{s}_i = ||\mathbf{v}_i||^2`` 
     0 \\
     -\cos\phi P_n'(\sin\phi) \\
 \end{array}
-\right] 
+\right]
 +\sum_{n=2}^{n_2} \left(\frac{R}{r}\right)^n\sum_{m=1}^n
 \left[
 \begin{array}{c}
@@ -97,14 +97,14 @@ where ``\mathbf{v}_i = \dot{\mathbf{r}}_i``, ``\dot{s}_i = ||\mathbf{v}_i||^2`` 
 \right]
 \right\rbrace,
 ```
-where ``r`` is the center-of-mass separation between the two bodies; ``n_1`` and ``n_2`` are the maximum degrees 
-of the zonal and tesseral expansions, respectively; ``P_n(\sin\phi)`` is the Legendre polynomial of degree ``n``, 
-``P_n^m(\sin\phi)`` is the associated Legendre function of degree ``n`` and order ``m``, ``J_n`` is the zonal 
-harmonic coefficient for the extended body; ``C_{nm}``, ``S_{nm}`` are the tesseral harmonic coefficients for 
-the extended body, ``R`` is the equatorial radius of the extended body, ``\phi`` is the latitude of the point 
-mass relative to the body-fixed coordinate system in which the harmonics are expressed; and ``\lambda`` is the 
-east longitude of the point mass in the same body-fixed coordinate system. The primes denote differentiation 
-with respect to the argument ``\sin\phi``. The accelerations are transformed into the inertial frame by 
+where ``r`` is the center-of-mass separation between the two bodies; ``n_1`` and ``n_2`` are the maximum degrees
+of the zonal and tesseral expansions, respectively; ``P_n(\sin\phi)`` is the Legendre polynomial of degree ``n``,
+``P_n^m(\sin\phi)`` is the associated Legendre function of degree ``n`` and order ``m``, ``J_n`` is the zonal
+harmonic coefficient for the extended body; ``C_{nm}``, ``S_{nm}`` are the tesseral harmonic coefficients for
+the extended body, ``R`` is the equatorial radius of the extended body, ``\phi`` is the latitude of the point
+mass relative to the body-fixed coordinate system in which the harmonics are expressed; and ``\lambda`` is the
+east longitude of the point mass in the same body-fixed coordinate system. The primes denote differentiation
+with respect to the argument ``\sin\phi``. The accelerations are transformed into the inertial frame by
 application of the appropriate rotation matrix.
 
 - Kinematic model for the precession and nutation of the Earth's orientation (IAU 1976/1980 Earth orientation model): see [`c2t_jpl_de430`](@ref).
@@ -127,9 +127,9 @@ and
 ```
 where ``(\phi_m, \theta_m, \psi_m)`` are the lunar mantle Euler angles, ``\mathbf{\omega}_m`` is the angular
 velocity of the mantle expressed in the mantle frame, ``\mathbf{I}_m`` is the mantle moment of inertia,
-``\mathbf{N}_{M,figM-pmA}`` is the torque on the lunar 
-mantle from the point mass of body ``A`` , ``\mathbf{N}_{M, figM - figE}`` is the torque on the mantle due to 
-the extended figure of the Moon interacting with the extended figure of the Earth, and ``\mathbf{N}_{cmb}`` 
+``\mathbf{N}_{M,figM-pmA}`` is the torque on the lunar
+mantle from the point mass of body ``A`` , ``\mathbf{N}_{M, figM - figE}`` is the torque on the mantle due to
+the extended figure of the Moon interacting with the extended figure of the Earth, and ``\mathbf{N}_{cmb}``
 is the torque due to interaction between the mantle and core.
 
 ``\textbf{Lunar core}``
@@ -147,10 +147,10 @@ and
         -\mathbf{\omega}_m \times \mathbf{I}_c\mathbf{\omega}_c - \mathbf{N}_{cmb}
     \right\rbrace,
 ```
-where ``(\phi_c, \theta_c, \psi_c)`` are the lunar core Euler angles, ``\mathbf{\omega}_c^\dagger`` is the 
-angular velocity of the core expressed in a frame define by the intersection of the core equator with the 
+where ``(\phi_c, \theta_c, \psi_c)`` are the lunar core Euler angles, ``\mathbf{\omega}_c^\dagger`` is the
+angular velocity of the core expressed in a frame define by the intersection of the core equator with the
 inertial ``XY`` plane, ``\mathbf{I}_c`` is the core moment of inertia; ``\mathbf{\omega}_m`` and ``\mathbf{\omega}_c``
-are the mantle and core angular velocities in the mantle frame; and ``\mathbf{N}_{cmb}`` is the torque due 
+are the mantle and core angular velocities in the mantle frame; and ``\mathbf{N}_{cmb}`` is the torque due
 to interaction between the mantle and core.
 
 """ NBP_pN_A_J23E_J23M_J2S!
@@ -159,14 +159,14 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     # N: number of bodies
     # jd0: initial Julian date
     local N, jd0 = params
-    local S = eltype(q)   # Type of positions/velocities components 
-    
+    local S = eltype(q)   # Type of positions/velocities components
+
     local zero_q_1 = zero(q[1])                  # Zero of type S
     local one_t = one(t)                         # One of the same type as time t
     local dsj2k = t+(jd0-J2000)                  # Days since J2000.0 (TDB)
     # Matrix elements of lunar mantle moment of inertia at time t-τ_M (without tidal distortion)
     # See equations (36) to (41) in pages 16-17 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    # ITM(q_del_τ_M, eulang_del_τ_M) 
+    # ITM(q_del_τ_M, eulang_del_τ_M)
     local I_m_t = (ITM_und-I_c).*one_t           # Undistorted moment of inertia of the mantle, see equation (40)
     local dI_m_t = ordpres_differentiate.(I_m_t) # Time-derivative of lunar mantle I at time t-τ_M
     local inv_I_m_t = inv(I_m_t)                 # Inverse of lunar mantle I matrix at time t-τ_M
@@ -175,11 +175,11 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     local I_M_t = I_m_t+I_c_t                    # Total I matrix (mantle + core)
 
     #=
-    Point-mass accelerations 
+    Point-mass accelerations
     See equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
-    =# 
+    =#
 
-    # Note: All the following arrays are declared here in order to help @taylorize work 
+    # Note: All the following arrays are declared here in order to help @taylorize work
 
     # Difference between two positions (\mathbf{r}_i - \mathbf{r}_j)
     X = Array{S}(undef, N, N)         # X-axis component
@@ -189,7 +189,7 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     # Distance between two positions r_{ij} = ||\mathbf{r}_i - \mathbf{r}_j||
     r_p2 = Array{S}(undef, N, N)      # r_{ij}^2
     r_p1d2 = Array{S}(undef, N, N)    # sqrt(r_p2) <-> r_{ij}
-    r_p3d2 = Array{S}(undef, N, N)    # r_p2^1.5 <-> r_{ij}^3 
+    r_p3d2 = Array{S}(undef, N, N)    # r_p2^1.5 <-> r_{ij}^3
     r_p7d2 = Array{S}(undef, N, N)    # r_p2^3.5 <-> r_{ij}^7
 
     # Newtonian accelerations \mathbf{a}_{i} = \sum_{i\neq j} mu_i * (\mathbf{r_i} - \mathbf{r_j}) / r_{ij}^3
@@ -211,16 +211,16 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     _4V_m_3Y = Array{S}(undef, N, N)  # Y-axis component
     _4W_m_3Z = Array{S}(undef, N, N)  # Z-axis component
 
-    # Product of velocity components 
+    # Product of velocity components
     UU = Array{S}(undef, N, N)        # v_{ix}v_{jx}
     VV = Array{S}(undef, N, N)        # v_{iy}v_{jy}
     WW = Array{S}(undef, N, N)        # v_{iz}v_{jz}
 
     # Newtonian potential of 1 body \mu_i / r_{ij}
     newtonian1b_Potential = Array{S}(undef, N, N)
-    # Newtonian potential of N bodies 
+    # Newtonian potential of N bodies
     # \sum_{i\neq l} \frac{\mu_i}{r_{il}}
-    newtonianNb_Potential = Array{S}(undef, N)    
+    newtonianNb_Potential = Array{S}(undef, N)
 
     # Newtonian coefficient * difference between two positions, i.e.,
     # \mu_i * (\mathbf{r_i} - \mathbf{r_j}) / r_{ij}^3
@@ -230,9 +230,9 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
 
     # Combinations of velocities
     v2 = Array{S}(undef, N)                # Velocity magnitude squared ||\mathbf{v}_i||^2
-    _2v2 = Array{S}(undef, N, N)           # 2 * ||\mathbf{v_i}||^2 
+    _2v2 = Array{S}(undef, N, N)           # 2 * ||\mathbf{v_i}||^2
     vi_dot_vj = Array{S}(undef, N, N)      # Dot product of two velocities \mathbf{v}_i\cdot\mathbf{v}_j
-    
+
     # Second term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
 
     # Second term without (\mathbf{v}_i - \mathbf{v}_j)
@@ -256,8 +256,8 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     _4ϕj = Array{S}(undef, N, N)            # 4*\sum term inside {}
     ϕi_plus_4ϕj = Array{S}(undef, N, N)     # 4*\sum + \sum terms inside {}
     sj2_plus_2si2 = Array{S}(undef, N, N)   # \dot{s}_j^2 + 2\dot{s}_i^2 inside {}
-    sj2_plus_2si2_minus_4vivj = Array{S}(undef, N, N)  # \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {} 
-    ϕs_and_vs = Array{S}(undef, N, N)       # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2  - 4<, > terms inside {} 
+    sj2_plus_2si2_minus_4vivj = Array{S}(undef, N, N)  # \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {}
+    ϕs_and_vs = Array{S}(undef, N, N)       # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2  - 4<, > terms inside {}
     pn1t1_7 = Array{S}(undef, N, N)         # Everything inside the {} in the first term except for the term with accelerations (last)
     # Last term inside the {}
     pNX_t_X = Array{S}(undef, N, N)     # X-axis component
@@ -269,12 +269,12 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     X_t_pn1 = Array{S}(undef, N, N)     # X-axis component
     Y_t_pn1 = Array{S}(undef, N, N)     # Y-axis component
     Z_t_pn1 = Array{S}(undef, N, N)     # Z-axis component
-    
+
     # Temporary post-Newtonian accelerations
     pntempX = Array{S}(undef, N)        # X-axis component
     pntempY = Array{S}(undef, N)        # Y-axis component
     pntempZ = Array{S}(undef, N)        # Z-axis component
-    # Full post-Newtonian accelerations 
+    # Full post-Newtonian accelerations
     postNewtonX = Array{S}(undef, N)    # X-axis component
     postNewtonY = Array{S}(undef, N)    # Y-axis component
     postNewtonZ = Array{S}(undef, N)    # Z-axis component
@@ -297,7 +297,7 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     X_bf_3 = Array{S}(undef, N_ext, N_ext)
     Y_bf_3 = Array{S}(undef, N_ext, N_ext)
     Z_bf_3 = Array{S}(undef, N_ext, N_ext)
-    # Body-fixed frame coordinates 
+    # Body-fixed frame coordinates
     X_bf = Array{S}(undef, N_ext, N_ext)
     Y_bf = Array{S}(undef, N_ext, N_ext)
     Z_bf = Array{S}(undef, N_ext, N_ext)
@@ -354,7 +354,7 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     Snm_cosmλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
     Snm_sinmλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
 
-    # Associated Legendre functions 
+    # Associated Legendre functions
     secϕ_P_nm = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)   # secϕ P_n^m
     P_nm = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)        # Vector of associated Legendre functions
     cosϕ_dP_nm = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)  # cosϕ d/d(sin ϕ)P_n^m
@@ -374,12 +374,12 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
 
     # Rotation matrices
 
-    # R matrix body-fixed -> "primed" (ξ, η, ζ) frame 
+    # R matrix body-fixed -> "primed" (ξ, η, ζ) frame
     # See equation (161) in page 32 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
-    Rb2p = Array{S}(undef, N_ext, N_ext, 3, 3) 
+    Rb2p = Array{S}(undef, N_ext, N_ext, 3, 3)
     # G matrix "space-fixed" -> "primed" (ξ, η, ζ) frame
     # See equation (163) in page 32 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
-    Gc2p = Array{S}(undef, N_ext, N_ext, 3, 3) 
+    Gc2p = Array{S}(undef, N_ext, N_ext, 3, 3)
 
     # Full extended-body accelerations
     accX = Array{S}(undef, N_ext)
@@ -388,7 +388,7 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
 
     # Lunar torques
     # See equation (43) in page 18 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    # Vector of lunar torques 
+    # Vector of lunar torques
     N_MfigM_pmA_x = Array{S}(undef, N_ext)   # x-axis component
     N_MfigM_pmA_y = Array{S}(undef, N_ext)   # y-axis component
     N_MfigM_pmA_z = Array{S}(undef, N_ext)   # z-axis component
@@ -405,8 +405,8 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     # Rotations to and from Earth, Sun and Moon pole-oriented frames
     local αs = deg2rad(α_p_sun*one_t)           # Sun's rotation pole right ascension (radians)
     local δs = deg2rad(δ_p_sun*one_t)           # Sun's rotation pole right ascension (radians)
-    # Space-fixed -> body-fixed coordinate transformations    
-    RotM = Array{S}(undef, 3, 3, 5) 
+    # Space-fixed -> body-fixed coordinate transformations
+    RotM = Array{S}(undef, 3, 3, 5)
     local RotM[:,:,ea] = c2t_jpl_de430(dsj2k)   # Earth
     local RotM[:,:,su] = pole_rotation(αs, δs)  # Sun
     # Lunar mantle Euler angles
@@ -426,8 +426,8 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     RotM[3,3,mo] = cos(θ_m)
     # Lunar mantle frame -> inertial frame -> Lunar core-equatorial frame coord transformation
     # See equation (16) in page 10 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    mantlef2coref = Array{S}(undef, 3, 3) 
-    # Lunar core Euler angle 
+    mantlef2coref = Array{S}(undef, 3, 3)
+    # Lunar core Euler angle
     ϕ_c = q[6N+7]
     # mantlef2coref = R_z(ϕ_c)*[ R_z(ψ_m)*R_x(θ_m)*R_z(ϕ_m) ]^T
     mantlef2coref[1,1] = (( RotM[1,1,mo])*cos(ϕ_c)) + (RotM[1,2,mo]*sin(ϕ_c))
@@ -443,19 +443,19 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     ω_c_CE_1 = (mantlef2coref[1,1]*q[6N+10]) + ((mantlef2coref[1,2]*q[6N+11]) + (mantlef2coref[1,3]*q[6N+12]))
     ω_c_CE_2 = (mantlef2coref[2,1]*q[6N+10]) + ((mantlef2coref[2,2]*q[6N+11]) + (mantlef2coref[2,3]*q[6N+12]))
     ω_c_CE_3 = (mantlef2coref[3,1]*q[6N+10]) + ((mantlef2coref[3,2]*q[6N+11]) + (mantlef2coref[3,3]*q[6N+12]))
-    
+
     # Second zonal harmonic coefficient
     # See Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     local J2E_t = (J2E + J2EDOT*(dsj2k/yr))*(RE_au^2)  # Earth (considering a linear change in time with rate J2EDOT)
     local J2S_t = JSEM[su,2]*one_t                     # Sun (static)
     # Vector of second zonal harmonic coefficients
-    J2_t = Array{S}(undef, 5) 
+    J2_t = Array{S}(undef, 5)
     J2_t[su] = J2S_t             # Earth
     J2_t[ea] = J2E_t             # Sun
     # Lunar torques: overall numerical factor in equation (44) in page 18 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     local N_MfigM_figE_factor = 7.5*μ[ea]*J2E_t
 
-    #= 
+    #=
     Compute point-mass Newtonian accelerations, all bodies
     See equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
     =#
@@ -476,59 +476,59 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
         accY[j] = zero_q_1
         accZ[j] = zero_q_1
     end
-    
+
     for j in 1:N
         for i in 1:N
             # i == j && continue
             if i == j
                 continue
-            else 
+            else
                 # Difference in position \mathbf{r_i} - \mathbf{r_j}
                 X[i,j] = q[3i-2]-q[3j-2]      # X-axis component
                 Y[i,j] = q[3i-1]-q[3j-1]      # Y-axis component
                 Z[i,j] = q[3i]-q[3j]          # Z-axis component
-                
+
                 # Difference in velocity \mathbf{v_i} - \mathbf{v_j}
                 U[i,j] = dq[3i-2]-dq[3j-2]    # X-axis component
                 V[i,j] = dq[3i-1]-dq[3j-1]    # Y-axis component
                 W[i,j] = dq[3i  ]-dq[3j  ]    # Z-axis component
-                
+
                 # Weighted difference in velocity 4\mathbf{v_i} - 3\mathbf{v_j}
                 _4U_m_3X[i,j] = (4dq[3j-2])-(3dq[3i-2]) # X-axis component
                 _4V_m_3Y[i,j] = (4dq[3j-1])-(3dq[3i-1]) # Y-axis component
                 _4W_m_3Z[i,j] = (4dq[3j  ])-(3dq[3i  ]) # Z-axis component
-                
+
                 # Dot product inside [] in the second term
                 pn2x = X[i,j]*_4U_m_3X[i,j]
                 pn2y = Y[i,j]*_4V_m_3Y[i,j]
                 pn2z = Z[i,j]*_4W_m_3Z[i,j]
-                
+
                 # Product of velocity components
                 UU[i,j] = dq[3i-2]*dq[3j-2]   # v_{ix}v_{jx}
                 VV[i,j] = dq[3i-1]*dq[3j-1]   # v_{iy}v_{jy}
                 WW[i,j] = dq[3i  ]*dq[3j  ]   # v_{iz}v_{jz}
-                
+
                 # Dot product of velocities \mathbf{v_i}\cdot\mathbf{v_j}
                 vi_dot_vj[i,j] = ( UU[i,j]+VV[i,j] ) + WW[i,j]
-                
+
                 # Distances r_{ij} = ||\mathbf{r_i} - \mathbf{r_j}||
                 r_p2[i,j] = ( (X[i,j]^2)+(Y[i,j]^2) ) + (Z[i,j]^2) # r_{ij}^2
                 r_p1d2[i,j] = sqrt(r_p2[i,j])                      # r_{ij}
-                r_p3d2[i,j] = r_p2[i,j]^1.5                        # r_{ij}^3  
+                r_p3d2[i,j] = r_p2[i,j]^1.5                        # r_{ij}^3
                 r_p7d2[i,j] = r_p2[i,j]^3.5                        # r_{ij}^7
-                
+
                 # Newtonian coefficient, i.e., mass parameter / distance^3 -> \mu_i / r_{ij}^3
                 newtonianCoeff[i,j] =  μ[i]/r_p3d2[i,j]
-                
+
                 # Second term without (\mathbf{v}_i - \mathbf{v}_j)
                 pn2[i,j] = newtonianCoeff[i,j]*(( pn2x+pn2y ) + pn2z)
-                
+
                 # Newtonian coefficient * difference between two positions, i.e.,
                 # \mu_i * (\mathbf{r_i} - \mathbf{r_j}) / r_{ij}^3
                 newton_acc_X[i,j] = X[i,j]*newtonianCoeff[i,j]    # X-axis component
                 newton_acc_Y[i,j] = Y[i,j]*newtonianCoeff[i,j]    # Y-axis component
                 newton_acc_Z[i,j] = Z[i,j]*newtonianCoeff[i,j]    # Z-axis component
-                
+
                 # Newtonian potential of 1 body \mu_i / r_{ij}
                 newtonian1b_Potential[i,j] = μ[i]/r_p1d2[i, j]
                 # Third term without newtonian accelerations \mathbf{a}_i
@@ -545,7 +545,7 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
                 newtonY[j] = temp_002
                 temp_003 = newtonZ[j] + (Z[i,j]*newtonianCoeff[i,j])  # Z-axis component
                 newtonZ[j] = temp_003
-                # Newtonian potential of N bodies 
+                # Newtonian potential of N bodies
                 # \sum_{i\neq l} \frac{\mu_i}{r_{il}}
                 temp_004 = newtonianNb_Potential[j] + newtonian1b_Potential[i, j]
                 newtonianNb_Potential[j] = temp_004
@@ -561,7 +561,7 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     and equations (173) and (174) in page 33 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
     =#
 
-    # 2nd-order lunar zonal (J_2) and tesseral (C_2, S_2) harmonics coefficients 
+    # 2nd-order lunar zonal (J_2) and tesseral (C_2, S_2) harmonics coefficients
     # times the equatorial radius of the moon squared R_M^2
     # See equation (30) in page 13 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     J2M_t = ( I_M_t[3,3] - ((I_M_t[1,1]+I_M_t[2,2])/2) )/(μ[mo]) # J_{2,M}*R_M^2
@@ -570,7 +570,7 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     S21M_t = (-I_M_t[3,2])/(μ[mo])                               # S_{21,M}*R_M^2
     S22M_t = ((-I_M_t[2,1])/(μ[mo]))/2                           # S_{22,M}*R_M^2
     J2_t[mo] = J2M_t
-    
+
     for j in 1:N_ext
         for i in 1:N_ext
             # i == j && continue
@@ -656,7 +656,7 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
                                 # cosϕP_1^1'
                                 # See equation (183) in page 34 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
                                 # Note: the second term equation (183) vanishes when n = m
-                                cosϕ_dP_nm[i,j,1,1] = sin_ϕ[i,j]*lnm3[1] 
+                                cosϕ_dP_nm[i,j,1,1] = sin_ϕ[i,j]*lnm3[1]
                             else
                                 # Trigonometric identity sin(λ + (m - 1)λ) and cos(λ + (m - 1)λ)
                                 sin_mλ[i,j,m] = (cos_mλ[i,j,m-1]*sin_mλ[i,j,1]) + (sin_mλ[i,j,m-1]*cos_mλ[i,j,1])
@@ -672,7 +672,7 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
                                 cosϕ_dP_nm[i,j,m,m] = (secϕ_P_nm[i,j,m,m]*sin_ϕ[i,j])*lnm3[m]
                             end
                             for n in m+1:n1SEM[mo]
-                                # secϕ P_n^m 
+                                # secϕ P_n^m
                                 # See equation (182) in page 34 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
                                 if n == m+1
                                     secϕ_P_nm[i,j,n,m] = (secϕ_P_nm[i,j,n-1,m]*sin_ϕ[i,j])*lnm1[n,m]
@@ -681,12 +681,12 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
                                 end
                                 # Associate Legendre polynomial of degree n and order m
                                 P_nm[i,j,n,m] = secϕ_P_nm[i,j,n,m]*cos_ϕ[i,j]
-                                # secϕ P_n^m 
+                                # secϕ P_n^m
                                 # See equation (183) in page 34 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
                                 cosϕ_dP_nm[i,j,n,m] = ((secϕ_P_nm[i,j,n,m]*sin_ϕ[i,j])*lnm3[n]) + (secϕ_P_nm[i,j,n-1,m]*lnm4[n,m])
                             end
                         end
-                        
+
                         # Moon: Compute accelerations due to tesseral harmonics C_{nm}, S_{nm}
                         # See equation (28) in page 13 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
                         # and equation (174) in page 33 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
@@ -706,7 +706,7 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
                                 Cnm_sinmλ[i,j,n,m] = CM[n,m]*sin_mλ[i,j,m]
                                 Snm_cosmλ[i,j,n,m] = SM[n,m]*cos_mλ[i,j,m]
                                 Snm_sinmλ[i,j,n,m] = SM[n,m]*sin_mλ[i,j,m]
-                                # Vector sum in equation (173) 
+                                # Vector sum in equation (173)
                                 temp_CS_ξ[i,j,n,m] = (   (  (P_nm[i,j,n,m]*lnm6[n]     )*( Cnm_cosmλ[i,j,n,m] + Snm_sinmλ[i,j,n,m] )  )/temp_rn[i,j,n]   ) + F_CS_ξ_36[i,j]
                                 temp_CS_η[i,j,n,m] = (   (  (secϕ_P_nm[i,j,n,m]*lnm7[m])*( Snm_cosmλ[i,j,n,m] - Cnm_sinmλ[i,j,n,m] )  )/temp_rn[i,j,n]   ) + F_CS_η_36[i,j]
                                 temp_CS_ζ[i,j,n,m] = (   (  (cosϕ_dP_nm[i,j,n,m]       )*( Cnm_cosmλ[i,j,n,m] + Snm_sinmλ[i,j,n,m] )  )/temp_rn[i,j,n]   ) + F_CS_ζ_36[i,j]
@@ -784,7 +784,7 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
                     accY[i] = temp_accY_i[i,j]
                     temp_accZ_i[i,j] = accZ[i] + (μ[j]*F_JCS_z[i,j])
                     accZ[i] = temp_accZ_i[i,j]
-                    
+
                     # Lunar torques
                     if j == mo
                         # Compute torques acting upon the body-figure of the Moon due to external point masses
@@ -805,7 +805,7 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
         end
     end
 
-    #= 
+    #=
     Post-Newtonian corrections to gravitational acceleration
     Post-Newtonian iterative procedure setup and initialization
     See equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
@@ -820,18 +820,18 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
                 _4ϕj[i,j] = 4newtonianNb_Potential[j]
                 # 4*\sum + \sum terms inside {}
                 ϕi_plus_4ϕj[i,j] = newtonianNb_Potential[i] + _4ϕj[i,j]
-                # 2 * ||\mathbf{v_i}||^2 
+                # 2 * ||\mathbf{v_i}||^2
                 _2v2[i,j] = 2v2[i]
                 # \dot{s}_j^2 + 2\dot{s}_i^2 inside {}
                 sj2_plus_2si2[i,j] = v2[j] + _2v2[i,j]
-                # \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {} 
+                # \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {}
                 sj2_plus_2si2_minus_4vivj[i,j] = sj2_plus_2si2[i,j] - (4vi_dot_vj[i,j])
-                # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2  - 4<, > terms inside {} 
+                # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2  - 4<, > terms inside {}
                 ϕs_and_vs[i,j] = sj2_plus_2si2_minus_4vivj[i,j] - ϕi_plus_4ϕj[i,j]
                 # (\mathbf{r}_i - \mathbf{r}_j)\cdot\mathbf{v_i}
-                Xij_t_Ui = X[i,j]*dq[3i-2] 
-                Yij_t_Vi = Y[i,j]*dq[3i-1]   
-                Zij_t_Wi = Z[i,j]*dq[3i]     
+                Xij_t_Ui = X[i,j]*dq[3i-2]
+                Yij_t_Vi = Y[i,j]*dq[3i-1]
+                Zij_t_Wi = Z[i,j]*dq[3i]
                 Rij_dot_Vi = ( Xij_t_Ui+Yij_t_Vi ) + Zij_t_Wi
                 # The expression below inside the (...)^2 should have a minus sign in front of the numerator,
                 # but upon squaring it is eliminated, so at the end of the day, it is irrelevant ;)
@@ -864,7 +864,7 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
                 pNZ_t_Z[i,j] = newtonZ[i]*Z[i,j]   # Z-axis component
                 # Everything inside the {} in the first term
                 pn1[i,j] = (  pn1t1_7[i,j]  +  0.5*( (pNX_t_X[i,j]+pNY_t_Y[i,j]) + pNZ_t_Z[i,j] )  )
-                # Full first term 
+                # Full first term
                 X_t_pn1[i,j] = newton_acc_X[i,j]*pn1[i,j]   # X-axis component
                 Y_t_pn1[i,j] = newton_acc_Y[i,j]*pn1[i,j]   # Y-axis component
                 Z_t_pn1[i,j] = newton_acc_Z[i,j]*pn1[i,j]   # Z-axis component
@@ -873,7 +873,7 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
                 pNX_t_pn3[i,j] = newtonX[i]*pn3[i,j]   # X-axis component
                 pNY_t_pn3[i,j] = newtonY[i]*pn3[i,j]   # Y-axis component
                 pNZ_t_pn3[i,j] = newtonZ[i]*pn3[i,j]   # Z-axis component
-                
+
                 # Temporary post-Newtonian accelerations
                 termpnx = ( X_t_pn1[i,j] + (U_t_pn2[i,j]+pNX_t_pn3[i,j]) )   # X-axis component
                 sumpnx = pntempX[j] + termpnx
@@ -886,7 +886,7 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
                 pntempZ[j] = sumpnz
             end # else (i != j)
         end
-        # Post-Newtonian acelerations 
+        # Post-Newtonian acelerations
         postNewtonX[j] = pntempX[j]*c_m2
         postNewtonY[j] = pntempY[j]*c_m2
         postNewtonZ[j] = pntempZ[j]*c_m2
@@ -906,10 +906,10 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
         dq[3(N+i)  ] = postNewtonZ[i]
     end
 
-    #=  
-    Lunar physical librations 
+    #=
+    Lunar physical librations
     See equations (33)-(35) in pages 15-16 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    =# 
+    =#
 
     # Lunar moment of intertia I times angular velocity ω: Iω
     Iω_x = (I_m_t[1,1]*q[6N+4]) + ((I_m_t[1,2]*q[6N+5]) + (I_m_t[1,3]*q[6N+6])) # x-axis component
@@ -1050,7 +1050,7 @@ function NBP_pN_A_J23E_J23M_J2S!(dq, q, params, t)
     dq[6N+10] = inv_I_c_t[1,1]*Ic_dωc_1 # + ( (inv_I_c_t[1,2]*Ic_dωc_2) + (inv_I_c_t[1,3]*Ic_dωc_3) )
     dq[6N+11] = inv_I_c_t[2,2]*Ic_dωc_2 # + ( (inv_I_c_t[2,1]*Ic_dωc_1) + (inv_I_c_t[2,3]*Ic_dωc_3) )
     dq[6N+12] = inv_I_c_t[3,3]*Ic_dωc_3 # + ( (inv_I_c_t[3,1]*Ic_dωc_1) + (inv_I_c_t[3,2]*Ic_dωc_2) )
-    
+
     # TT-TDB
     # TODO: implement TT-TDB integration
     dq[6N+13] = zero_q_1
@@ -1069,14 +1069,14 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     # N: number of bodies
     # jd0: initial Julian date
     local N, jd0 = params
-    local S = eltype(q)   # Type of positions/velocities components 
-    
+    local S = eltype(q)   # Type of positions/velocities components
+
     local zero_q_1 = zero(q[1])                  # Zero of type S
     local one_t = one(t)                         # One of the same type as time t
     local dsj2k = t+(jd0-J2000)                  # Days since J2000.0 (TDB)
     # Matrix elements of lunar moment of inertia at time t-τ_M (without tidal distortion)
     # See equations (36) to (41) in pages 16-17 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    # ITM(q_del_τ_M, eulang_del_τ_M) 
+    # ITM(q_del_τ_M, eulang_del_τ_M)
     local I_m_t = (ITM_und-I_c).*one_t           # Undistorted moment of inertia of the mantle, see equation (40)
     local dI_m_t = ordpres_differentiate.(I_m_t) # Time-derivative of lunar mantle I at time t-τ_M
     local inv_I_m_t = inv(I_m_t)                 # Inverse of lunar mantle I matrix at time t-τ_M
@@ -1085,11 +1085,11 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     local I_M_t = I_m_t+I_c_t                    # Total I matrix (mantle + core)
 
     #=
-    Point-mass accelerations 
+    Point-mass accelerations
     See equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
-    =# 
+    =#
 
-    # Note: All the following arrays are declared here in order to help @taylorize work 
+    # Note: All the following arrays are declared here in order to help @taylorize work
 
     # Difference between two positions (\mathbf{r}_i - \mathbf{r}_j)
     X = Array{S}(undef, N, N)         # X-axis component
@@ -1099,7 +1099,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     # Distance between two positions r_{ij} = ||\mathbf{r}_i - \mathbf{r}_j||
     r_p2 = Array{S}(undef, N, N)      # r_{ij}^2
     r_p1d2 = Array{S}(undef, N, N)    # sqrt(r_p2) <-> r_{ij}
-    r_p3d2 = Array{S}(undef, N, N)    # r_p2^1.5 <-> r_{ij}^3 
+    r_p3d2 = Array{S}(undef, N, N)    # r_p2^1.5 <-> r_{ij}^3
     r_p7d2 = Array{S}(undef, N, N)    # r_p2^3.5 <-> r_{ij}^7
 
     # Newtonian accelerations \mathbf{a}_{i} = \sum_{i\neq j} mu_i * (\mathbf{r_i} - \mathbf{r_j}) / r_{ij}^3
@@ -1128,10 +1128,10 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
 
     # Newtonian potential of 1 body \mu_i / r_{ij}
     newtonian1b_Potential = Array{S}(undef, N, N)
-    # Newtonian potential of N bodies 
+    # Newtonian potential of N bodies
     # \sum_{i\neq l} \frac{\mu_i}{r_{il}}
     newtonianNb_Potential = Array{S}(undef, N)
-    
+
     # Newtonian coefficient * difference between two positions, i.e.,
     # \mu_i * (\mathbf{r_i} - \mathbf{r_j}) / r_{ij}^3
     newton_acc_X = Array{S}(undef, N, N)
@@ -1140,7 +1140,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
 
     # Combinations of velocities
     v2 = Array{S}(undef, N)                # Velocity magnitude squared ||\mathbf{v}_i||^2
-    _2v2 = Array{S}(undef, N, N)           # 2 * ||\mathbf{v_i}||^2 
+    _2v2 = Array{S}(undef, N, N)           # 2 * ||\mathbf{v_i}||^2
     vi_dot_vj = Array{S}(undef, N, N)      # Dot product of two velocities \mathbf{v}_i\cdot\mathbf{v}_j
 
     # Second term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
@@ -1167,7 +1167,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     ϕi_plus_4ϕj = Array{S}(undef, N, N)     # 4*\sum + \sum terms inside {}
     sj2_plus_2si2 = Array{S}(undef, N, N)   # \dot{s}_j^2 + 2\dot{s}_i^2 inside {}
     sj2_plus_2si2_minus_4vivj = Array{S}(undef, N, N)  # \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {}
-    ϕs_and_vs = Array{S}(undef, N, N)       # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2  - 4<, > terms inside {} 
+    ϕs_and_vs = Array{S}(undef, N, N)       # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2  - 4<, > terms inside {}
     pn1t1_7 = Array{S}(undef, N, N)         # Everything inside the {} in the first term except for the term with accelerations (last)
     # Last term inside the {}
     pNX_t_X = Array{S}(undef, N, N)     # X-axis component
@@ -1184,7 +1184,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     pntempX = Array{S}(undef, N)        # X-axis component
     pntempY = Array{S}(undef, N)        # Y-axis component
     pntempZ = Array{S}(undef, N)        # Z-axis component
-    # Full post-Newtonian accelerations 
+    # Full post-Newtonian accelerations
     postNewtonX = Array{S}(undef, N)    # X-axis component
     postNewtonY = Array{S}(undef, N)    # Y-axis component
     postNewtonZ = Array{S}(undef, N)    # Z-axis component
@@ -1207,7 +1207,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     X_bf_3 = Array{S}(undef, N_ext, N_ext)
     Y_bf_3 = Array{S}(undef, N_ext, N_ext)
     Z_bf_3 = Array{S}(undef, N_ext, N_ext)
-    # Body-fixed frame coordinates 
+    # Body-fixed frame coordinates
     X_bf = Array{S}(undef, N_ext, N_ext)
     Y_bf = Array{S}(undef, N_ext, N_ext)
     Z_bf = Array{S}(undef, N_ext, N_ext)
@@ -1264,7 +1264,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     Snm_cosmλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
     Snm_sinmλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
 
-    # Associated Legendre functions 
+    # Associated Legendre functions
     secϕ_P_nm = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)   # secϕ P_n^m
     P_nm = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)        # Vector of associated Legendre functions
     cosϕ_dP_nm = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)  # cosϕ d/d(sin ϕ)P_n^m# Accelerations due to second zonal harmonic
@@ -1284,7 +1284,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
 
     # Rotation matrices
 
-    # R matrix body-fixed -> "primed" (ξ, η, ζ) frame 
+    # R matrix body-fixed -> "primed" (ξ, η, ζ) frame
     # See equation (161) in page 32 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
     Rb2p = Array{S}(undef, N_ext, N_ext, 3, 3)
     # G matrix "space-fixed" -> "primed" (ξ, η, ζ) frame
@@ -1298,7 +1298,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
 
     # Lunar torques
     # See equation (43) in page 18 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    # Vector of lunar torques 
+    # Vector of lunar torques
     N_MfigM_pmA_x = Array{S}(undef, N_ext)   # x-axis component
     N_MfigM_pmA_y = Array{S}(undef, N_ext)   # y-axis component
     N_MfigM_pmA_z = Array{S}(undef, N_ext)   # z-axis component
@@ -1315,8 +1315,8 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     # Rotations to and from Earth, Sun and Moon pole-oriented frames
     local αs = deg2rad(α_p_sun*one_t)           # Sun's rotation pole right ascension (radians)
     local δs = deg2rad(δ_p_sun*one_t)           # Sun's rotation pole right ascension (radians)
-    # Space-fixed -> body-fixed coordinate transformations    
-    RotM = Array{S}(undef, 3, 3, 5) 
+    # Space-fixed -> body-fixed coordinate transformations
+    RotM = Array{S}(undef, 3, 3, 5)
     local RotM[:,:,ea] = c2t_jpl_de430(dsj2k)   # Earth
     local RotM[:,:,su] = pole_rotation(αs, δs)  # Sun
     # Lunar mantle Euler angles
@@ -1337,7 +1337,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     # Lunar mantle frame -> inertial frame -> Lunar core-equatorial frame coord transformation
     # See equation (16) in page 10 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     mantlef2coref = Array{S}(undef, 3, 3) # lunar mantle frame -> inertial frame -> lunar core-equatorial frame coord transformation
-    # Lunar core Euler angle 
+    # Lunar core Euler angle
     ϕ_c = q[6N+7]
     # mantlef2coref = R_z(ϕ_c)*[ R_z(ψ_m)*R_x(θ_m)*R_z(ϕ_m) ]^T
     mantlef2coref[1,1] = (( RotM[1,1,mo])*cos(ϕ_c)) + (RotM[1,2,mo]*sin(ϕ_c))
@@ -1365,7 +1365,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     # Lunar torques: overall numerical factor in equation (44) in page 18 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     local N_MfigM_figE_factor = 7.5*μ[ea]*J2E_t
 
-    #= 
+    #=
     Compute point-mass Newtonian accelerations, all bodies
     See equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
     =#
@@ -1414,7 +1414,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
                 pn2y = Y[i,j]*_4V_m_3Y[i,j]
                 pn2z = Z[i,j]*_4W_m_3Z[i,j]
 
-                # Product of velocity components 
+                # Product of velocity components
                 UU[i,j] = dq[3i-2]*dq[3j-2]   # v_{ix}v_{jx}
                 VV[i,j] = dq[3i-1]*dq[3j-1]   # v_{iy}v_{jy}
                 WW[i,j] = dq[3i  ]*dq[3j  ]   # v_{iz}v_{jz}
@@ -1425,8 +1425,8 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
                 # Distances r_{ij} = ||\mathbf{r_i} - \mathbf{r_j}||
                 r_p2[i,j] = ( (X[i,j]^2)+(Y[i,j]^2) ) + (Z[i,j]^2) # r_{ij}^2
                 r_p1d2[i,j] = sqrt(r_p2[i,j])                      # r_{ij}
-                r_p3d2[i,j] = r_p2[i,j]^1.5                        # r_{ij}^3  
-                r_p7d2[i,j] = r_p2[i,j]^3.5                        # r_{ij}^7 
+                r_p3d2[i,j] = r_p2[i,j]^1.5                        # r_{ij}^3
+                r_p7d2[i,j] = r_p2[i,j]^3.5                        # r_{ij}^7
 
                 # Newtonian coefficient, i.e., mass parameter / distance^3 -> \mu_i / r_{ij}^3
                 newtonianCoeff[i,j] =  μ[i]/r_p3d2[i,j]
@@ -1453,7 +1453,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
                 newtonY[j] = temp_002
                 temp_003 = newtonZ[j] + (Z[i,j]*newtonianCoeff[i,j])  # Z-axis component
                 newtonZ[j] = temp_003
-                # Newtonian potential of N bodies 
+                # Newtonian potential of N bodies
                 # \sum_{i\neq l} \frac{\mu_i}{r_{il}}
                 temp_004 = newtonianNb_Potential[j] + newtonian1b_Potential[i, j]
                 newtonianNb_Potential[j] = temp_004
@@ -1469,7 +1469,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     and equations (173) and (174) in page 33 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
     =#
 
-    # 2nd-order lunar zonal (J_2) and tesseral (C_2, S_2) harmonics coefficients 
+    # 2nd-order lunar zonal (J_2) and tesseral (C_2, S_2) harmonics coefficients
     # times the equatorial radius of the moon squared R_M^2
     # See equation (30) in page 13 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     J2M_t = ( I_M_t[3,3] - ((I_M_t[1,1]+I_M_t[2,2])/2) )/(μ[mo]) # J_{2,M}*R_M^2
@@ -1565,7 +1565,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
                                 # cosϕP_1^1'
                                 # See equation (183) in page 34 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
                                 # Note: the second term equation (183) vanishes when n = m
-                                cosϕ_dP_nm[i,j,1,1] = sin_ϕ[i,j]*lnm3[1] 
+                                cosϕ_dP_nm[i,j,1,1] = sin_ϕ[i,j]*lnm3[1]
                             else
                                 # Trigonometric identity sin(λ + (m - 1)λ) and cos(λ + (m - 1)λ)
                                 sin_mλ[i,j,m] = (cos_mλ[i,j,m-1]*sin_mλ[i,j,1]) + (sin_mλ[i,j,m-1]*cos_mλ[i,j,1])
@@ -1581,7 +1581,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
                                 cosϕ_dP_nm[i,j,m,m] = (secϕ_P_nm[i,j,m,m]*sin_ϕ[i,j])*lnm3[m]
                             end
                             for n in m+1:n1SEM[mo]
-                                # secϕ P_n^m 
+                                # secϕ P_n^m
                                 # See equation (182) in page 34 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
                                 if n == m+1
                                     secϕ_P_nm[i,j,n,m] = (secϕ_P_nm[i,j,n-1,m]*sin_ϕ[i,j])*lnm1[n,m]
@@ -1590,12 +1590,12 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
                                 end
                                 # Associate Legendre polynomial of degree n and order m
                                 P_nm[i,j,n,m] = secϕ_P_nm[i,j,n,m]*cos_ϕ[i,j]
-                                # secϕ P_n^m 
+                                # secϕ P_n^m
                                 # See equation (183) in page 34 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
                                 cosϕ_dP_nm[i,j,n,m] = ((secϕ_P_nm[i,j,n,m]*sin_ϕ[i,j])*lnm3[n]) + (secϕ_P_nm[i,j,n-1,m]*lnm4[n,m])
                             end
                         end
-                        
+
                         # Moon: Compute accelerations due to tesseral harmonics C_{nm}, S_{nm}
                         # See equation (28) in page 13 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
                         # and equation (174) in page 33 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
@@ -1615,7 +1615,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
                                 Cnm_sinmλ[i,j,n,m] = CM[n,m]*sin_mλ[i,j,m]
                                 Snm_cosmλ[i,j,n,m] = SM[n,m]*cos_mλ[i,j,m]
                                 Snm_sinmλ[i,j,n,m] = SM[n,m]*sin_mλ[i,j,m]
-                                # Vector sum in equation (173) 
+                                # Vector sum in equation (173)
                                 temp_CS_ξ[i,j,n,m] = (   (  (P_nm[i,j,n,m]*lnm6[n]     )*( Cnm_cosmλ[i,j,n,m] + Snm_sinmλ[i,j,n,m] )  )/temp_rn[i,j,n]   ) + F_CS_ξ_36[i,j]
                                 temp_CS_η[i,j,n,m] = (   (  (secϕ_P_nm[i,j,n,m]*lnm7[m])*( Snm_cosmλ[i,j,n,m] - Cnm_sinmλ[i,j,n,m] )  )/temp_rn[i,j,n]   ) + F_CS_η_36[i,j]
                                 temp_CS_ζ[i,j,n,m] = (   (  (cosϕ_dP_nm[i,j,n,m]       )*( Cnm_cosmλ[i,j,n,m] + Snm_sinmλ[i,j,n,m] )  )/temp_rn[i,j,n]   ) + F_CS_ζ_36[i,j]
@@ -1714,7 +1714,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
         end
     end
 
-    #= 
+    #=
     Post-Newtonian corrections to gravitational acceleration
     Post-Newtonian iterative procedure setup and initialization
     See equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
@@ -1729,13 +1729,13 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
                 _4ϕj[i,j] = 4newtonianNb_Potential[j]
                 # 4*\sum + \sum terms inside {}
                 ϕi_plus_4ϕj[i,j] = newtonianNb_Potential[i] + _4ϕj[i,j]
-                # 2 * ||\mathbf{v_i}||^2 
+                # 2 * ||\mathbf{v_i}||^2
                 _2v2[i,j] = 2v2[i]
                 # \dot{s}_j^2 + 2\dot{s}_i^2 inside {}
                 sj2_plus_2si2[i,j] = v2[j] + _2v2[i,j]
                 # \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {}
                 sj2_plus_2si2_minus_4vivj[i,j] = sj2_plus_2si2[i,j] - (4vi_dot_vj[i,j])
-                # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2  - 4<, > terms inside {} 
+                # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2  - 4<, > terms inside {}
                 ϕs_and_vs[i,j] = sj2_plus_2si2_minus_4vivj[i,j] - ϕi_plus_4ϕj[i,j]
                 # (\mathbf{r}_i - \mathbf{r}_j)\cdot\mathbf{v_i}
                 Xij_t_Ui = X[i,j]*dq[3i-2]
@@ -1795,7 +1795,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
                 pntempZ[j] = sumpnz
             end # else (i != j)
         end
-        # Post-Newtonian acelerations 
+        # Post-Newtonian acelerations
         postNewtonX[j] = pntempX[j]*c_m2
         postNewtonY[j] = pntempY[j]*c_m2
         postNewtonZ[j] = pntempZ[j]*c_m2
@@ -1815,10 +1815,10 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
         dq[3(N+i)  ] = postNewtonZ[i]
     end
 
-    #=  
-    Lunar physical librations 
+    #=
+    Lunar physical librations
     See equations (33)-(35) in pages 15-16 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    =# 
+    =#
 
     # Lunar moment of intertia I times angular velocity ω: Iω
     Iω_x = (I_m_t[1,1]*q[6N+4]) + ((I_m_t[1,2]*q[6N+5]) + (I_m_t[1,3]*q[6N+6])) # x-axis component
@@ -1970,7 +1970,7 @@ end
 @doc raw"""
     DE430!(dq, q, params, t)
 
-Solar System (JPL DE430/431) dynamical model. This function uses threads and includes all the effects in 
+Solar System (JPL DE430/431) dynamical model. This function uses threads and includes all the effects in
 `NBP_pN_A_J23E_J23M_J2S!` plus
 
 - Tidal secular acceleration of Moon due to rides raised on Earth by both the Moon and the Sun: see equation (32) in page 14 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
@@ -2002,36 +2002,36 @@ the acceleration of the Moon with respect to Earth, for each tide-raising body.
 
 See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!`](@ref).
 """ DE430!
-function DE430!(dq, q, params, t)
+@taylorize function DE430!(dq, q, params, t)
     # N: number of bodies
     # jd0: initial Julian date
     local N, jd0 = params
     # Time Taylor variable
     local __t = Taylor1(t.order)
     # Type of positions/velocities components
-    local S = eltype(q) 
+    local S = eltype(q)
     # Zero of type S
     local zero_q_1 = zero(q[1]) \
-    # One of the same type as time t                 
-    local one_t = one(t)                         
-    # Days since J2000.0 (TDB)  
-    local dsj2k = t+(jd0-J2000)                  
-    
-    # Short backward integration needed to evaluate time-delayed tidal interactions 
+    # One of the same type as time t
+    local one_t = one(t)
+    # Days since J2000.0 (TDB)
+    local dsj2k = t+(jd0-J2000)
+
+    # Short backward integration needed to evaluate time-delayed tidal interactions
 
     # Parameters
-    local params_bwd = (N_bwd, jd0)    
+    local params_bwd = (N_bwd, jd0)
     # Positions
     local qq_bwd = Taylor1.(constant_term.(  q[ union(nbodyind(N,1:N_bwd),6N+1:6N+13) ]), t.order )::Vector{S}
     # Velocities
-    local dqq_bwd = similar(qq_bwd)    
+    local dqq_bwd = similar(qq_bwd)
     # Vector of auxiliaries
     local xaux_bwd = similar(qq_bwd)
     # Backward integration
     # TO DO: Used taylorized method instead of default jetcoeffs!
     local jc = TaylorIntegration.jetcoeffs!(NBP_pN_A_J23E_J23M_J2S_threads!, t, qq_bwd, dqq_bwd, xaux_bwd, params_bwd)
-    
-    # Evaluation of time-delayed positions 
+
+    # Evaluation of time-delayed positions
     local q_del_τ_M = special_eval(qq_bwd, __t-τ_M)   # τ_M
     local q_del_τ_0 = special_eval(qq_bwd, __t-τ_0p)  # τ_0p
     local q_del_τ_1 = special_eval(qq_bwd, __t-τ_1p)  # τ_1p
@@ -2040,7 +2040,7 @@ function DE430!(dq, q, params, t)
     local eulang_del_τ_M = q_del_τ_M[6N_bwd+1:6N_bwd+3]::Vector{S}
     # Lunar mantle angular velocity delayed τ_M
     local ω_m_del_τ_M = q_del_τ_M[6N_bwd+4:6N_bwd+6]::Vector{S}
-    
+
     # Matrix elements of lunar mantle moment of inertia at time t-τ_M (including tidal distortion)
     # See equations (36) to (41) in pages 16-17 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     local I_m_t = ITM(q_del_τ_M, eulang_del_τ_M, ω_m_del_τ_M)::Matrix{S}
@@ -2051,11 +2051,11 @@ function DE430!(dq, q, params, t)
     local I_M_t = I_m_t+I_c_t                    # Total I matrix (mantle + core)
 
     #=
-    Point-mass accelerations 
+    Point-mass accelerations
     See equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
-    =# 
+    =#
 
-    # Note: All the following arrays are declared here in order to help @taylorize work 
+    # Note: All the following arrays are declared here in order to help @taylorize work
 
     # Difference between two positions (\mathbf{r}_i - \mathbf{r}_j)
     X = Array{S}(undef, N, N)         # X-axis component
@@ -2065,7 +2065,7 @@ function DE430!(dq, q, params, t)
     # Distance between two positions r_{ij} = ||\mathbf{r}_i - \mathbf{r}_j||
     r_p2 = Array{S}(undef, N, N)      # r_{ij}^2
     r_p1d2 = Array{S}(undef, N, N)    # sqrt(r_p2) <-> r_{ij}
-    r_p3d2 = Array{S}(undef, N, N)    # r_p2^1.5 <-> r_{ij}^3 
+    r_p3d2 = Array{S}(undef, N, N)    # r_p2^1.5 <-> r_{ij}^3
     r_p7d2 = Array{S}(undef, N, N)    # r_p2^3.5 <-> r_{ij}^7
 
     # Newtonian accelerations \mathbf{a}_{i} = \sum_{i\neq j} mu_i * (\mathbf{r_i} - \mathbf{r_j}) / r_{ij}^3
@@ -2094,10 +2094,10 @@ function DE430!(dq, q, params, t)
 
     # Newtonian potential of 1 body \mu_i / r_{ij}
     newtonian1b_Potential = Array{S}(undef, N, N)
-    # Newtonian potential of N bodies 
+    # Newtonian potential of N bodies
     # \sum_{i\neq l} \frac{\mu_i}{r_{il}}
     newtonianNb_Potential = Array{S}(undef, N)
-    
+
     # Newtonian coefficient * difference between two positions, i.e.,
     # \mu_i * (\mathbf{r_i} - \mathbf{r_j}) / r_{ij}^3
     newton_acc_X = Array{S}(undef, N, N)
@@ -2106,7 +2106,7 @@ function DE430!(dq, q, params, t)
 
     # Combinations of velocities
     v2 = Array{S}(undef, N)                # Velocity magnitude squared ||\mathbf{v}_i||^2
-    _2v2 = Array{S}(undef, N, N)           # 2 * ||\mathbf{v_i}||^2 
+    _2v2 = Array{S}(undef, N, N)           # 2 * ||\mathbf{v_i}||^2
     vi_dot_vj = Array{S}(undef, N, N)      # Dot product of two velocities \mathbf{v}_i\cdot\mathbf{v}_j
 
     # Second term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
@@ -2117,10 +2117,10 @@ function DE430!(dq, q, params, t)
     U_t_pn2 = Array{S}(undef, N, N)        # X-axis component
     V_t_pn2 = Array{S}(undef, N, N)        # Y-axis component
     W_t_pn2 = Array{S}(undef, N, N)        # Z-axis component
-    
+
     # Third term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
 
-    # Third term without newtonian accelerations \mathbf{a}_i
+    # Third term without Newtonian accelerations \mathbf{a}_i
     pn3 = Array{S}(undef, N, N)
     # Full third term of equation (35)
     pNX_t_pn3 = Array{S}(undef, N, N)      # X-axis component
@@ -2132,8 +2132,8 @@ function DE430!(dq, q, params, t)
     _4ϕj = Array{S}(undef, N, N)            # 4*\sum term inside {}
     ϕi_plus_4ϕj = Array{S}(undef, N, N)     # 4*\sum + \sum terms inside {}
     sj2_plus_2si2 = Array{S}(undef, N, N)   # \dot{s}_j^2 + 2\dot{s}_i^2 inside {}
-    sj2_plus_2si2_minus_4vivj = Array{S}(undef, N, N)  # \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {} 
-    ϕs_and_vs = Array{S}(undef, N, N)       # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {} 
+    sj2_plus_2si2_minus_4vivj = Array{S}(undef, N, N)  # \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {}
+    ϕs_and_vs = Array{S}(undef, N, N)       # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {}
     pn1t1_7 = Array{S}(undef, N, N)         # Everything inside the {} in the first term except for the term with accelerations (last)
     # Last term inside the {}
     pNX_t_X = Array{S}(undef, N, N)     # X-axis component
@@ -2150,10 +2150,14 @@ function DE430!(dq, q, params, t)
     pntempX = Array{S}(undef, N)        # X-axis component
     pntempY = Array{S}(undef, N)        # Y-axis component
     pntempZ = Array{S}(undef, N)        # Z-axis component
-    # Full post-Newtonian accelerations 
+    # Full post-Newtonian accelerations
     postNewtonX = Array{S}(undef, N)    # X-axis component
     postNewtonY = Array{S}(undef, N)    # Y-axis component
     postNewtonZ = Array{S}(undef, N)    # Z-axis component
+
+    ### TT-TDB computation
+    local L_G_t = L_G*one_t
+    local L_B_t = L_B*one_t
 
     #=
     Extended body accelerations
@@ -2173,7 +2177,7 @@ function DE430!(dq, q, params, t)
     X_bf_3 = Array{S}(undef, N_ext, N_ext)
     Y_bf_3 = Array{S}(undef, N_ext, N_ext)
     Z_bf_3 = Array{S}(undef, N_ext, N_ext)
-    # Body-fixed frame coordinates 
+    # Body-fixed frame coordinates
     X_bf = Array{S}(undef, N_ext, N_ext)
     Y_bf = Array{S}(undef, N_ext, N_ext)
     Z_bf = Array{S}(undef, N_ext, N_ext)
@@ -2230,7 +2234,7 @@ function DE430!(dq, q, params, t)
     Snm_cosmλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
     Snm_sinmλ = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)
 
-    # Associated Legendre functions 
+    # Associated Legendre functions
     secϕ_P_nm = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)   # secϕ P_n^m
     P_nm = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)        # Vector of associated Legendre functions
     cosϕ_dP_nm = Array{S}(undef, N_ext, N_ext, n1SEM[mo]+1, n1SEM[mo]+1)  # cosϕ d/d(sin ϕ)P_n^m# Accelerations due to second zonal harmonic
@@ -2250,13 +2254,13 @@ function DE430!(dq, q, params, t)
 
     # Rotation matrices
 
-    # R matrix body-fixed -> "primed" (ξ, η, ζ) frame 
+    # R matrix body-fixed -> "primed" (ξ, η, ζ) frame
     # See equation (161) in page 32 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
     Rb2p = Array{S}(undef, N_ext, N_ext, 3, 3)
     # G matrix "space-fixed" -> "primed" (ξ, η, ζ) frame
     # See equation (163) in page 32 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
     Gc2p = Array{S}(undef, N_ext, N_ext, 3, 3)
-    
+
     # Full extended-body accelerations
     accX = Array{S}(undef, N_ext)
     accY = Array{S}(undef, N_ext)
@@ -2264,7 +2268,7 @@ function DE430!(dq, q, params, t)
 
     # Lunar torques
     # See equation (43) in page 18 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    # Vector of lunar torques 
+    # Vector of lunar torques
     N_MfigM_pmA_x = Array{S}(undef, N_ext)   # x-axis component
     N_MfigM_pmA_y = Array{S}(undef, N_ext)   # y-axis component
     N_MfigM_pmA_z = Array{S}(undef, N_ext)   # z-axis component
@@ -2281,8 +2285,8 @@ function DE430!(dq, q, params, t)
     # Rotations to and from Earth, Sun and Moon pole-oriented frames
     local αs = deg2rad(α_p_sun*one_t)           # Sun's rotation pole right ascension (radians)
     local δs = deg2rad(δ_p_sun*one_t)           # Sun's rotation pole right ascension (radians)
-    # Space-fixed -> body-fixed coordinate transformations    
-    RotM = Array{S}(undef, 3, 3, 5) 
+    # Space-fixed -> body-fixed coordinate transformations
+    RotM = Array{S}(undef, 3, 3, 5)
     local RotM[:,:,ea] = c2t_jpl_de430(dsj2k)   # Earth
     local RotM[:,:,su] = pole_rotation(αs, δs)  # Sun
     # Lunar mantle Euler angles
@@ -2303,7 +2307,7 @@ function DE430!(dq, q, params, t)
     # Lunar mantle frame -> inertial frame -> Lunar core-equatorial frame coord transformation
     # See equation (16) in page 10 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     mantlef2coref = Array{S}(undef, 3, 3) # lunar mantle frame -> inertial frame -> lunar core-equatorial frame coord transformation
-    # Lunar core Euler angle 
+    # Lunar core Euler angle
     ϕ_c = q[6N+7]
     # mantlef2coref = R_z(ϕ_c)*[ R_z(ψ_m)*R_x(θ_m)*R_z(ϕ_m) ]^T
     mantlef2coref[1,1] = (( RotM[1,1,mo])*cos(ϕ_c)) + (RotM[1,2,mo]*sin(ϕ_c))
@@ -2358,7 +2362,7 @@ function DE430!(dq, q, params, t)
     local r_star_S_1 = R31*q_SE_τ_1 # r-star 1, Sun
     local r_star_S_2 = R32*q_SE_τ_2 # r-star 2, Sun
 
-    #= 
+    #=
     Compute point-mass Newtonian accelerations, all bodies
     See equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
     =#
@@ -2390,39 +2394,39 @@ function DE430!(dq, q, params, t)
                 X[i,j] = q[3i-2]-q[3j-2]      # X-axis component
                 Y[i,j] = q[3i-1]-q[3j-1]      # Y-axis component
                 Z[i,j] = q[3i]-q[3j]          # Z-axis component
-                
+
                 # Difference in velocity \mathbf{v_i} - \mathbf{v_j}
                 U[i,j] = dq[3i-2]-dq[3j-2]    # X-axis component
                 V[i,j] = dq[3i-1]-dq[3j-1]    # Y-axis component
                 W[i,j] = dq[3i  ]-dq[3j  ]    # Z-axis component
-                
+
                 # Weighted difference in velocity 4\mathbf{v_i} - 3\mathbf{v_j}
                 _4U_m_3X[i,j] = (4dq[3j-2])-(3dq[3i-2]) # X-axis component
                 _4V_m_3Y[i,j] = (4dq[3j-1])-(3dq[3i-1]) # Y-axis component
                 _4W_m_3Z[i,j] = (4dq[3j  ])-(3dq[3i  ]) # Z-axis component
-                
+
                 # Dot product inside [] in the second term
                 pn2x = X[i,j]*_4U_m_3X[i,j]
                 pn2y = Y[i,j]*_4V_m_3Y[i,j]
                 pn2z = Z[i,j]*_4W_m_3Z[i,j]
-                
+
                 # Product of velocity components
                 UU[i,j] = dq[3i-2]*dq[3j-2]   # v_{ix}v_{jx}
                 VV[i,j] = dq[3i-1]*dq[3j-1]   # v_{iy}v_{jy}
                 WW[i,j] = dq[3i  ]*dq[3j  ]   # v_{iz}v_{jz}
-                
+
                 # Dot product of velocities \mathbf{v_i}\cdot\mathbf{v_j}
                 vi_dot_vj[i,j] = ( UU[i,j]+VV[i,j] ) + WW[i,j]
-                
+
                 # Distances r_{ij} = ||\mathbf{r_i} - \mathbf{r_j}||
                 r_p2[i,j] = ( (X[i,j]^2)+(Y[i,j]^2) ) + (Z[i,j]^2) # r_{ij}^2
                 r_p1d2[i,j] = sqrt(r_p2[i,j])                      # r_{ij}
-                r_p3d2[i,j] = r_p2[i,j]^1.5                        # r_{ij}^3  
+                r_p3d2[i,j] = r_p2[i,j]^1.5                        # r_{ij}^3
                 r_p7d2[i,j] = r_p2[i,j]^3.5                        # r_{ij}^7
-                
+
                 # Newtonian coefficient, i.e., mass parameter / distance^3 -> \mu_i / r_{ij}^3
                 newtonianCoeff[i,j] =  μ[i]/r_p3d2[i,j]
-                
+
                 # Second term without (\mathbf{v}_i - \mathbf{v}_j)
                 pn2[i,j] = newtonianCoeff[i,j]*(( pn2x+pn2y ) + pn2z)
 
@@ -2431,7 +2435,7 @@ function DE430!(dq, q, params, t)
                 newton_acc_X[i,j] = X[i,j]*newtonianCoeff[i,j]    # X-axis component
                 newton_acc_Y[i,j] = Y[i,j]*newtonianCoeff[i,j]    # Y-axis component
                 newton_acc_Z[i,j] = Z[i,j]*newtonianCoeff[i,j]    # Z-axis component
-                
+
                 # Newtonian potential of 1 body \mu_i / r_{ij}
                 newtonian1b_Potential[i,j] = μ[i]/r_p1d2[i, j]
                 # Third term without newtonian accelerations \mathbf{a}_i
@@ -2441,14 +2445,14 @@ function DE430!(dq, q, params, t)
                 V_t_pn2[i,j] = pn2[i,j]*V[i,j]   # Y-axis component
                 W_t_pn2[i,j] = pn2[i,j]*W[i,j]   # Z-axis component
 
-                # Newtonian accelerations \mathbf{a}_{i} = \sum_{i\neq j} mu_i * (\mathbf{r_i} - \mathbf{r_j}) / r_{ij}^3                
+                # Newtonian accelerations \mathbf{a}_{i} = \sum_{i\neq j} mu_i * (\mathbf{r_i} - \mathbf{r_j}) / r_{ij}^3
                 temp_001 = newtonX[j] + (X[i,j]*newtonianCoeff[i,j])  # X-axis component
                 newtonX[j] = temp_001
                 temp_002 = newtonY[j] + (Y[i,j]*newtonianCoeff[i,j])  # Y-axis component
                 newtonY[j] = temp_002
                 temp_003 = newtonZ[j] + (Z[i,j]*newtonianCoeff[i,j])  # Z-axis component
                 newtonZ[j] = temp_003
-                # Newtonian potential of N bodies 
+                # Newtonian potential of N bodies
                 # \sum_{i\neq l} \frac{\mu_i}{r_{il}}
                 temp_004 = newtonianNb_Potential[j] + newtonian1b_Potential[i, j]
                 newtonianNb_Potential[j] = temp_004
@@ -2464,7 +2468,7 @@ function DE430!(dq, q, params, t)
     and equations (173) and (174) in page 33 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
     =#
 
-    # 2nd-order lunar zonal (J_2) and tesseral (C_2, S_2) harmonics coefficients 
+    # 2nd-order lunar zonal (J_2) and tesseral (C_2, S_2) harmonics coefficients
     # times the equatorial radius of the moon squared R_M^2
     # See equation (30) in page 13 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     J2M_t = ( I_M_t[3,3] - ((I_M_t[1,1]+I_M_t[2,2])/2) )/(μ[mo]) # J_{2,M}*R_M^2
@@ -2542,7 +2546,7 @@ function DE430!(dq, q, params, t)
                         F_J_ξ_36[i,j] = temp_fjξ[i,j,n]
                         F_J_ζ_36[i,j] = temp_fjζ[i,j,n]
                     end
-                    
+
                     # Associate Legendre functions (only for the moon)
                     if j == mo
                         for m in 1:n1SEM[mo]
@@ -2559,7 +2563,7 @@ function DE430!(dq, q, params, t)
                                 # cosϕP_1^1'
                                 # See equation (183) in page 34 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
                                 # Note: the second term equation (183) vanishes when n = m
-                                cosϕ_dP_nm[i,j,1,1] = sin_ϕ[i,j]*lnm3[1] 
+                                cosϕ_dP_nm[i,j,1,1] = sin_ϕ[i,j]*lnm3[1]
                             else
                                 # Trigonometric identity sin(λ + (m - 1)λ) and cos(λ + (m - 1)λ)
                                 sin_mλ[i,j,m] = (cos_mλ[i,j,m-1]*sin_mλ[i,j,1]) + (sin_mλ[i,j,m-1]*cos_mλ[i,j,1])
@@ -2575,7 +2579,7 @@ function DE430!(dq, q, params, t)
                                 cosϕ_dP_nm[i,j,m,m] = (secϕ_P_nm[i,j,m,m]*sin_ϕ[i,j])*lnm3[m]
                             end
                             for n in m+1:n1SEM[mo]
-                                # secϕ P_n^m 
+                                # secϕ P_n^m
                                 # See equation (182) in page 34 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
                                 if n == m+1
                                     secϕ_P_nm[i,j,n,m] = (secϕ_P_nm[i,j,n-1,m]*sin_ϕ[i,j])*lnm1[n,m]
@@ -2584,7 +2588,7 @@ function DE430!(dq, q, params, t)
                                 end
                                 # Associate Legendre polynomial of degree n and order m
                                 P_nm[i,j,n,m] = secϕ_P_nm[i,j,n,m]*cos_ϕ[i,j]
-                                # secϕ P_n^m 
+                                # secϕ P_n^m
                                 # See equation (183) in page 34 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
                                 cosϕ_dP_nm[i,j,n,m] = ((secϕ_P_nm[i,j,n,m]*sin_ϕ[i,j])*lnm3[n]) + (secϕ_P_nm[i,j,n-1,m]*lnm4[n,m])
                             end
@@ -2609,7 +2613,7 @@ function DE430!(dq, q, params, t)
                                 Cnm_sinmλ[i,j,n,m] = CM[n,m]*sin_mλ[i,j,m]
                                 Snm_cosmλ[i,j,n,m] = SM[n,m]*cos_mλ[i,j,m]
                                 Snm_sinmλ[i,j,n,m] = SM[n,m]*sin_mλ[i,j,m]
-                                # Vector sum in equation (173) 
+                                # Vector sum in equation (173)
                                 temp_CS_ξ[i,j,n,m] = (   (  (P_nm[i,j,n,m]*lnm6[n]     )*( Cnm_cosmλ[i,j,n,m] + Snm_sinmλ[i,j,n,m] )  )/temp_rn[i,j,n]   ) + F_CS_ξ_36[i,j]
                                 temp_CS_η[i,j,n,m] = (   (  (secϕ_P_nm[i,j,n,m]*lnm7[m])*( Snm_cosmλ[i,j,n,m] - Cnm_sinmλ[i,j,n,m] )  )/temp_rn[i,j,n]   ) + F_CS_η_36[i,j]
                                 temp_CS_ζ[i,j,n,m] = (   (  (cosϕ_dP_nm[i,j,n,m]       )*( Cnm_cosmλ[i,j,n,m] + Snm_sinmλ[i,j,n,m] )  )/temp_rn[i,j,n]   ) + F_CS_ζ_36[i,j]
@@ -2708,7 +2712,7 @@ function DE430!(dq, q, params, t)
         end
     end
 
-    #= 
+    #=
     Post-Newtonian corrections to gravitational acceleration
     Post-Newtonian iterative procedure setup and initialization
     See equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
@@ -2723,18 +2727,18 @@ function DE430!(dq, q, params, t)
                 _4ϕj[i,j] = 4newtonianNb_Potential[j]
                 # 4*\sum + \sum terms inside {}
                 ϕi_plus_4ϕj[i,j] = newtonianNb_Potential[i] + _4ϕj[i,j]
-                # 2 * ||\mathbf{v_i}||^2 
+                # 2 * ||\mathbf{v_i}||^2
                 _2v2[i,j] = 2v2[i]
                 # \dot{s}_j^2 + 2\dot{s}_i^2 inside {}
                 sj2_plus_2si2[i,j] = v2[j] + _2v2[i,j]
-                # \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {} 
+                # \dot{s}_j^2 + 2\dot{s}_i^2 - 4<, > terms inside {}
                 sj2_plus_2si2_minus_4vivj[i,j] = sj2_plus_2si2[i,j] - (4vi_dot_vj[i,j])
-                # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2  - 4<, > terms inside {} 
+                # -4\sum - \sum + \dot{s}_j^2 + 2\dot{s}_i^2  - 4<, > terms inside {}
                 ϕs_and_vs[i,j] = sj2_plus_2si2_minus_4vivj[i,j] - ϕi_plus_4ϕj[i,j]
                 # (\mathbf{r}_i - \mathbf{r}_j)\cdot\mathbf{v_i}
-                Xij_t_Ui = X[i,j]*dq[3i-2] 
-                Yij_t_Vi = Y[i,j]*dq[3i-1]   
-                Zij_t_Wi = Z[i,j]*dq[3i]     
+                Xij_t_Ui = X[i,j]*dq[3i-2]
+                Yij_t_Vi = Y[i,j]*dq[3i-1]
+                Zij_t_Wi = Z[i,j]*dq[3i]
                 Rij_dot_Vi = ( Xij_t_Ui+Yij_t_Vi ) + Zij_t_Wi
                 # The expression below inside the (...)^2 should have a minus sign in front of the numerator,
                 # but upon squaring it is eliminated, so at the end of the day, it is irrelevant ;)
@@ -2767,7 +2771,7 @@ function DE430!(dq, q, params, t)
                 pNZ_t_Z[i,j] = newtonZ[i]*Z[i,j]   # Z-axis component
                 # Everything inside the {} in the first term
                 pn1[i,j] = (  pn1t1_7[i,j]  +  0.5*( (pNX_t_X[i,j]+pNY_t_Y[i,j]) + pNZ_t_Z[i,j] )  )
-                # Full first term 
+                # Full first term
                 X_t_pn1[i,j] = newton_acc_X[i,j]*pn1[i,j]   # X-axis component
                 Y_t_pn1[i,j] = newton_acc_Y[i,j]*pn1[i,j]   # Y-axis component
                 Z_t_pn1[i,j] = newton_acc_Z[i,j]*pn1[i,j]   # Z-axis component
@@ -2776,7 +2780,7 @@ function DE430!(dq, q, params, t)
                 pNX_t_pn3[i,j] = newtonX[i]*pn3[i,j]   # X-axis component
                 pNY_t_pn3[i,j] = newtonY[i]*pn3[i,j]   # Y-axis component
                 pNZ_t_pn3[i,j] = newtonZ[i]*pn3[i,j]   # Z-axis component
-                
+
                 # Temporary post-Newtonian accelerations
                 termpnx = ( X_t_pn1[i,j] + (U_t_pn2[i,j]+pNX_t_pn3[i,j]) )   # X-axis component
                 sumpnx = pntempX[j] + termpnx
@@ -2789,7 +2793,7 @@ function DE430!(dq, q, params, t)
                 pntempZ[j] = sumpnz
             end # else (i != j)
         end
-        # Post-Newtonian acelerations 
+        # Post-Newtonian acelerations
         postNewtonX[j] = pntempX[j]*c_m2
         postNewtonY[j] = pntempY[j]*c_m2
         postNewtonZ[j] = pntempZ[j]*c_m2
@@ -2841,7 +2845,7 @@ function DE430!(dq, q, params, t)
     k_20E_div_r0s5_S = k_20E/r0s5_S
 
     # Long-period tidal accelerations
-    
+
     # Moon
     a_tid_0_M_x = k_20E_div_r0s5_M*((ρ0s2_M + coeff0_M)*X_bf[mo,ea])
     a_tid_0_M_y = k_20E_div_r0s5_M*((ρ0s2_M + coeff0_M)*Y_bf[mo,ea])
@@ -2859,7 +2863,6 @@ function DE430!(dq, q, params, t)
     y1s_M = r_star_M_1[2]
     z1s_M = r_star_M_1[3]
 
-    
     # Cylindrical coordinates
     ρ1s2_M = (x1s_M^2) + (y1s_M^2)    # Radial (cylindrical) coordinate squared
     ρ1s_M = sqrt(ρ1s2_M)              # Radial (cylindrical) coordinate
@@ -3002,10 +3005,10 @@ function DE430!(dq, q, params, t)
         dq[3(N+i)  ] = postNewtonZ[i]
     end
 
-    #=  
-    Lunar physical librations 
+    #=
+    Lunar physical librations
     See equations (33)-(35) in pages 15-16 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    =# 
+    =#
 
     # Lunar moment of intertia I times angular velocity ω: Iω
     Iω_x = (I_m_t[1,1]*q[6N+4]) + ((I_m_t[1,2]*q[6N+5]) + (I_m_t[1,3]*q[6N+6])) # x-axis component
@@ -3093,7 +3096,7 @@ function DE430!(dq, q, params, t)
     N_3_LMF = (RotM[3,1,mo]*N_MfigM[1]) + ((RotM[3,2,mo]*N_MfigM[2]) + (RotM[3,3,mo]*N_MfigM[3]))
 
     # Torque on the mantle due to the interaction between core and mantle (evaluated in mantle frame)
-    # See equation (45) in page 18 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract    
+    # See equation (45) in page 18 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     N_cmb_1 = (k_ν*(q[6N+10]-q[6N+4])) - (C_c_m_A_c*(q[6N+12]*q[6N+11]))
     N_cmb_2 = (k_ν*(q[6N+11]-q[6N+5])) + (C_c_m_A_c*(q[6N+12]*q[6N+10]))
     N_cmb_3 = (k_ν*(q[6N+12]-q[6N+6]))
@@ -3148,8 +3151,28 @@ function DE430!(dq, q, params, t)
     dq[6N+12] = inv_I_c_t[3,3]*Ic_dωc_3 # + ( (inv_I_c_t[3,1]*Ic_dωc_1) + (inv_I_c_t[3,2]*Ic_dωc_2) )
 
     # TT-TDB
-    # TODO: implement TT-TDB integration
-    dq[6N+13] = zero_q_1
+    α_TTmTDB = -0.5v2[ea] - newtonianNb_Potential[ea] # Eq. (2) Fienga et al. (2009)
+    v4E = v2[ea]^2 # v_Earth^4
+    ϕ_Earth_Newtonian_sq = newtonianNb_Potential[ea]^2
+    β_TTmTDB = ( ϕ_Earth_Newtonian_sq / 2 ) - ( v4E / 8 )  # Eq. (3) Fienga et al. (2009)
+    Threads.@threads for i in 1:N
+        if i == ea
+            continue
+        else
+            β_TTmTDB_i_1 = 4( ((dq[3i-2]*dq[3ea-2])+(dq[3i-1]*dq[3ea-1])) + (dq[3i]*dq[3ea]) )
+            β_TTmTDB_i_2 = newtonianNb_Potential[i] - ( (1.5v2[ea]) + (2v2[i]) )
+            β_TTmTDB_i_3 = (  ((dq[3(N+i)-2]*X[ea,3i-2]) + (dq[3(N+i)-1]*Y[ea,3i-1])) + (dq[3(N+i)]*Z[ea,3i])  )/2
+            vi_dot_rEi = ((dq[3i-2]*X[ea,3i-2]) + (dq[3i-1]*Y[ea,3i-1])) + (dq[3i]*Z[ea,3i])
+            vi_dot_rEi_div_rEi_sq = (vi_dot_rEi/r_p1d2[ea,i])^2
+            β_TTmTDB_i_4 = vi_dot_rEi_div_rEi_sq/2
+            β_TTmTDB_i = ((β_TTmTDB_i_1 + β_TTmTDB_i_2) + (β_TTmTDB_i_3 + β_TTmTDB_i_4))
+            temp_β_TTmTDB = β_TTmTDB + newtonian1b_Potential[i]*β_TTmTDB_i
+            β_TTmTDB = temp_β_TTmTDB
+        end # else (i != j)
+    end
+
+    # Eq. (10) Fienga et al. (2009)
+    dq[6N+13] = ( L_B_t + c_m2*α_TTmTDB)*(one_t + L_B_t - L_G_t) + ( (c_m4*β_TTmTDB) - L_G_t )
 
     nothing
 end
