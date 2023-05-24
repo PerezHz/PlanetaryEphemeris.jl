@@ -2011,7 +2011,7 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
     # Type of positions/velocities components
     local S = eltype(q)
     # Zero of type S
-    local zero_q_1 = zero(q[1]) \
+    local zero_q_1 = zero(q[1])
     # One of the same type as time t
     local one_t = one(t)
     # Days since J2000.0 (TDB)
@@ -3151,7 +3151,7 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
     dq[6N+12] = inv_I_c_t[3,3]*Ic_dωc_3 # + ( (inv_I_c_t[3,1]*Ic_dωc_1) + (inv_I_c_t[3,2]*Ic_dωc_2) )
 
     # TT-TDB
-    α_TTmTDB = -0.5v2[ea] - newtonianNb_Potential[ea] # Eq. (2) Fienga et al. (2009)
+    α_TTmTDB = 0.5v2[ea] + newtonianNb_Potential[ea] # Eq. (2) Fienga et al. (2009)
     v4E = v2[ea]^2 # v_Earth^4
     ϕ_Earth_Newtonian_sq = newtonianNb_Potential[ea]^2
     β_TTmTDB = ( ϕ_Earth_Newtonian_sq / 2 ) - ( v4E / 8 )  # Eq. (3) Fienga et al. (2009)
@@ -3161,18 +3161,18 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
         else
             β_TTmTDB_i_1 = 4( ((dq[3i-2]*dq[3ea-2])+(dq[3i-1]*dq[3ea-1])) + (dq[3i]*dq[3ea]) )
             β_TTmTDB_i_2 = newtonianNb_Potential[i] - ( (1.5v2[ea]) + (2v2[i]) )
-            β_TTmTDB_i_3 = (  ((dq[3(N+i)-2]*X[ea,3i-2]) + (dq[3(N+i)-1]*Y[ea,3i-1])) + (dq[3(N+i)]*Z[ea,3i])  )/2
-            vi_dot_rEi = ((dq[3i-2]*X[ea,3i-2]) + (dq[3i-1]*Y[ea,3i-1])) + (dq[3i]*Z[ea,3i])
+            β_TTmTDB_i_3 = (  ((dq[3(N+i)-2]*X[i,ea]) + (dq[3(N+i)-1]*Y[i,ea])) + (dq[3(N+i)]*Z[i,ea])  ) /2
+            vi_dot_rEi = ((dq[3i-2]*X[ea,i]) + (dq[3i-1]*Y[ea,i])) + (dq[3i]*Z[ea,i])
             vi_dot_rEi_div_rEi_sq = (vi_dot_rEi/r_p1d2[ea,i])^2
             β_TTmTDB_i_4 = vi_dot_rEi_div_rEi_sq/2
-            β_TTmTDB_i = ((β_TTmTDB_i_1 + β_TTmTDB_i_2) + (β_TTmTDB_i_3 + β_TTmTDB_i_4))
-            temp_β_TTmTDB = β_TTmTDB + newtonian1b_Potential[i]*β_TTmTDB_i
+            β_TTmTDB_i = ((β_TTmTDB_i_1 + β_TTmTDB_i_2) + ( β_TTmTDB_i_3 + β_TTmTDB_i_4))
+            temp_β_TTmTDB = β_TTmTDB + (newtonian1b_Potential[i,ea]*β_TTmTDB_i)
             β_TTmTDB = temp_β_TTmTDB
         end # else (i != j)
     end
 
     # Eq. (10) Fienga et al. (2009)
-    dq[6N+13] = ( L_B_t + c_m2*α_TTmTDB)*(one_t + L_B_t - L_G_t) + ( (c_m4*β_TTmTDB) - L_G_t )
+    dq[6N+13] = ( L_B_t - c_m2*α_TTmTDB)*(one_t + L_B_t - L_G_t) + ( (c_m4*β_TTmTDB) - L_G_t )
 
     nothing
 end
