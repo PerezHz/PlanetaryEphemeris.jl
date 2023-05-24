@@ -3151,7 +3151,8 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
     dq[6N+12] = inv_I_c_t[3,3]*Ic_dωc_3 # + ( (inv_I_c_t[3,1]*Ic_dωc_1) + (inv_I_c_t[3,2]*Ic_dωc_2) )
 
     # TT-TDB
-    α_TTmTDB = 0.5v2[ea] + newtonianNb_Potential[ea] # Eq. (2) Fienga et al. (2009)
+    w_LE = (newtonianCoeff[su,ea]*J2_t[su])*((one_t - (3(sin_ϕ[su,ea]^2)))/2) # Eq. (7) Folkner et al. (2014)
+    α_TTmTDB = ((0.5v2[ea]) + newtonianNb_Potential[ea]) + w_LE # Eq. (2) Fienga et al. (2009)
     v4E = v2[ea]^2 # v_Earth^4
     ϕ_Earth_Newtonian_sq = newtonianNb_Potential[ea]^2
     β_TTmTDB = ( ϕ_Earth_Newtonian_sq / 2 ) - ( v4E / 8 )  # Eq. (3) Fienga et al. (2009)
@@ -3172,7 +3173,9 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
     end
 
     # Eq. (10) Fienga et al. (2009)
-    dq[6N+13] = ( L_B_t - c_m2*α_TTmTDB)*(one_t + L_B_t - L_G_t) + ( (c_m4*β_TTmTDB) - L_G_t )
+    #   Since the initial condition is in seconds, and the independent variable is in days,
+    #   an additional factor daysec=86400 is needed for unit consistency
+    dq[6N+13] = daysec*(( L_B_t - c_m2*α_TTmTDB)*(one_t + L_B_t - L_G_t) + ( (c_m4*β_TTmTDB) - L_G_t ))
 
     nothing
 end

@@ -15,19 +15,19 @@ const astic_2000 = readdlm( astic_2000_fname )
 @doc raw"""
     initialcond(N::Int, jd0::T = datetime2julian(DateTime(1969,6,28,0,0,0)))
 
-Return a vector with the initial conditions (`3N` positions [au] + `3N` velocities [au/day] + 
+Return a vector with the initial conditions (`3N` positions [au] + `3N` velocities [au/day] +
 3 lunar mantle Euler angles [rad] + 3 mantle angular velocities [rad/day] +
 3 lunar core Euler angles [rad] + 3 core angular velocities [rad/day] +
-DE430 TT-TDB at initial epoch [days]) for the integration. Two possible values of `jd0` 
+DE430 TT-TDB at initial epoch [days]) for the integration. Two possible values of `jd0`
 are supported:
 
 - If `jd0 == datetime2julian(DateTime(1969,6,28,0,0,0))`, planets (+ Sun & Moon) and asteroids initial conditions are retrieved from files `ss11ic_1969Jun28.txt` and `ast343ic_1969Jun28.txt` respectively.
 
 - If `jd0 == datetime2julian(DateTime(2000,1,1,12))`, planets (+ Sun & Moon) and asteroids initial conditions are retrieved from files `ss11ic.txt` and `ast343ic.txt` respectively.
 
-For the initial conditions at 1969-Jun-28.0 see Tables 5 and 6 in page 47 (Sun + Planets + 
-Moon positions and velocities), Table 7 in page 49 (lunar mantle and core libration 
-angles/rates) and Table 13 in pages 60-74 (asteroids positions and velocities) of 
+For the initial conditions at 1969-Jun-28.0 see Tables 5 and 6 in page 47 (Sun + Planets +
+Moon positions and velocities), Table 7 in page 49 (lunar mantle and core libration
+angles/rates) and Table 13 in pages 60-74 (asteroids positions and velocities) of
 https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract.
 """
 function initialcond(N::Int, jd0::T = datetime2julian(DateTime(1969,6,28,0,0,0))) where {T <: Real}
@@ -49,7 +49,7 @@ function initialcond(N::Int, jd0::T = datetime2julian(DateTime(1969,6,28,0,0,0))
         q0[6N+7:6N+9] .= [-0.00241990927040684100, 0.41101946488652730000, -0.46309468558363680000]    # Lunar core Euler angles
         q0[6N+10:6N+12] .= [-0.00661836772247824400, -0.00107295445159005100, 0.22964879652299730000]  # Lunar core angular velocity vector (mantle frame)
         # DE430 TT-TDB at initial epoch
-        q0[6N+13] = -0.00016266592104301078 
+        q0[6N+13] = -0.00016266592104301078
     # 2000-Jan-1.5 (TDB)
     elseif dt0 == dt0_2000
         smppic = ssic_2000
@@ -61,7 +61,7 @@ function initialcond(N::Int, jd0::T = datetime2julian(DateTime(1969,6,28,0,0,0))
         q0[6N+7:6N+9] .= [0.0025514083634858424, 0.4093771628786826, 2560.1154745041295]       # Lunar core Euler angles
         q0[6N+10:6N+12] .= [0.006443733086714832, -0.0005981799500672227, 0.22968509873693774] # Lunar core angular velocity vector (mantle frame)
         # DE430 TT-TDB at initial epoch
-        q0[6N+13] = 9.930292723454279e-5 
+        q0[6N+13] = 9.930292723454279e-5
     # Neither 1969-Jun-28 (TDB) or 2000-Jan-1.5 (TDB)
     else
         #@assert(false, "Initial time must either correspond to $(dt0_1969) or $(dt0_2000).")

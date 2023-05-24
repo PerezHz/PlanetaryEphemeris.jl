@@ -205,7 +205,7 @@ for V_dense in (:(Val{true}), :(Val{false}))
             _jd0, _tspan, _abstol = promote(jd0, tspan, abstol)
 
             return propagate(maxsteps, _jd0, _tspan, $V_dense(); dynamics = dynamics, nast = nast, order = order,
-                             abstol = abstol, parse_eqs = parse_eqs)
+                             abstol = _abstol, parse_eqs = parse_eqs)
 
         end
 
