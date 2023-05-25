@@ -5,7 +5,7 @@ const PE = PlanetaryEphemeris
 const src_path = dirname(pathof(PlanetaryEphemeris))
 
 # Integration parameters
-const order = 30
+const order = 25
 const abstol = 1.0E-20
 
 # Important bodies indices 
