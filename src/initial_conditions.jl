@@ -1,6 +1,3 @@
-# Special method for Float128
-julian2datetime(jd::Float128) = julian2datetime(Float64(jd))
-
 # Planets (+ Sun & Moon) initial conditions file
 const ssic_1969_fname = joinpath( src_path, "ss11ic_1969Jun28.txt" )
 const ssic_1969 = readdlm( ssic_1969_fname )
@@ -16,7 +13,7 @@ const astic_2000_fname = joinpath( src_path, "ast343ic.txt" )
 const astic_2000 = readdlm( astic_2000_fname )
 
 @doc raw"""
-    initialcond(N, jd0::Float64=datetime2julian(DateTime(1969,6,28,0,0,0)))
+    initialcond(N::Int, jd0::T = datetime2julian(DateTime(1969,6,28,0,0,0)))
 
 Return a vector with the initial conditions (`3N` positions [au] + `3N` velocities [au/day] + 
 3 lunar mantle Euler angles [rad] + 3 mantle angular velocities [rad/day] +
@@ -33,11 +30,11 @@ Moon positions and velocities), Table 7 in page 49 (lunar mantle and core librat
 angles/rates) and Table 13 in pages 60-74 (asteroids positions and velocities) of 
 https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract.
 """
-function initialcond(N, jd0::T = datetime2julian(DateTime(1969,6,28,0,0,0))) where {T <: Real}
+function initialcond(N::Int, jd0::T = datetime2julian(DateTime(1969,6,28,0,0,0))) where {T <: Real}
     # Output from JPL Horizons
 
     q0 = Array{T}(undef, 6N+13)           # Initial conditions array
-    dt0 = julian2datetime(jd0)            # Convert jd0 to DateTime
+    dt0 = julian2datetime(Float64(jd0))            # Convert jd0 to DateTime
     dt0_1969 = DateTime(1969,6,28,0,0,0)  # 1969-Jun-28 (TDB)
     dt0_2000 = DateTime(2000,1,1,12)      # 2000-Jan-1.5 (TDB)
 
