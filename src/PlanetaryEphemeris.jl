@@ -12,6 +12,7 @@ export PE, au, yr, sundofs, earthdofs, c_au_per_day, μ, NBP_pN_A_J23E_J23M_J2S!
 
 using AutoHashEquals
 using TaylorIntegration, LinearAlgebra
+using TaylorSeries: numtype
 using Printf
 using Dates: DateTime, datetime2julian, year
 using DelimitedFiles

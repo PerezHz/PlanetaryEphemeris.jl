@@ -9557,7 +9557,7 @@ end
 function TaylorIntegration._allocate_jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::AbstractArray{Taylor1{_S}, _N}, dq::AbstractArray{Taylor1{_S}, _N}, params) where {_T <: Real, _S <: Number, _N}
     order = t.order
     local (N, jd0) = params
-    local __t = Taylor1(t.order)
+    local __t = Taylor1(numtype(t), t.order)
     local S = eltype(q)
     local zero_q_1 = zero(q[1])
     local one_t = one(t)
@@ -12419,7 +12419,7 @@ function TaylorIntegration.jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::Abstract
     tmp1731 = __ralloc.v4[92]
     tmp1732 = __ralloc.v4[93]
     local (N, jd0) = params
-    local __t = Taylor1(t.order)
+    local __t = Taylor1(numtype(t), t.order)
     local S = eltype(q)
     local zero_q_1 = zero(q[1])
     local one_t = one(t)

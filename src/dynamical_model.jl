@@ -2007,7 +2007,7 @@ function DE430!(dq, q, params, t)
     # jd0: initial Julian date
     local N, jd0 = params
     # Time Taylor variable
-    local __t = Taylor1(t.order)
+    local __t = Taylor1(numtype(t), t.order)
     # Type of positions/velocities components
     local S = eltype(q)
     # Zero of type S

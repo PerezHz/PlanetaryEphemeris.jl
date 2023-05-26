@@ -84,10 +84,7 @@ function main(maxsteps::Int, jd0_datetime::DateTime, nyears::Float64, dynamics::
     sol = propagate(maxsteps, jd0, nyears, Val(true), dynamics = dynamics, nast = nast, order = order, abstol = abstol, 
                     parse_eqs = parse_eqs)
 
-    # Total number of bodies (Sun + 8 Planets + Moon + Pluto + Asteroids)
-    N = 11 + nast
-
-    selecteph2jld2(sol, bodyind, nyears, N)
+    selecteph2jld2(sol, bodyind, nyears)
 
     nothing 
 end 
