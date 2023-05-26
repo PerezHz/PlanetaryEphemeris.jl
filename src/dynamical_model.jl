@@ -2105,9 +2105,10 @@ function DE430!(dq, q, params, t)
     newton_acc_Z = Array{S}(undef, N, N)
 
     # Combinations of velocities
-    v2 = Array{S}(undef, N)                # Velocity magnitude squared ||\mathbf{v}_i||^2
-    _2v2 = Array{S}(undef, N, N)           # 2 * ||\mathbf{v_i}||^2
-    vi_dot_vj = Array{S}(undef, N, N)      # Dot product of two velocities \mathbf{v}_i\cdot\mathbf{v}_j
+    v2 = Array{S}(undef, N)                       # Velocity magnitude squared ||\mathbf{v}_i||^2
+    _2v2 = Array{S}(undef, N, N)                  # 2 * ||\mathbf{v_i}||^2
+    vi_dot_vj = Array{S}(undef, N, N)             # Dot product of two velocities \mathbf{v}_i\cdot\mathbf{v}_j
+    rij_dot_vi_div_rij_sq = Array{S}(undef, N, N) # || \mathbf{r}_{i,j} \cdot \mathbf{v}_j ||^2  /  ||\mathbf{r}_{i,j}||^2
 
     # Second term of equation (35) in page 7 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
 
@@ -2154,10 +2155,6 @@ function DE430!(dq, q, params, t)
     postNewtonX = Array{S}(undef, N)    # X-axis component
     postNewtonY = Array{S}(undef, N)    # Y-axis component
     postNewtonZ = Array{S}(undef, N)    # Z-axis component
-
-    ### TT-TDB computation
-    local L_G_t = L_G*one_t
-    local L_B_t = L_B*one_t
 
     #=
     Extended body accelerations
@@ -2743,9 +2740,9 @@ function DE430!(dq, q, params, t)
                 # The expression below inside the (...)^2 should have a minus sign in front of the numerator,
                 # but upon squaring it is eliminated, so at the end of the day, it is irrelevant ;)
                 # (\mathbf{r}_i - \mathbf{r}_j)\cdot\mathbf{v_i} / r_{ij}
-                pn1t7 = (Rij_dot_Vi^2)/r_p2[i,j]
+                rij_dot_vi_div_rij_sq[i,j] = (Rij_dot_Vi^2)/r_p2[i,j]
                 # Everything inside the {} except for the first and last terms
-                pn1t2_7 = ϕs_and_vs[i,j] - (1.5pn1t7)
+                pn1t2_7 = ϕs_and_vs[i,j] - (1.5rij_dot_vi_div_rij_sq[i,j])
                 # Everything inside the {} except for the last term
                 pn1t1_7[i,j] = c_p2+pn1t2_7
             end # else (i != j)
@@ -3169,12 +3166,10 @@ function DE430!(dq, q, params, t)
         if i == ea
             continue
         else
-            β_TTmTDB_i_1 = 4( ((dq[3i-2]*dq[3ea-2])+(dq[3i-1]*dq[3ea-1])) + (dq[3i]*dq[3ea]) )
+            β_TTmTDB_i_1 = 4vi_dot_vj[i,ea]
             β_TTmTDB_i_2 = newtonianNb_Potential[i] - ( (1.5v2[ea]) + (2v2[i]) )
             β_TTmTDB_i_3 = (  ((dq[3(N+i)-2]*X[i,ea]) + (dq[3(N+i)-1]*Y[i,ea])) + (dq[3(N+i)]*Z[i,ea])  ) /2
-            vi_dot_rEi = ((dq[3i-2]*X[ea,i]) + (dq[3i-1]*Y[ea,i])) + (dq[3i]*Z[ea,i])
-            vi_dot_rEi_div_rEi_sq = (vi_dot_rEi/r_p1d2[ea,i])^2
-            β_TTmTDB_i_4 = vi_dot_rEi_div_rEi_sq/2
+            β_TTmTDB_i_4 = rij_dot_vi_div_rij_sq[i,ea]/2
             β_TTmTDB_i = ((β_TTmTDB_i_1 + β_TTmTDB_i_2) + ( β_TTmTDB_i_3 + β_TTmTDB_i_4))
             temp_β_TTmTDB = β_TTmTDB + (newtonian1b_Potential[i,ea]*β_TTmTDB_i)
             β_TTmTDB = temp_β_TTmTDB
@@ -3185,7 +3180,7 @@ function DE430!(dq, q, params, t)
     # See equation (10) of https://ui.adsabs.harvard.edu/abs/2009A%26A...507.1675F/abstract
     # Since the initial condition is in seconds, and the independent variable is in days,
     # an additional factor daysec=86400 is needed for unit consistency
-    dq[6N+13] = daysec*(( L_B_t - c_m2*α_TTmTDB)*(one_t + L_B_t - L_G_t) + ( (c_m4*β_TTmTDB) - L_G_t ))
+    dq[6N+13] = daysec*(( L_B - (c_m2*α_TTmTDB))*one_plus_L_B_minus_L_G + ( (c_m4*β_TTmTDB) - L_G ))
 
     nothing
 end

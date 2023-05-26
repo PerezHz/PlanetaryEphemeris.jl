@@ -695,4 +695,4 @@ const L_G = 6.969290134e-10 # rate of Terrestrial Time (TT) wrt Geocentric Coord
 const L_B = 1.550519768e-8  # rate of TDB wrt TCB
 const TDB_0 = -65.5e-6daysec # initial offset (days)
 const T_0 = 2443144.5003725 # Julian day
-const one_plus_L_B_minus_L_G = 1
+const one_plus_L_B_minus_L_G = 1 + L_B - L_G
