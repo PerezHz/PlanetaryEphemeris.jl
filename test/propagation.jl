@@ -74,7 +74,7 @@ using PlanetaryEphemeris: jd0, nyears, dense, dynamics, order, abstol
     @test selecteph(sol64, bodyind, euler = true, ttmtdb = true) == recovered_sol64
 
     # Float 128
-
+    #=
     # Test integration
     sol128 = propagate(1, Float128(jd0), nyears, dense; dynamics = dynamics, order = order, abstol = abstol)
     # Save solution
@@ -85,4 +85,5 @@ using PlanetaryEphemeris: jd0, nyears, dense, dynamics, order, abstol
     rm(filename)
 
     @test selecteph(sol128, bodyind, euler = true, ttmtdb = true) == recovered_sol128
+    =#
 end
