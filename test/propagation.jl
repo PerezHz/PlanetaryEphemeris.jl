@@ -4,7 +4,6 @@ using PlanetaryEphemeris
 using Dates
 using Quadmath
 using TaylorIntegration
-using TaylorSeries
 using JLD2
 using Test
 
