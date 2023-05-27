@@ -71,7 +71,7 @@ using PlanetaryEphemeris: order, abstol
     # Float64
 
     # Test integration
-    sol64 = propagate(1, jd0, nyears, dense; dynamics = dynamics, order = order, abstol = abstol, parse_eqs=false)
+    sol64 = propagate(1, jd0, nyears, dense; dynamics = dynamics, order = order, abstol = abstol)
     # Save solution
     filename = selecteph2jld2(sol64, bodyind, nyears)
     # Recovered solution
