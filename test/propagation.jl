@@ -45,6 +45,8 @@ using PlanetaryEphemeris: initialcond, ssic_1969, ssic_2000, astic_1969, astic_2
 
 end
 
+using Downloads
+using SPICE: furnsh, spkgeo
 using PlanetaryEphemeris: order, abstol
 
 @testset "Propagation" begin
@@ -57,8 +59,6 @@ using PlanetaryEphemeris: order, abstol
     local N = 11 + N_ast
     # Indices of bodies to be saved
     local bodyind = 1:(11+16)
-    # Years to be integrated
-    local nyears = 31
     # Starting time of integration
     local jd0 = datetime2julian(DateTime(2000,1,1,12))
     # Number of years
@@ -71,15 +71,51 @@ using PlanetaryEphemeris: order, abstol
     # Float64
 
     # Test integration
-    sol64 = propagate(1, jd0, nyears, dense; dynamics = dynamics, order = order, abstol = abstol)
+    sol64 = propagate(1, jd0, nyears, dense; dynamics = dynamics, order = order, abstol = abstol, parse_eqs=false)
     # Save solution
     filename = selecteph2jld2(sol64, bodyind, nyears)
     # Recovered solution
     recovered_sol64 = JLD2.load(filename, "ss16ast_eph")
-    # Remove file
-    rm(filename)
 
     @test selecteph(sol64, bodyind, euler = true, ttmtdb = true) == recovered_sol64
+
+    LSK = "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls"
+    TTmTDBK = "https://ssd.jpl.nasa.gov/ftp/eph/planets/bsp/TTmTDB.de430.19feb2015.bsp"
+    SPK = "https://ssd.jpl.nasa.gov/ftp/eph/planets/bsp/de430_1850-2150.bsp"
+
+    # Download kernels
+    Downloads.download(LSK, "naif0012.tls")
+    Downloads.download(SPK, "de430_1850-2150.bsp")
+    Downloads.download(TTmTDBK, "TTmTDB.de430.19feb2015.bsp")
+
+    # Load kernels
+    furnsh("naif0012.tls", "de430_1850-2150.bsp", "TTmTDB.de430.19feb2015.bsp")
+
+    ttmtdb_pe = TaylorInterpolant(sol64.t0, sol64.t, sol64.x[:, 6N+13])
+    posvel_pe_su = selecteph(sol64,su)
+    posvel_pe_ea = selecteph(sol64,ea)
+    posvel_pe_mo = selecteph(sol64,mo)
+    posvel_pe_ma = selecteph(sol64,6)
+    posvel_pe_ju = selecteph(sol64,7)
+
+    ttmtdb_jpl(et) = spkgeo(1000000001, et, "J2000", 1000000000)[1][1]
+    posvel_jpl_su(et) = kmsec2auday(spkgeo(10, et, "J2000", 0)[1])
+    posvel_jpl_ea(et) = kmsec2auday(spkgeo(399, et, "J2000", 0)[1])
+    posvel_jpl_mo(et) = kmsec2auday(spkgeo(301, et, "J2000", 0)[1])
+    posvel_jpl_ma(et) = kmsec2auday(spkgeo(4, et, "J2000", 0)[1])
+    posvel_jpl_ju(et) = kmsec2auday(spkgeo(5, et, "J2000", 0)[1])
+
+    for et in eachindex(sol64.t0:0.25:sol64.t[end])
+        @show abs(ttmtdb_pe(et) - ttmtdb_jpl(et))
+        @show norm(posvel_jpl_su(et) - posvel_pe_su(et), Inf)
+        @show norm(posvel_jpl_ea(et) - posvel_pe_ea(et), Inf)
+        @show norm(posvel_jpl_mo(et) - posvel_pe_mo(et), Inf)
+        @show norm(posvel_jpl_ma(et) - posvel_pe_ma(et), Inf)
+        @show norm(posvel_jpl_ju(et) - posvel_pe_ju(et), Inf)
+    end
+
+    # Remove files
+    rm.((filename, "naif0012.tls", "de430_1850-2150.bsp", "TTmTDB.de430.19feb2015.bsp"))
 
     # Float 128
     #=
