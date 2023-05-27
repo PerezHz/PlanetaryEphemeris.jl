@@ -48,6 +48,7 @@ end
 using Downloads
 using SPICE: furnsh, spkgeo
 using PlanetaryEphemeris: order, abstol
+using LinearAlgebra: norm
 
 @testset "Propagation" begin
 
