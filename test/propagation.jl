@@ -45,7 +45,7 @@ using PlanetaryEphemeris: initialcond, ssic_1969, ssic_2000, astic_1969, astic_2
 
 end
 
-using PlanetaryEphemeris: jd0, nyears, dense, dynamics, order, abstol
+using PlanetaryEphemeris: order, abstol
 
 @testset "Propagation" begin
 
@@ -59,6 +59,14 @@ using PlanetaryEphemeris: jd0, nyears, dense, dynamics, order, abstol
     local bodyind = 1:(11+16)
     # Years to be integrated
     local nyears = 31
+    # Starting time of integration
+    local jd0 = datetime2julian(DateTime(2000,1,1,12))
+    # Number of years
+    local nyears = 2031.0 - year(julian2datetime(jd0))
+    # Dense output
+    local dense = Val(true)
+    # Dynamical function
+    local dynamics = DE430!
 
     # Float64
 
