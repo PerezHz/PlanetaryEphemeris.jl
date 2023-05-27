@@ -15,5 +15,7 @@ using PrecompileTools
         # All calls in this block will be precompiled, regardless of whether
         # they belong to your package or not (on Julia 1.8 and higher)
         propagate(maxsteps, jd0, nyears, dense; dynamics = dynamics, order = order, abstol = abstol)
+        # Precompile quadruple-precision methods
+        propagate(maxsteps, Float128(jd0), nyears, dense; dynamics = dynamics, order = order, abstol = abstol)
     end
 end
