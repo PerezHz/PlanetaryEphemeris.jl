@@ -106,7 +106,8 @@ using LinearAlgebra: norm
     posvel_jpl_ma(et) = kmsec2auday(spkgeo(4, et, "J2000", 0)[1])
     posvel_jpl_ju(et) = kmsec2auday(spkgeo(5, et, "J2000", 0)[1])
 
-    for et in eachindex(sol64.t0:0.25:sol64.t[end])
+    etv = range(start=sol64.t0, length=5, stop=sol64.t[end])
+    for et in eachindex(etv)
         @show abs(ttmtdb_pe(et) - ttmtdb_jpl(et))
         @show norm(posvel_jpl_su(et) - posvel_pe_su(et), Inf)
         @show norm(posvel_jpl_ea(et) - posvel_pe_ea(et), Inf)
