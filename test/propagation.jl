@@ -92,21 +92,21 @@ using LinearAlgebra: norm
     # Load kernels
     furnsh("naif0012.tls", "de430_1850-2150.bsp", "TTmTDB.de430.19feb2015.bsp")
 
-    ttmtdb_pe = TaylorInterpolant(sol64.t0, sol64.t, sol64.x[:, 6N+13])
-    posvel_pe_su = selecteph(sol64,su)
-    posvel_pe_ea = selecteph(sol64,ea)
-    posvel_pe_mo = selecteph(sol64,mo)
-    posvel_pe_ma = selecteph(sol64,6)
-    posvel_pe_ju = selecteph(sol64,7)
+    ttmtdb_pe = TaylorInterpolant(sol64.t0, sol64.t, sol64.x[:, 6N+13]) # TT-TDB
+    posvel_pe_su = selecteph(sol64,su) # Sun
+    posvel_pe_ea = selecteph(sol64,ea) # Earth
+    posvel_pe_mo = selecteph(sol64,mo) # Moon
+    posvel_pe_ma = selecteph(sol64,6) # Mars
+    posvel_pe_ju = selecteph(sol64,7) # Jupiter
 
-    ttmtdb_jpl(et) = spkgeo(1000000001, et, "J2000", 1000000000)[1][1]
-    posvel_jpl_su(et) = kmsec2auday(spkgeo(10, et, "J2000", 0)[1])
-    posvel_jpl_ea(et) = kmsec2auday(spkgeo(399, et, "J2000", 0)[1])
-    posvel_jpl_mo(et) = kmsec2auday(spkgeo(301, et, "J2000", 0)[1])
-    posvel_jpl_ma(et) = kmsec2auday(spkgeo(4, et, "J2000", 0)[1])
-    posvel_jpl_ju(et) = kmsec2auday(spkgeo(5, et, "J2000", 0)[1])
+    ttmtdb_jpl(et) = spkgeo(1000000001, et, "J2000", 1000000000)[1][1] # TT-TDB
+    posvel_jpl_su(et) = kmsec2auday(spkgeo(10, et, "J2000", 0)[1]) # Sun
+    posvel_jpl_ea(et) = kmsec2auday(spkgeo(399, et, "J2000", 0)[1]) # Earth
+    posvel_jpl_mo(et) = kmsec2auday(spkgeo(301, et, "J2000", 0)[1]) # Moon
+    posvel_jpl_ma(et) = kmsec2auday(spkgeo(4, et, "J2000", 0)[1]) # Mars
+    posvel_jpl_ju(et) = kmsec2auday(spkgeo(5, et, "J2000", 0)[1]) # Jupiter
 
-    etv = range(start=sol64.t0, length=5, stop=sol64.t[end])
+    etv = range(sol64.t0, sol64.t[end], 5)
     for et in eachindex(etv)
         @test abs(ttmtdb_pe(et) - ttmtdb_jpl(et)) < 1e-18
         @test norm(posvel_jpl_su(et) - posvel_pe_su(et), Inf) < 1e-17
