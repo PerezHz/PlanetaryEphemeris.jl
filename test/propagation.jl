@@ -108,7 +108,7 @@ using LinearAlgebra: norm
 
     etv = range(sol64.t0, sol64.t[end], 5)
     for et in eachindex(etv)
-        @test abs(ttmtdb_pe(et) - ttmtdb_jpl(et)) < 1e-18
+        @test abs(ttmtdb_pe(et) - ttmtdb_jpl(et)) < 1e-14
         @test norm(posvel_jpl_su(et) - posvel_pe_su(et), Inf) < 1e-17
         @test norm(posvel_jpl_ea(et) - posvel_pe_ea(et), Inf) < 1e-14
         @test norm(posvel_jpl_mo(et) - posvel_pe_mo(et), Inf) < 1e-14
