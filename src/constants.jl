@@ -1,14 +1,14 @@
 # PlanetaryEphemeris abbreviation
 const PE = PlanetaryEphemeris
 
-# Path to PlanetaryEphemeris src directory 
+# Path to PlanetaryEphemeris src directory
 const src_path = dirname(pathof(PlanetaryEphemeris))
 
 # Integration parameters
 const order = 25
 const abstol = 1.0E-20
 
-# Important bodies indices 
+# Important bodies indices
 const su = 1 # Sun's index
 const ea = 4 # Earth's index
 const mo = 5 # Moon's index
@@ -424,11 +424,11 @@ const UJ_interaction = fill(false, length(μ), length(μ))
 # Sun's J_2 only interacts with the Moon and planets
 UJ_interaction[2:11, su] .= true
 # Earth's grav potential interacts with Sun, Mercury, Venus, Moon, Mars and Jupiter
-UJ_interaction[union(1:ea-1,ea+1:7), ea] .= true 
+UJ_interaction[union(1:ea-1,ea+1:7), ea] .= true
 # Moon's grav potential interacts with Sun, Mercury, Venus, Earth, Mars and Jupiter
-UJ_interaction[union(1:mo-1,mo+1:7), mo] .= true 
+UJ_interaction[union(1:mo-1,mo+1:7), mo] .= true
 
-# Physical constants in various units 
+# Physical constants in various units
 # See Table 4 in page 47 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 const au = 1.495978707E8                       # Astronomical unit value in km
 const yr = 365.25                              # Days in a Julian year
@@ -441,14 +441,15 @@ const c_au_per_sec = clightkms/au              # Speed of light in au per sec
 const c_cm_per_sec = 100_000*clightkms         # Speed of light in cm per sec
 const c_p2 = 29979.063823897606                # Speed of light^2 in au^2/day^2
 const c_m2 = 3.3356611996764786e-5             # Speed of light^-2 in day^2/au^2
+const c_m4 = 1.1126635639027125e-9             # Speed of light^-4 in day^4/au^4
 
 @doc raw"""
     nbodyind(N::Int, i::Int)
     nbodyind(N::Int, ivec::AbstractVector{Int})
 
-Return the indices of the positions and velocities of the `i`-th body (or the 
-`ivec`-th bodies) in a vector with `N` bodies. The function assumes that the vector has 
-the form: `3N` positions + `3N` velocities (+ Lunar physical librations + TT-TDB). 
+Return the indices of the positions and velocities of the `i`-th body (or the
+`ivec`-th bodies) in a vector with `N` bodies. The function assumes that the vector has
+the form: `3N` positions + `3N` velocities (+ Lunar physical librations + TT-TDB).
 """
 nbodyind(N::Int, i::Int) = union(3i-2:3i, 3*(N+i)-2:3*(N+i))
 
@@ -458,14 +459,14 @@ function nbodyind(N::Int, ivec::T) where {T <: AbstractVector{Int}}
         i > N && continue
         a = union(a, nbodyind(N, i))
     end
-    
+
     return sort(a)
 end
 
 const sundofs = nbodyind(length(μ), su)        # Sun's position and velocity indices
 const earthdofs = nbodyind(length(μ), ea)      # Earth's position and velocity indices
 
-const J2000 = 2451545.0                        # 2000 epoch julian date   
+const J2000 = 2451545.0                        # 2000 epoch julian date
 
 # Extended body parameters for the Sun.
 # See Table 9 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
@@ -474,29 +475,29 @@ const R_sun = 696000.0/au                      # Solar radius in au
 const α_p_sun = 286.13                         # Sun's rotation pole right ascension (degrees)
 const δ_p_sun = 63.87                          # Sun's rotation pole declination (degrees)
 
-const RSUN  = 6.9600000000000000E+05           # Solar radius in km  
+const RSUN  = 6.9600000000000000E+05           # Solar radius in km
 const J2SUN = 2.1106088532726840E-07           # Dynamical form–factor of the Sun
 # Second zonal harmonic coefficient J_2 * Suns's radius in au^2
-const JS = [J2SUN*(RSUN/au)^2]                 
+const JS = [J2SUN*(RSUN/au)^2]
 
 # Extended body parameters for the Earth
 # See Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-const RE     =  6.378136300E+03                # Earth's radius in km 
+const RE     =  6.378136300E+03                # Earth's radius in km
 # TODO: solve differences between parsed and non-parsed
 const RE_au = (RE/au)                          # Earth's radius in au
-const J2E    =  1.082625450E-03                # Second zonal harmonic of the Earth 
-const J3E    = -2.532410000E-06                # Third zonal harmonic of the Earth 
-const J4E    = -1.619898000E-06                # Fourth zonal harmonic of the Earth 
-const J5E    = -2.277345000E-07                # Fifth zonal harmonic of the Earth 
+const J2E    =  1.082625450E-03                # Second zonal harmonic of the Earth
+const J3E    = -2.532410000E-06                # Third zonal harmonic of the Earth
+const J4E    = -1.619898000E-06                # Fourth zonal harmonic of the Earth
+const J5E    = -2.277345000E-07                # Fifth zonal harmonic of the Earth
 const J2EDOT = -2.600000000E-11                # Rate of change of J2E in 1/yr
-# Vector of zonal harmonic coefficients J_n * Earth's radius in au ^n 
+# Vector of zonal harmonic coefficients J_n * Earth's radius in au ^n
 const JE = [J2E*(RE/au)^2, J3E*(RE/au)^3, J4E*(RE/au)^4, J5E*(RE/au)^5]
 
 # Extended body parameters for the Moon
 
 # Extended body parameters for the Moon
 # See Table 11 in page 51 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-const RM = 1.7380000000000000E+03            # Lunar radius in km 
+const RM = 1.7380000000000000E+03            # Lunar radius in km
 const R_moon = RM/au                         # Lunar radius in au
 const β_L = 6.3102131934887270E-04           # Lunar moment parameter, β_L = (C_T-A_T)/B_T
 const γ_L = 2.2773171480091860E-04           # Lunar moment parameter, γ_L = (B_T-A_T)/C_T
@@ -518,8 +519,8 @@ const JM = [J2M*R_moon^2, J3M*R_moon^3, J4M*R_moon^4, J5M*R_moon^5, J6M*R_moon^6
 
 # Matrix of zonal harmonic coefficients J_n * radius of the corresponding body ^n
 const JSEM = zeros(5, 6)
-JSEM[su,2:2] = JS     # Sun 
-JSEM[ea,2:5] = JE     # Earth 
+JSEM[su,2:2] = JS     # Sun
+JSEM[ea,2:5] = JE     # Earth
 JSEM[mo,2:6] = JM     # Moon
 
 # Degree of zonal harmonics expansion for each body with extended body accelerations
@@ -534,13 +535,13 @@ const fact1_jsem = [(2n-1)/n for n in 1:max_n1SEM]  # (2n - 1) / n
 const fact2_jsem = [(n-1)/n for n in 1:max_n1SEM]   # (n - 1) / n
 const fact3_jsem = [n for n in 1:max_n1SEM]         # n
 const fact4_jsem = fact3_jsem .+ 1                  # n + 1
-const fact5_jsem = fact3_jsem .+ 2                  # n + 2    
+const fact5_jsem = fact3_jsem .+ 2                  # n + 2
 
 # Lunar tesseral harmonics coefficients (C_{nm}, S_{nm}) with n = 2,...,6 and m = 1,...,n
 # See Table 11 in page 51 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 
 # n = 2, m = 2
-const C22M =  2.2382740590560020E-05          
+const C22M =  2.2382740590560020E-05
 
 # n = 3, m = 1, 2, 3
 const C31M =  2.8480741195592860E-05
@@ -615,16 +616,16 @@ SM[6,1:6] .= S6M    # n = 6
 # See equations (180)-(183) in pages 33-34 of https://ui.adsabs.harvard.edu/abs/1971mfdo.book.....M/abstract
 const lnm1 = [(2n-1)/(n-m) for n in 1:6, m in 1:6]       # (2n - 1) / (n - m)
 const lnm2 = [-(n+m-1)/(n-m) for n in 1:6, m in 1:6]     # -(n + m - 1) / (n - m)
-const lnm3 = [-n for n in 1:6]                           # -n 
+const lnm3 = [-n for n in 1:6]                           # -n
 const lnm4 = [n+m for n in 1:6, m in 1:6]                # (n + m)
 const lnm5 = [2n-1 for n in 1:6]                         # (2n - 1)
 const lnm6 = [-(n+1) for n in 1:6]                       # -(n + 1)
-const lnm7 = [m for m in 1:6]                            # m  
+const lnm7 = [m for m in 1:6]                            # m
 
 # Number of bodies in extended-body accelerations
-const N_ext = 11     
+const N_ext = 11
 # Number of bodies used to compute time-delayed tidal interactions
-const N_bwd = 11                   
+const N_bwd = 11
 
 # Diagonal elements of undistorted lunar mantle moment of inertia
 # See equation (37) in page 16 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
@@ -652,9 +653,9 @@ const ITM_und = diagm([A_T, B_T, C_T]*μ[mo]*R_moon^2)
 const I_c = diagm([A_c, B_c, C_c]*μ[mo]*R_moon^2)
 
 # Lunar distance (km)
-const ld = 384402.0 
+const ld = 384402.0
 # 384399.014 km  mean semi-major axis value was retrieved from:
-# Table 3, page 5, J. G. Williams, D. H. Boggs, and W. M. Folkner (2013). 
+# Table 3, page 5, J. G. Williams, D. H. Boggs, and W. M. Folkner (2013).
 # “DE430 Lunar Orbit, Physical Librations and Surface Coordinates,” JPL IOM 335-JW,
 # DB,WF-20130722-016 (internal document)
 # https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de430_moon_coord.pdf
@@ -682,10 +683,16 @@ const τ_2 = 2.5352978633388720E-03 # Rotational time-lag for semi-diurnal defor
 const μ_mo_div_μ_ea = μ[mo]/μ[ea]                # Ratio of Moon and Earth mass parameters
 const tid_num_coeff = 1.5*(1.0 + μ_mo_div_μ_ea)  # Overall numerical factor in equation (32)
 
-# Standard value of nominal mean angular velocity of Earth (rad/day), 
+# Standard value of nominal mean angular velocity of Earth (rad/day),
 # See Explanatory Supplement to the Astronomical Almanac 2014, section 7.4.3.3,
 # page 296: 7.2921151467e-5 rad/second
 const ω_E = daysec*7.2921151467e-5 # (7.2921151467e-5 rad/sec)*daysec -> rad/day
 
 # Earth/Moon mass ratio
 const EMRAT = 8.1300569074190620E+01
+
+const L_G = 6.969290134e-10 # rate of Terrestrial Time (TT) wrt Geocentric Coordinate Time (TCG)
+const L_B = 1.550519768e-8  # rate of TDB wrt TCB
+const TDB_0 = -65.5e-6daysec # initial offset (days)
+const T_0 = 2443144.5003725 # Julian day
+const one_plus_L_B_minus_L_G = 1 + L_B - L_G

@@ -1,5 +1,5 @@
 @doc raw"""
-    selecteph2jld2(sseph::TaylorInterpolant, bodyind::T, tspan::S, N::Int) where {T <: AbstractVector{Int}, S <: Number}
+    selecteph2jld2(sseph::TaylorInterpolant, bodyind::T, tspan::S) where {T <: AbstractVector{Int}, S <: Number}
 
 Save the ephemeris, contained in `sseph`, of the bodies with indices `bodyind`, in a `.jld2` file named as follows
 
@@ -11,14 +11,13 @@ Save the ephemeris, contained in `sseph`, of the bodies with indices `bodyind`, 
 - `sseph::TaylorInterpolant`: ephemeris of all the bodies.
 - `bodyind::T`: indices of the bodies to be saved.
 - `tspan::S`: time span of the integration (positive -> forward integration / negative -> backward integration).
-- `N::Int`: total number of bodies.
 """
-function selecteph2jld2(sseph::TaylorInterpolant, bodyind::T, tspan::S, N::Int) where {T <: AbstractVector{Int}, S <: Number}
+function selecteph2jld2(sseph::TaylorInterpolant, bodyind::T, tspan::S) where {T <: AbstractVector{Int}, S <: Number}
 
+    # Total number of bodies
+    N = numberofbodies(sseph)
     # Number of asteroids in sseph
     nast = N - 11
-    # indices of the positions and velocities of the bodies to be saved
-    indvec = nbodyind(N, bodyind)
     # Number of asteroids to be saved
     nastout = length(bodyind) - 11
     # Check nastout <= nast
@@ -26,7 +25,7 @@ function selecteph2jld2(sseph::TaylorInterpolant, bodyind::T, tspan::S, N::Int) 
     # Prefix to distinguish between forward (p) / backward (m) integration
     sgn_yrs = signbit(tspan) ? "m" : "p"
     # Number of years
-    nyrs_int = Int(abs(tspan))
+    nyrs_int = floor(Int, abs(tspan))
 
     # Write output to .jld2 file
 
@@ -34,7 +33,7 @@ function selecteph2jld2(sseph::TaylorInterpolant, bodyind::T, tspan::S, N::Int) 
     ss16ast_fname = "sseph$(lpad(nast,3,'0'))ast$(lpad(nastout,3,'0'))_" * sgn_yrs * "$(nyrs_int)y_et.jld2"
 
     # TaylorInterpolant with only the information of the bodies to be saved + Lunar orientation + TT-TDB
-    ss16ast_eph = TaylorInterpolant(sseph.t0, sseph.t, sseph.x[:, union(indvec, 6N+1:6N+13)])
+    ss16ast_eph = selecteph(sseph, bodyind, euler = true, ttmtdb = true)
 
     println("Saving solution to file: ", ss16ast_fname)
 
@@ -134,13 +133,9 @@ Integrate the Solar System via the Taylor method.
 - `jd0::T`: initial Julian date.
 - `tspan::T`: time span of the integration (in Julian days).
 - `::Val{false/true}`: whether to save the Taylor polynomials at each step (`true`) or not (`false`).
-- `output::Bool`: whether to write the output to a file (`true`) or not.
-- `ephfile::String`: name of the file where to save the solution if `ss16ast` is `false`.
 - `dynamics::Function`: dynamical model function.
 - `nast::Int`: number of asteroids to be considered in the integration.
-- `ss16ast::Bool`: whether to save the solution using `selecteph2jld2` (`true`) or not.
-- `bodyind::AbstractVector{Int}`: indices of the bodies to be saved.
-- `order::Int=order`: order of the Taylor expansions to be used in the integration.
+- `order::Int`: order of the Taylor expansions to be used in the integration.
 - `abstol::T`: absolute tolerance.
 - `parse_eqs::Bool`: whether to use the specialized method of `jetcoeffs!` (`true`) created with `@taylorize` or not.
 """ propagate
@@ -162,7 +157,6 @@ for V_dense in (:(Val{true}), :(Val{false}))
 
             # Parameters for dynamical function
             params = (N, jd0)
-
 
             # Final time of integration (days)
             tmax = t0 + tspan*yr
@@ -205,7 +199,7 @@ for V_dense in (:(Val{true}), :(Val{false}))
             _jd0, _tspan, _abstol = promote(jd0, tspan, abstol)
 
             return propagate(maxsteps, _jd0, _tspan, $V_dense(); dynamics = dynamics, nast = nast, order = order,
-                             abstol = abstol, parse_eqs = parse_eqs)
+                             abstol = _abstol, parse_eqs = parse_eqs)
 
         end
 
