@@ -3162,7 +3162,7 @@ See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!
     v4E = v2[ea]^2 # v_Earth^4
     ϕ_Earth_Newtonian_sq = newtonianNb_Potential[ea]^2
     β_TTmTDB = ( ϕ_Earth_Newtonian_sq / 2 ) - ( v4E / 8 )
-    for i in 1:N
+    Threads.@threads for i in 1:N
         if i == ea
             continue
         else
