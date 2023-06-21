@@ -72,7 +72,7 @@ using LinearAlgebra: norm
     # Float64
 
     # Test integration
-    sol64 = propagate(20, jd0, nyears, dense; dynamics = dynamics, order = order, abstol = abstol)
+    sol64 = propagate(20, jd0, nyears, dense; dynamics, order, abstol)
     # Save solution
     filename = selecteph2jld2(sol64, bodyind, nyears)
     # Recovered solution
