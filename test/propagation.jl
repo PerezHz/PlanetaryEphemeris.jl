@@ -107,7 +107,7 @@ using LinearAlgebra: norm
     posvel_jpl_ju(et) = kmsec2auday(spkgeo(5, et, "J2000", 0)[1]) # Jupiter
 
     etv = range(sol64.t0, sol64.t[end], 5)
-    for et in eachindex(etv)
+    for et in etv
         @show abs(ttmtdb_pe(et) - ttmtdb_jpl(et))
         @test abs(ttmtdb_pe(et) - ttmtdb_jpl(et)) < 1e-12
         @test norm(posvel_jpl_su(et) - posvel_pe_su(et), Inf) < 1e-17
