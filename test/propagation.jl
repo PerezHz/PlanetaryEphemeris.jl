@@ -108,12 +108,12 @@ using LinearAlgebra: norm
 
     etv = range(sol64.t0, sol64.t[end], 5)
     for et in eachindex(etv)
-        @test abs(ttmtdb_pe(et) - ttmtdb_jpl(et)) < 1e-14
-        @test norm(posvel_jpl_su(et) - posvel_pe_su(et), Inf) < 1e-17
-        @test norm(posvel_jpl_ea(et) - posvel_pe_ea(et), Inf) < 1e-14
-        @test norm(posvel_jpl_mo(et) - posvel_pe_mo(et), Inf) < 1e-14
-        @test norm(posvel_jpl_ma(et) - posvel_pe_ma(et), Inf) < 1e-14
-        @test norm(posvel_jpl_ju(et) - posvel_pe_ju(et), Inf) < 1e-14
+        @test abs(ttmtdb_jpl(et) - ttmtdb_pe(et/daysec)) < 1e-14
+        @test norm(posvel_jpl_su(et) - posvel_pe_su(et/daysec), Inf) < 1e-17
+        @test norm(posvel_jpl_ea(et) - posvel_pe_ea(et/daysec), Inf) < 1e-14
+        @test norm(posvel_jpl_mo(et) - posvel_pe_mo(et/daysec), Inf) < 1e-14
+        @test norm(posvel_jpl_ma(et) - posvel_pe_ma(et/daysec), Inf) < 1e-14
+        @test norm(posvel_jpl_ju(et) - posvel_pe_ju(et/daysec), Inf) < 1e-14
     end
 
     # Remove files

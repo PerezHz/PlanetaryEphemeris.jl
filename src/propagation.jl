@@ -167,27 +167,11 @@ for V_dense in (:(Val{true}), :(Val{false}))
 
             if $V_dense == Val{true}
 
-                # Parameters for TaylorInterpolant
-
-                # Initial time [ days -> seconds ]
-                et0 = ( (jd0 - J2000) * daysec ) :: T
-
-                # Vector of times [ days -> seconds ]
-                etv = (sol_.t * daysec) :: Vector{T}
-
-                # Vector of Taylor polynomials [ days -> seconds ]
-                sseph_x_et = day2sec(sol_.x) :: Matrix{Taylor1{T}}
-
-                # Save ephemeris in TaylorInterpolant object
-                sseph = TaylorInterpolant{T, T, 2}(et0, etv, sseph_x_et)
-
-                return sseph
+                return TaylorInterpolant{T, T, 2}(jd0 - J2000, sol_.t, sol_.x)
 
             else
 
-                sol = (t = sol_[1][:], x = sol_[2][:, :])
-
-                return sol
+                return sol_[1], sol_[2]
 
             end
 
