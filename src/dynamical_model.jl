@@ -3162,7 +3162,7 @@ function DE430!(dq, q, params, t)
     v4E = v2[ea]^2 # v_Earth^4
     ϕ_Earth_Newtonian_sq = newtonianNb_Potential[ea]^2
     β_TTmTDB = ( ϕ_Earth_Newtonian_sq / 2 ) - ( v4E / 8 )
-    Threads.@threads for i in 1:N
+    for i in 1:N
         if i == ea
             continue
         else
