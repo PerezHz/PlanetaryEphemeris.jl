@@ -109,12 +109,12 @@ using LinearAlgebra: norm
     tv = range(sol64.t0, sol64.t[end], 5)
     for t in tv 
         et = t * daysec
-        @show abs(ttmtdb_jpl(et) - ttmtdb_pe(t))
-        @show norm(posvel_jpl_su(et) - posvel_pe_su(t), Inf)
-        @show norm(posvel_jpl_ea(et) - posvel_pe_ea(t), Inf)
-        @show norm(posvel_jpl_mo(et) - posvel_pe_mo(t), Inf)
-        @show norm(posvel_jpl_ma(et) - posvel_pe_ma(t), Inf)
-        @show norm(posvel_jpl_ju(et) - posvel_pe_ju(t), Inf)
+        @show abs(ttmtdb_jpl(et) - ttmtdb_pe(t)) < 1e-10
+        @show norm(posvel_jpl_su(et) - posvel_pe_su(t), Inf) < 1e-17
+        @show norm(posvel_jpl_ea(et) - posvel_pe_ea(t), Inf) < 1e-14
+        @show norm(posvel_jpl_mo(et) - posvel_pe_mo(t), Inf) < 1e-14
+        @show norm(posvel_jpl_ma(et) - posvel_pe_ma(t), Inf) < 1e-15
+        @show norm(posvel_jpl_ju(et) - posvel_pe_ju(t), Inf) < 1e-15
     end
 
     # Remove files
