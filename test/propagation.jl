@@ -106,15 +106,22 @@ using LinearAlgebra: norm
     posvel_jpl_ma(et) = kmsec2auday(spkgeo(4, et, "J2000", 0)[1]) # Mars
     posvel_jpl_ju(et) = kmsec2auday(spkgeo(5, et, "J2000", 0)[1]) # Jupiter
 
-    etv = range(sol64.t0, sol64.t[end], 5)
-    for et in etv
-        @show abs(ttmtdb_pe(et) - ttmtdb_jpl(et))
-        @test abs(ttmtdb_pe(et) - ttmtdb_jpl(et)) < 1e-12
-        @test norm(posvel_jpl_su(et) - posvel_pe_su(et), Inf) < 1e-17
-        @test norm(posvel_jpl_ea(et) - posvel_pe_ea(et), Inf) < 1e-14
-        @test norm(posvel_jpl_mo(et) - posvel_pe_mo(et), Inf) < 1e-14
-        @test norm(posvel_jpl_ma(et) - posvel_pe_ma(et), Inf) < 1e-14
-        @test norm(posvel_jpl_ju(et) - posvel_pe_ju(et), Inf) < 1e-14
+    tv = range(sol64.t0, sol64.t[end], 5)
+    for t in tv
+        et = t * daysec
+        @show abs(ttmtdb_jpl(et) - ttmtdb_pe(t))
+        @show norm(posvel_jpl_su(et) - posvel_pe_su(t), Inf)
+        @show norm(posvel_jpl_ea(et) - posvel_pe_ea(t), Inf)
+        @show norm(posvel_jpl_mo(et) - posvel_pe_mo(t), Inf)
+        @show norm(posvel_jpl_ma(et) - posvel_pe_ma(t), Inf)
+        @show norm(posvel_jpl_ju(et) - posvel_pe_ju(t), Inf)
+
+        @test abs(ttmtdb_jpl(et) - ttmtdb_pe(t)) < 1e-12
+        @test norm(posvel_jpl_su(et) - posvel_pe_su(t), Inf) < 1e-17
+        @test norm(posvel_jpl_ea(et) - posvel_pe_ea(t), Inf) < 1e-14
+        @test norm(posvel_jpl_mo(et) - posvel_pe_mo(t), Inf) < 1e-14
+        @test norm(posvel_jpl_ma(et) - posvel_pe_ma(t), Inf) < 1e-15
+        @test norm(posvel_jpl_ju(et) - posvel_pe_ju(t), Inf) < 1e-15
     end
 
     # Remove files
