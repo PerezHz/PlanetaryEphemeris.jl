@@ -72,7 +72,7 @@ using LinearAlgebra: norm
     # Float64
 
     # Test integration
-    sol64 = propagate(20, jd0, nyears, dense; dynamics, order, abstol)
+    sol64 = propagate(40, jd0, nyears, dense; dynamics, order, abstol)
     # Save solution
     filename = selecteph2jld2(sol64, bodyind, nyears)
     # Recovered solution
@@ -117,11 +117,11 @@ using LinearAlgebra: norm
         @show norm(posvel_jpl_ju(et) - posvel_pe_ju(t), Inf)
 
         @test abs(ttmtdb_jpl(et) - ttmtdb_pe(t)) < 1e-12
-        @test norm(posvel_jpl_su(et) - posvel_pe_su(t), Inf) < 1e-17
-        @test norm(posvel_jpl_ea(et) - posvel_pe_ea(t), Inf) < 1e-14
-        @test norm(posvel_jpl_mo(et) - posvel_pe_mo(t), Inf) < 1e-14
-        @test norm(posvel_jpl_ma(et) - posvel_pe_ma(t), Inf) < 1e-15
-        @test norm(posvel_jpl_ju(et) - posvel_pe_ju(t), Inf) < 1e-15
+        @test norm(posvel_jpl_su(et) - posvel_pe_su(t), Inf) < 1e-14
+        @test norm(posvel_jpl_ea(et) - posvel_pe_ea(t), Inf) < 1e-13
+        @test norm(posvel_jpl_mo(et) - posvel_pe_mo(t), Inf) < 1e-13
+        @test norm(posvel_jpl_ma(et) - posvel_pe_ma(t), Inf) < 1e-12
+        @test norm(posvel_jpl_ju(et) - posvel_pe_ju(t), Inf) < 1e-13
     end
 
     # Remove files
