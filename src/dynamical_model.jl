@@ -2002,7 +2002,7 @@ the acceleration of the Moon with respect to Earth, for each tide-raising body.
 
 See also [`NBP_pN_A_J23E_J23M_J2S!`](@ref) and [`NBP_pN_A_J23E_J23M_J2S_threads!`](@ref).
 """ DE430!
-@taylorize function DE430!(dq, q, params, t)
+function DE430!(dq, q, params, t)
     # N: number of bodies
     # jd0: initial Julian date
     local N, jd0 = params
