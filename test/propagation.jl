@@ -72,7 +72,7 @@ using LinearAlgebra: norm
     # Float64
 
     # Test integration
-    sol64 = propagate(40, jd0, nyears, dense; dynamics, order, abstol)
+    sol64 = propagate(100, jd0, nyears, dense; dynamics, order, abstol)
     # Save solution
     filename = selecteph2jld2(sol64, bodyind, nyears)
     # Recovered solution
@@ -106,9 +106,10 @@ using LinearAlgebra: norm
     posvel_jpl_ma(et) = kmsec2auday(spkgeo(4, et, "J2000", 0)[1]) # Mars
     posvel_jpl_ju(et) = kmsec2auday(spkgeo(5, et, "J2000", 0)[1]) # Jupiter
 
-    tv = range(sol64.t0, sol64.t[end], 5)
+    tv = range(sol64.t0, sol64.t[end], 10)
     for t in tv
         et = t * daysec
+        @show t, et
         @show abs(ttmtdb_jpl(et) - ttmtdb_pe(t))
         @show norm(posvel_jpl_su(et) - posvel_pe_su(t), Inf)
         @show norm(posvel_jpl_ea(et) - posvel_pe_ea(t), Inf)
