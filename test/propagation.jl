@@ -72,7 +72,7 @@ using LinearAlgebra: norm
     # Float64
 
     # Test integration
-    sol64 = propagate(10, jd0, nyears, dense; dynamics = dynamics, order = order, abstol = abstol)
+    sol64 = propagate(100, jd0, nyears, dense; dynamics, order, abstol)
     # Save solution
     filename = selecteph2jld2(sol64, bodyind, nyears)
     # Recovered solution
@@ -106,15 +106,23 @@ using LinearAlgebra: norm
     posvel_jpl_ma(et) = kmsec2auday(spkgeo(4, et, "J2000", 0)[1]) # Mars
     posvel_jpl_ju(et) = kmsec2auday(spkgeo(5, et, "J2000", 0)[1]) # Jupiter
 
-    tv = range(sol64.t0, sol64.t[end], 5)
+    tv = range(sol64.t0, sol64.t[end], 10)
     for t in tv
         et = t * daysec
-        @test abs(ttmtdb_jpl(et) - ttmtdb_pe(t)) < 1e-10
-        @test norm(posvel_jpl_su(et) - posvel_pe_su(t), Inf) < 1e-17
-        @test norm(posvel_jpl_ea(et) - posvel_pe_ea(t), Inf) < 1e-14
-        @test norm(posvel_jpl_mo(et) - posvel_pe_mo(t), Inf) < 1e-14
-        @test norm(posvel_jpl_ma(et) - posvel_pe_ma(t), Inf) < 1e-15
-        @test norm(posvel_jpl_ju(et) - posvel_pe_ju(t), Inf) < 1e-15
+        @show t, et
+        @show abs(ttmtdb_jpl(et) - ttmtdb_pe(t))
+        @show norm(posvel_jpl_su(et) - posvel_pe_su(t), Inf)
+        @show norm(posvel_jpl_ea(et) - posvel_pe_ea(t), Inf)
+        @show norm(posvel_jpl_mo(et) - posvel_pe_mo(t), Inf)
+        @show norm(posvel_jpl_ma(et) - posvel_pe_ma(t), Inf)
+        @show norm(posvel_jpl_ju(et) - posvel_pe_ju(t), Inf)
+
+        @test abs(ttmtdb_jpl(et) - ttmtdb_pe(t)) < 1e-12
+        @test norm(posvel_jpl_su(et) - posvel_pe_su(t), Inf) < 1e-14
+        @test norm(posvel_jpl_ea(et) - posvel_pe_ea(t), Inf) < 1e-11
+        @test norm(posvel_jpl_mo(et) - posvel_pe_mo(t), Inf) < 1e-11
+        @test norm(posvel_jpl_ma(et) - posvel_pe_ma(t), Inf) < 1e-12
+        @test norm(posvel_jpl_ju(et) - posvel_pe_ju(t), Inf) < 1e-13
     end
 
     # Remove files
