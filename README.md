@@ -1,6 +1,7 @@
 # PlanetaryEphemeris.jl
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.5152451.svg)](https://doi.org/10.5281/zenodo.5152451)
+[![CI](https://github.com/PerezHz/PlanetaryEphemeris.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/PerezHz/PlanetaryEphemeris.jl/actions/workflows/CI.yml)
 [![Coverage Status](https://coveralls.io/repos/github/PerezHz/PlanetaryEphemeris.jl/badge.svg?branch=main)](https://coveralls.io/github/PerezHz/PlanetaryEphemeris.jl?branch=main)
 [![codecov](https://codecov.io/gh/PerezHz/PlanetaryEphemeris.jl/branch/main/graph/badge.svg?token=CZE0SONYYX)](https://codecov.io/gh/PerezHz/PlanetaryEphemeris.jl)
 
