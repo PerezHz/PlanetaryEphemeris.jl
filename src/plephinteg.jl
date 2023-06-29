@@ -6,11 +6,11 @@ Threaded version of `TaylorSeries.evaluate!`.
 See also [`TaylorSeries.evaluate!`](@ref).
 """
 function evaluate_threads!(x::Vector{Taylor1{T}}, δt::T, x0::Vector{T}) where { T <: Number}
-    
+
     Threads.@threads for i in eachindex(x)
         x0[i] = evaluate( x[i], δt )
     end
-    
+
     nothing
 end
 
@@ -46,8 +46,8 @@ end
 
 First step-size control. See section 3.2 of https://doi.org/10.1080/10586458.2005.10128904.
 
-See also [`stepsize_threads`](@ref) and [`TaylorIntegration.stepsize`](@ref). 
-""" 
+See also [`stepsize_threads`](@ref) and [`TaylorIntegration.stepsize`](@ref).
+"""
 function stepsize_jz05(q::AbstractArray{Taylor1{U}, N}, epsilon::T) where
         {T<:Real, U<:Number, N}
     nbodies = (length(q)-13)÷6
@@ -88,7 +88,7 @@ end
 # end
 
 @doc raw"""
-    taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}}, dx::Vector{Taylor1{U}}, xaux::Vector{Taylor1{U}}, 
+    taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}}, dx::Vector{Taylor1{U}}, xaux::Vector{Taylor1{U}},
                         abstol::T, params, parse_eqs::Bool=true) where {T<:Real, U<:Number}
     taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}}, dx::Vector{Taylor1{U}}, abstol::T, params,
                         rv::TaylorIntegration.RetAlloc{Taylor1{U}}) where {T<:Real, U<:Number}
@@ -97,7 +97,7 @@ Threaded version of `TaylorIntegration.taylorstep`.
 
 See also [`stepsize_threads`](@ref) and [`TaylorIntegration.taylorstep`](@ref).
 """
-function taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}}, dx::Vector{Taylor1{U}}, xaux::Vector{Taylor1{U}}, 
+function taylorstep_threads!(f!, t::Taylor1{T}, x::Vector{Taylor1{U}}, dx::Vector{Taylor1{U}}, xaux::Vector{Taylor1{U}},
                              abstol::T, params) where {T<:Real, U<:Number}
 
     # Compute the Taylor coefficients
@@ -183,10 +183,10 @@ for V in (:(Val{true}), :(Val{false}))
             else
                 return _taylorinteg_threads!(f!, t, x, dx, q0, t0, tmax, abstol, $V(), params, maxsteps = maxsteps)
             end
-            
+
         end
 
-        function _taylorinteg_threads!(f!, t::Taylor1{T}, x::Array{Taylor1{U}, 1}, dx::Array{Taylor1{U}, 1}, q0::Array{U, 1}, t0::T, 
+        function _taylorinteg_threads!(f!, t::Taylor1{T}, x::Array{Taylor1{U}, 1}, dx::Array{Taylor1{U}, 1}, q0::Array{U, 1}, t0::T,
                                        tmax::T, abstol::T, ::$V, params; maxsteps::Int = 500) where {T <: Real, U <: Number}
 
             # Initialize the vector of Taylor1 expansions
@@ -196,7 +196,7 @@ for V in (:(Val{true}), :(Val{false}))
             tv = Array{T}(undef, maxsteps+1)
             xv = Array{U}(undef, dof, maxsteps+1)
             if $V == Val{true}
-                polynV = Array{Taylor1{U}}(undef, dof, maxsteps+1)
+                psol = Array{Taylor1{U}}(undef, dof, maxsteps)
             end
             xaux = Array{Taylor1{U}}(undef, dof)
 
@@ -206,9 +206,6 @@ for V in (:(Val{true}), :(Val{false}))
             x0 = deepcopy(q0)
             @inbounds tv[1] = t0
             @inbounds xv[:,1] .= q0
-            if $V == Val{true}
-                @inbounds polynV[:,1] .= deepcopy.(x)
-            end
             sign_tstep = copysign(1, tmax-t0)
 
             # Integration
@@ -220,7 +217,7 @@ for V in (:(Val{true}), :(Val{false}))
                 evaluate_threads!(x, δt, x0) # new initial condition
                 if $V == Val{true}
                     # Store the Taylor polynomial solution
-                    @inbounds polynV[:,nsteps+1] .= deepcopy.(x)
+                    @inbounds psol[:,nsteps] .= deepcopy.(x)
                 end
                 @inbounds Threads.@threads for i in eachindex(x0)
                     x[i][0] = x0[i]
@@ -240,13 +237,13 @@ for V in (:(Val{true}), :(Val{false}))
             end
 
             if $V == Val{true}
-                return TaylorInterpolant(tv[1], view(tv.-tv[1],1:nsteps), view(transpose(view(polynV,:,2:nsteps)),1:nsteps-1,:))
+                return TaylorInterpolant(tv[1], view(tv.-tv[1],1:nsteps), view(transpose(view(psol,:,1:nsteps-1)),1:nsteps-1,:))
             elseif $V == Val{false}
                 return view(tv,1:nsteps), view(transpose(view(xv,:,1:nsteps)),1:nsteps,:)
             end
         end
 
-        function _taylorinteg_threads!(f!, t::Taylor1{T}, x::Array{Taylor1{U}, 1}, dx::Array{Taylor1{U}, 1}, q0::Array{U, 1}, t0::T, 
+        function _taylorinteg_threads!(f!, t::Taylor1{T}, x::Array{Taylor1{U}, 1}, dx::Array{Taylor1{U}, 1}, q0::Array{U, 1}, t0::T,
                                        tmax::T, abstol::T, rv::TaylorIntegration.RetAlloc{Taylor1{U}}, ::$V, params; maxsteps::Int = 500) where {T <: Real, U <: Number}
 
             # Initialize the vector of Taylor1 expansions
@@ -256,7 +253,7 @@ for V in (:(Val{true}), :(Val{false}))
             tv = Array{T}(undef, maxsteps+1)
             xv = Array{U}(undef, dof, maxsteps+1)
             if $V == Val{true}
-                polynV = Array{Taylor1{U}}(undef, dof, maxsteps+1)
+                psol = Array{Taylor1{U}}(undef, dof, maxsteps)
             end
 
             # Initial conditions
@@ -264,9 +261,6 @@ for V in (:(Val{true}), :(Val{false}))
             x0 = deepcopy(q0)
             @inbounds tv[1] = t0
             @inbounds xv[:,1] .= q0
-            if $V == Val{true}
-                @inbounds polynV[:,1] .= deepcopy.(x)
-            end
             sign_tstep = copysign(1, tmax-t0)
 
             # Integration
@@ -278,7 +272,7 @@ for V in (:(Val{true}), :(Val{false}))
                 evaluate_threads!(x, δt, x0) # new initial condition
                 if $V == Val{true}
                     # Store the Taylor polynomial solution
-                    @inbounds polynV[:,nsteps+1] .= deepcopy.(x)
+                    @inbounds psol[:,nsteps] .= deepcopy.(x)
                 end
 
                 Threads.@threads for i in eachindex(x0)
@@ -299,7 +293,7 @@ for V in (:(Val{true}), :(Val{false}))
             end
 
             if $V == Val{true}
-                return TaylorInterpolant(tv[1], view(tv.-tv[1],1:nsteps), view(transpose(view(polynV,:,2:nsteps)),1:nsteps-1,:))
+                return TaylorInterpolant(tv[1], view(tv.-tv[1],1:nsteps), view(transpose(view(psol,:,1:nsteps-1)),1:nsteps-1,:))
             elseif $V == Val{false}
                 return view(tv,1:nsteps), view(transpose(view(xv,:,1:nsteps)),1:nsteps,:)
             end
