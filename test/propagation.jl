@@ -3,7 +3,6 @@
 using PlanetaryEphemeris
 using Dates
 using Quadmath
-using TaylorIntegration
 using JLD2
 using Test
 

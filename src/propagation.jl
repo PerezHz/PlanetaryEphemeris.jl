@@ -1,4 +1,56 @@
 @doc raw"""
+    loadeph(ss16asteph::TaylorInterpolant, μ::Vector{<:Real})
+
+Taking Solar System ephemeris `ss16asteph` and their gravitational parameters `μ` as input, returns for all bodies the point-mass Newtonian acceleration and the Newtonian N body potential.
+
+# Arguments
+
+- `ss16asteph`: Solar System ephemeris.
+- `μ::Vector{<:Real}`: vector of mass parameters.
+"""
+function loadeph(ss16asteph::TaylorInterpolant, μ::Vector{<:Real})
+
+    # Compute point-mass Newtonian accelerations from ephemeris
+    # accelerations of all bodies are needed to compute the post-Newtonian acceleration of e.g. Solar System minor bodies
+    # Number of bodies that contibute to the asteroid's acceleration
+    Nm1 = numberofbodies(ss16asteph)
+    # Initialize a TaylorInterpolant for the point-mass Newtonian accelerations
+    acc_eph = TaylorInterpolant(ss16asteph.t0, ss16asteph.t, Matrix{eltype(ss16asteph.x)}(undef, length(ss16asteph.t)-1, 3Nm1))
+    # Initialize a TaylorInterpolant for the newtonian N body potential
+    pot_eph = TaylorInterpolant(ss16asteph.t0, ss16asteph.t, Matrix{eltype(ss16asteph.x)}(undef, length(ss16asteph.t)-1, Nm1))
+    # Fill TaylorInterpolant.x with zero polynomials
+    fill!(acc_eph.x, zero(ss16asteph.x[1]))
+    fill!(pot_eph.x, zero(ss16asteph.x[1]))
+
+    # Iterator over all bodies except asteroid
+    for j in 1:Nm1
+        for i in 1:Nm1
+            if i == j
+                #
+            else
+                # Difference between two positions (\mathbf{r}_i - \mathbf{r}_j)
+                X_ij = ss16asteph.x[:, 3i-2] .- ss16asteph.x[:, 3j-2]  # X-axis component
+                Y_ij = ss16asteph.x[:, 3i-1] .- ss16asteph.x[:, 3j-1]  # Y-axis component
+                Z_ij = ss16asteph.x[:, 3i  ] .- ss16asteph.x[:, 3j  ]  # Z-axis component
+                # Distance between two bodies squared ||\mathbf{r}_i - \mathbf{r}_j||^2
+                r_p2_ij = ( (X_ij.^2) .+ (Y_ij.^2) ) .+ (Z_ij.^2)
+                # Distance between two bodies ||\mathbf{r}_i - \mathbf{r}_j||
+                r_ij = sqrt.(r_p2_ij)
+                # Newtonian potential
+                pot_eph.x[:, j] .+= (μ[i]./r_ij)
+            end
+        end
+
+        # Fill acelerations by differentiating velocities
+        acc_eph.x[:, 3j-2] .= NEOs.ordpres_differentiate.(ss16asteph.x[:, 3(Nm1+j)-2])  # X-axis component
+        acc_eph.x[:, 3j-1] .= NEOs.ordpres_differentiate.(ss16asteph.x[:, 3(Nm1+j)-1])  # Y-axis component
+        acc_eph.x[:, 3j  ] .= NEOs.ordpres_differentiate.(ss16asteph.x[:, 3(Nm1+j)  ])  # Z-axis component
+    end
+
+    return acc_eph, pot_eph
+end
+
+@doc raw"""
     selecteph2jld2(sseph::TaylorInterpolant, bodyind::T, tspan::S) where {T <: AbstractVector{Int}, S <: Number}
 
 Save the ephemeris, contained in `sseph`, of the bodies with indices `bodyind`, in a `.jld2` file named as follows
