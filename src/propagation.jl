@@ -149,31 +149,6 @@ function save2jld2andcheck(outfilename::String, sol)
 end
 
 @doc raw"""
-    day2sec(x::Matrix{Taylor1{U}}) where {U <: Number}
-
-Convert `x` from days to seconds.
-"""
-function day2sec(x::Matrix{Taylor1{U}}) where {U <: Number}
-
-    # Order of Taylor polynomials
-    order = x[1, 1].order
-    # Matrix dimensions
-    m, n = size(x)
-    # Taylor conversion variable
-    t = Taylor1(order) / daysec
-    # Allocate memory
-    res = Matrix{Taylor1{U}}(undef, m, n)
-    # Iterate over the matrix
-    for j in 1:n
-        for i in 1:m
-            @inbounds res[i, j] = x[i, j](t)
-        end
-    end
-
-    return res
-end
-
-@doc raw"""
     propagate(maxsteps::Int, jd0::T, tspan::T, ::Val{false/true}; dynamics::Function = NBP_pN_A_J23E_J23M_J2S!,
               nast::Int = 343, order::Int = order, abstol::T = abstol, parse_eqs::Bool = true) where {T <: Real}
 
@@ -214,16 +189,16 @@ for V_dense in (:(Val{true}), :(Val{false}))
             tmax = t0 + tspan*yr
 
             # Integration
-            sol_ = @time taylorinteg_threads(dynamics, q0, t0, tmax, order, abstol, $V_dense(), params, maxsteps = maxsteps,
-                                             parse_eqs = parse_eqs)
+            sol = @time taylorinteg(dynamics, q0, t0, tmax, order, abstol, $V_dense(), params, 
+                                     maxsteps = maxsteps, parse_eqs = parse_eqs)
 
             if $V_dense == Val{true}
 
-                return TaylorInterpolant{T, T, 2}(jd0 - J2000, sol_.t, sol_.x)
+                return TaylorInterpolant{T, T, 2}(jd0 - J2000, sol[1], sol[3])
 
             else
 
-                return sol_[1], sol_[2]
+                return sol
 
             end
 
