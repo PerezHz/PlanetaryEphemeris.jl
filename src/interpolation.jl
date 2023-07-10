@@ -35,11 +35,15 @@ function TaylorInterpolant(t0::T, t::SubArray{T, 1}, x::SubArray{Taylor1{U}, N})
 end 
 
 # Custom print 
-function show(io::IO, interp::TaylorInterpolant{T, U, 2}) where {T, U}
+function show(io::IO, interp::TaylorInterpolant{T, U, N}) where {T, U, N}
     t_range = minmax(interp.t0 + interp.t[1], interp.t0 + interp.t[end])
-    N = size(interp.x, 2)
     S = eltype(interp.x)
-    print(io, "t: ", t_range, ", x: ", N, " ", S, " variables")
+    if isone(N)
+        print(io, "t: ", t_range, ", x: 1 ", S, " variable")
+    else 
+        L = size(interp.x, 2)
+        print(io, "t: ", t_range, ", x: ", L, " ", S, " variables")
+    end
 end 
 
 @doc raw"""
