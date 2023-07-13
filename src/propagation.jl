@@ -149,7 +149,7 @@ function save2jld2andcheck(outfilename::String, sol)
 end
 
 @doc raw"""
-    propagate(maxsteps::Int, jd0::T, tspan::T, ::Val{false/true}; dynamics::Function = NBP_pN_A_J23E_J23M_J2S!,
+    propagate(maxsteps::Int, jd0::T, tspan::T, ::Val{false/true}; dynamics::Function = NBP_pN_A_J23E_J23M_J2S_threads!,
               nast::Int = 343, order::Int = order, abstol::T = abstol, parse_eqs::Bool = true) where {T <: Real}
 
 Integrate the Solar System via the Taylor method.
@@ -170,7 +170,7 @@ Integrate the Solar System via the Taylor method.
 for V_dense in (:(Val{true}), :(Val{false}))
     @eval begin
 
-        function propagate(maxsteps::Int, jd0::T, tspan::T, ::$V_dense; dynamics::Function = NBP_pN_A_J23E_J23M_J2S!,
+        function propagate(maxsteps::Int, jd0::T, tspan::T, ::$V_dense; dynamics::Function = NBP_pN_A_J23E_J23M_J2S_threads!,
                            nast::Int = 343, order::Int = order, abstol::T = abstol, parse_eqs::Bool = true) where {T <: Real}
 
             # Total number of bodies (Sun + 8 planets + Moon + Pluto + Asteroid)
@@ -189,8 +189,8 @@ for V_dense in (:(Val{true}), :(Val{false}))
             tmax = t0 + tspan*yr
 
             # Integration
-            sol = @time taylorinteg(dynamics, q0, t0, tmax, order, abstol, $V_dense(), params, 
-                                     maxsteps = maxsteps, parse_eqs = parse_eqs)
+            sol = @time taylorinteg(dynamics, q0, t0, tmax, order, abstol, $V_dense(), params;
+                                    maxsteps, parse_eqs)
 
             if $V_dense == Val{true}
 
@@ -204,7 +204,7 @@ for V_dense in (:(Val{true}), :(Val{false}))
 
         end
 
-        function propagate(maxsteps::Int, jd0::T1, tspan::T2, ::$V_dense; dynamics::Function = NBP_pN_A_J23E_J23M_J2S!,
+        function propagate(maxsteps::Int, jd0::T1, tspan::T2, ::$V_dense; dynamics::Function = NBP_pN_A_J23E_J23M_J2S_threads!,
                            nast::Int = 343, order::Int = order, abstol::T3 = abstol, parse_eqs::Bool = true) where {T1, T2, T3 <: Real}
 
             _jd0, _tspan, _abstol = promote(jd0, tspan, abstol)
