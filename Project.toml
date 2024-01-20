@@ -1,7 +1,7 @@
 name = "PlanetaryEphemeris"
 uuid = "d83715d0-7e5f-11e9-1a59-4137b20d8363"
 authors = ["Jorge A. Pérez Hernández", "Luis Benet", "Luis Eduardo Ramírez Montoya"]
-version = "0.7.4"
+version = "0.7.5"
 
 [deps]
 ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
@@ -18,7 +18,7 @@ TaylorSeries = "6aa5eb33-94cf-58f4-a9d0-e4b2c4fc25ea"
 
 [compat]
 ArgParse = "1.1"
-AutoHashEquals = "0.2"
+AutoHashEquals = "0.2, 2"
 DelimitedFiles = "1"
 JLD2 = "0.4"
 PrecompileTools = "1.1"
