@@ -19,7 +19,7 @@ jobs:
       matrix:
         version:
           - '1.9'
-          # - '1'
+          - '1'
           - 'nightly'
         os:
           - ubuntu-latest
@@ -40,6 +40,8 @@ jobs:
       - uses: codecov/codecov-action@v3
         with:
           files: lcov.info
-      - uses: julia-actions/julia-uploadcoveralls@v1
-        env:
-          COVERALLS_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+      - uses: coverallsapp/github-action@master
+        with:
+          path-to-lcov: lcov.info
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel: false
