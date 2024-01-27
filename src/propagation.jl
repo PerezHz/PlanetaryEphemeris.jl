@@ -1,3 +1,5 @@
+# This file is part of the PlanetaryEphemeris.jl package; MIT licensed
+
 @doc raw"""
     loadeph(ss16asteph::TaylorInterpolant, μ::Vector{<:Real})
 

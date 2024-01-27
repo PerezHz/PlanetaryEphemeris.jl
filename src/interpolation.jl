@@ -65,7 +65,7 @@ end
 Return the index of `tinterp.t` corresponding to `t` and the time elapsed from `tinterp.t0`
 to `t`.
 """
-function getinterpindex(tinterp::TaylorInterpolant{T,U,N}, t::TT) where {T,U,N,TT<:Union{T, Taylor1{U}}}
+function getinterpindex(tinterp::TaylorInterpolant{T,U,N}, t::TT) where {T,U,N,TT<:Union{T, Taylor1{U}, Taylor1{TaylorN{U}}}}
     t00 = constant_term(constant_term(t))                # Current time
     tmin, tmax = minmax(tinterp.t[end], tinterp.t[1])    # Min and max time in tinterp
     Δt = t-tinterp.t0                                    # Time since start of tinterp
@@ -81,8 +81,11 @@ function getinterpindex(tinterp::TaylorInterpolant{T,U,N}, t::TT) where {T,U,N,T
         ind = searchsortedlast(tinterp.t, Δt00, rev=true)
     end
 
-    # Return index and elapsed time
-    return ind::Int, Δt::TT
+    # Time since the start of the ind-th timestep
+    δt = Δt-tinterp.t[ind]
+
+    # Return index and elapsed time since i-th timestep
+    return ind::Int, δt::TT
 end
 
 @doc raw"""
@@ -98,31 +101,39 @@ numberofbodies(interp::TaylorInterpolant) = numberofbodies(size(interp.x, 2))
 # Function-like (callability) methods
 
 @doc raw"""
-    (tinterp::TaylorInterpolant{T,U,1})(t::V) where {T<:Real, U<:Number, V<:Number}
-    (tinterp::TaylorInterpolant{T,U,2})(t::V) where {T<:Real, U<:Number, V<:Number}
-    (tinterp::TaylorInterpolant{T,U,2})(target::Int, t::V) where {T<:Real, U<:Number, V<:Number}
-    (tinterp::TaylorInterpolant{T,U,2})(target::Int, observer::Int, t::V) where {T<:Real, U<:Number, V<:Number}
+    (tinterp::TaylorInterpolant{T, U, 1})(t::T) where {T, U}
+    (tinterp::TaylorInterpolant{T, U, 1})(t::TT) where {T, U, TT<:Union{Taylor1{U},Taylor1{TaylorN{U}}}}
+    (tinterp::TaylorInterpolant{T, U, 2})(t::T) where {T, U}
+    (tinterp::TaylorInterpolant{T, U, 2})(t::TT) where {T, U, TT<:Union{Taylor1{U},Taylor1{TaylorN{U}}}}
 
 Evaluate `tinterp.x` at time `t`.
 
 See also [`getinterpindex`](@ref).
 """
-function (tinterp::TaylorInterpolant{T, U, 1})(t::TT) where {T, U, TT<:Union{T, Taylor1{U}}}
+function (tinterp::TaylorInterpolant{T, U, 1})(t::T) where {T, U}
     # Get index of tinterp.x that interpolates at time t
-    ind::Int, Δt::TT = getinterpindex(tinterp, t)
-    # Time since the start of the ind-th timespan
-    δt::TT = Δt-(tinterp.t[ind])
+    ind::Int, δt::T = getinterpindex(tinterp, t)
     # Evaluate tinterp.x[ind] at δt
-    return (tinterp.x[ind]::Taylor1{U})(δt)
+    return (tinterp.x[ind])(δt)::U
+end
+function (tinterp::TaylorInterpolant{T, U, 1})(t::TT) where {T, U, TT<:Union{Taylor1{U},Taylor1{TaylorN{U}}}}
+    # Get index of tinterp.x that interpolates at time t
+    ind::Int, δt::TT = getinterpindex(tinterp, t)
+    # Evaluate tinterp.x[ind] at δt
+    return (tinterp.x[ind])(δt)::Taylor1{TT}
 end
 
-function (tinterp::TaylorInterpolant{T, U, 2})(t::TT) where {T, U, TT<:Union{T, Taylor1{U}}}
+function (tinterp::TaylorInterpolant{T, U, 2})(t::T) where {T, U}
     # Get index of tinterp.x that interpolates at time t
-    ind::Int, Δt::TT = getinterpindex(tinterp, t)
-    # Time since the start of the ind-th timespan
-    δt::TT = Δt-tinterp.t[ind]
+    ind::Int, δt::T = getinterpindex(tinterp, t)
     # Evaluate tinterp.x[ind] at δt
-    return tinterp.x[ind,:](δt)
+    return view(tinterp.x, ind, :)(δt)::Vector{U}
+end
+function (tinterp::TaylorInterpolant{T, U, 2})(t::TT) where {T, U, TT<:Union{Taylor1{U},Taylor1{TaylorN{U}}}}
+    # Get index of tinterp.x that interpolates at time t
+    ind::Int, δt::TT = getinterpindex(tinterp, t)
+    # Evaluate tinterp.x[ind] at δt
+    return view(tinterp.x, ind, :)(δt)::Vector{TT}
 end
 
 function (tinterp::TaylorInterpolant{T, U, 2})(target::Int, observer::Int, t::T)  where {T, U}
@@ -138,7 +149,7 @@ function (tinterp::TaylorInterpolant{T, U, 2})(target::Int, observer::Int, t::T)
     end
 end
 
-(tinterp::TaylorInterpolant{T,U,2})(target::Int, t::TT) where {T, U, TT<:Union{T, Taylor1{U}}} = tinterp(target, 0, t)
+(tinterp::TaylorInterpolant{T,U,2})(target::Int, t::TT) where {T, U, TT<:Union{T, Taylor1{U}, Taylor1{TaylorN{U}}}} = tinterp(target, 0, t)
 
 @doc raw"""
     reverse(tinterp::TaylorInterpolant{T,U,N}) where {T<:Real, U<:Number, N}
