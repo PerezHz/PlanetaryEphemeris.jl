@@ -72,6 +72,7 @@ using LinearAlgebra: norm
         tmid = sol.t0 + sol.t[1]/2
         @test sol(tmid) isa Vector{Float64}
         @test sol(tmid + Taylor1(order)) isa Vector{Taylor1{Float64}}
+        @test sol(tmid + dq[1] + dq[1]*dq[2]) isa Vector{TaylorN{Float64}}
         @test sol(tmid + Taylor1([dq[1],dq[1]*dq[2]],order)) isa Vector{Taylor1{TaylorN{Float64}}}
     end
 

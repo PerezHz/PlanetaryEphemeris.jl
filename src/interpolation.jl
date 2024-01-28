@@ -25,7 +25,13 @@ time ``x(t)``; or a lunar core Euler angle as a function of time ``\theta_c(t)``
     end
 end
 
+const TaylorInterpCallingArgs{T,U} = Union{T, Taylor1{U}, TaylorN{U}, Taylor1{TaylorN{U}}} where {T,U}
+
 # Outer constructors
+function TaylorInterpolant{T, U, N}(t0::T, t::VT, x::X) where {T<:Number, U<:Number, N, VT<:AbstractVector{T}, X<:AbstractArray{Taylor1{U}, N}}
+    return TaylorInterpolant{T, U, N, VT, X}(t0, t, x)
+end
+
 function TaylorInterpolant(t0::T, t::VT, x::X) where {T<:Number, U<:Number, N, VT<:AbstractVector{T}, X<:AbstractArray{Taylor1{U}, N}}
     return TaylorInterpolant{T, U, N, VT, X}(t0, t, x)
 end
@@ -65,7 +71,7 @@ end
 Return the index of `tinterp.t` corresponding to `t` and the time elapsed from `tinterp.t0`
 to `t`.
 """
-function getinterpindex(tinterp::TaylorInterpolant{T,U,N}, t::TT) where {T,U,N,TT<:Union{T, Taylor1{U}, Taylor1{TaylorN{U}}}}
+function getinterpindex(tinterp::TaylorInterpolant{T,U,N}, t::TT) where {T,U,N,TT<:TaylorInterpCallingArgs{T,U}}
     t00 = constant_term(constant_term(t))                # Current time
     tmin, tmax = minmax(tinterp.t[end], tinterp.t[1])    # Min and max time in tinterp
     Δt = t-tinterp.t0                                    # Time since start of tinterp
@@ -102,9 +108,9 @@ numberofbodies(interp::TaylorInterpolant) = numberofbodies(size(interp.x, 2))
 
 @doc raw"""
     (tinterp::TaylorInterpolant{T, U, 1})(t::T) where {T, U}
-    (tinterp::TaylorInterpolant{T, U, 1})(t::TT) where {T, U, TT<:Union{Taylor1{U},Taylor1{TaylorN{U}}}}
+    (tinterp::TaylorInterpolant{T, U, 1})(t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}}
     (tinterp::TaylorInterpolant{T, U, 2})(t::T) where {T, U}
-    (tinterp::TaylorInterpolant{T, U, 2})(t::TT) where {T, U, TT<:Union{Taylor1{U},Taylor1{TaylorN{U}}}}
+    (tinterp::TaylorInterpolant{T, U, 2})(t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}}
 
 Evaluate `tinterp.x` at time `t`.
 
@@ -116,11 +122,11 @@ function (tinterp::TaylorInterpolant{T, U, 1})(t::T) where {T, U}
     # Evaluate tinterp.x[ind] at δt
     return (tinterp.x[ind])(δt)::U
 end
-function (tinterp::TaylorInterpolant{T, U, 1})(t::TT) where {T, U, TT<:Union{Taylor1{U},Taylor1{TaylorN{U}}}}
+function (tinterp::TaylorInterpolant{T, U, 1})(t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}}
     # Get index of tinterp.x that interpolates at time t
     ind::Int, δt::TT = getinterpindex(tinterp, t)
     # Evaluate tinterp.x[ind] at δt
-    return (tinterp.x[ind])(δt)::Taylor1{TT}
+    return (tinterp.x[ind])(δt)::TT
 end
 
 function (tinterp::TaylorInterpolant{T, U, 2})(t::T) where {T, U}
@@ -129,7 +135,7 @@ function (tinterp::TaylorInterpolant{T, U, 2})(t::T) where {T, U}
     # Evaluate tinterp.x[ind] at δt
     return view(tinterp.x, ind, :)(δt)::Vector{U}
 end
-function (tinterp::TaylorInterpolant{T, U, 2})(t::TT) where {T, U, TT<:Union{Taylor1{U},Taylor1{TaylorN{U}}}}
+function (tinterp::TaylorInterpolant{T, U, 2})(t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}}
     # Get index of tinterp.x that interpolates at time t
     ind::Int, δt::TT = getinterpindex(tinterp, t)
     # Evaluate tinterp.x[ind] at δt
@@ -149,7 +155,7 @@ function (tinterp::TaylorInterpolant{T, U, 2})(target::Int, observer::Int, t::T)
     end
 end
 
-(tinterp::TaylorInterpolant{T,U,2})(target::Int, t::TT) where {T, U, TT<:Union{T, Taylor1{U}, Taylor1{TaylorN{U}}}} = tinterp(target, 0, t)
+(tinterp::TaylorInterpolant{T,U,2})(target::Int, t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}} = tinterp(target, 0, t)
 
 @doc raw"""
     reverse(tinterp::TaylorInterpolant{T,U,N}) where {T<:Real, U<:Number, N}
