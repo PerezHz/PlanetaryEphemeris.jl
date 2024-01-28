@@ -25,7 +25,7 @@ time ``x(t)``; or a lunar core Euler angle as a function of time ``\theta_c(t)``
     end
 end
 
-const TaylorInterpCallingArgs{T,U} = Union{T, Taylor1{U}, TaylorN{U}, Taylor1{TaylorN{U}}} where {T,U}
+const TaylorInterpCallingArgs{T,U} = Union{T, U, Taylor1{U}, TaylorN{U}, Taylor1{TaylorN{U}}} where {T,U}
 
 # Outer constructors
 function TaylorInterpolant{T, U, N}(t0::T, t::VT, x::X) where {T<:Number, U<:Number, N, VT<:AbstractVector{T}, X<:AbstractArray{Taylor1{U}, N}}
