@@ -1,3 +1,5 @@
+# This file is part of the PlanetaryEphemeris.jl package; MIT licensed
+
 # Planets (+ Sun & Moon) initial conditions file
 const ssic_1969_fname = joinpath( src_path, "ss11ic_1969Jun28.txt" )
 const ssic_1969 = readdlm( ssic_1969_fname )

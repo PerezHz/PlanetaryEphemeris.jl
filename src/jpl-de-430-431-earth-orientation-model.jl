@@ -1,3 +1,5 @@
+# This file is part of the PlanetaryEphemeris.jl package; MIT licensed
+
 # JPL-DE-430/431 model for the orientation of the Earth
 
 # From JPL DE430 documentation (Folkner et al., 2014):
@@ -10,8 +12,8 @@
 @doc raw"""
     Ω(t)
 
-Return the longitude (in radians) of the mean ascending node of the lunar orbit on the 
-ecliptic, measured from the mean equinox of date 
+Return the longitude (in radians) of the mean ascending node of the lunar orbit on the
+ecliptic, measured from the mean equinox of date
 ```math
 \Omega(t) = 125^\circ 02' 40''.280 - \left(1934^\circ 8' 10''.539\right) T + 7''.455 T^2 + 0''.008 T^3,
 ```
@@ -24,12 +26,12 @@ See equation (5-64) in page 5-27 of https://doi.org/10.1002/0471728470.
 @doc raw"""
     Delta_psi(t)
 
-Return the nutation in longitude (in radians) 
+Return the nutation in longitude (in radians)
 ```math
 \Delta\psi(t) = -17''.1996 \sin\Omega,
 ```
 where ``t = 36,525 T`` is the TDB time in Julian days from J2000.0 and ``\Omega`` is the
-longitude of the mean ascending node of the lunar orbit. 
+longitude of the mean ascending node of the lunar orbit.
 
 See equation (5-190) in page 5-72 of https://doi.org/10.1002/0471728470.
 
@@ -40,7 +42,7 @@ Delta_psi(t) = deg2rad( (-17.1996/3600)*sin(Ω(t)) )
 @doc raw"""
     Delta_epsilon(t)
 
-Return the nutation in obliquity (in radians) 
+Return the nutation in obliquity (in radians)
 ```math
 \Delta\epsilon(t) = 9''.2025 \cos\Omega,
 ```
@@ -78,7 +80,7 @@ end
 @doc raw"""
     ϵ̄(t)
 
-Return the mean obliquity (in radians) 
+Return the mean obliquity (in radians)
 ```math
 \bar{\epsilon}(t) = 84,381''.448 - 46''.8150 T - 0''.00059 T^2 + 0''.001813 T^3,
 ```
@@ -90,14 +92,14 @@ See equation (5-153) in page 5-61 of https://doi.org/10.1002/0471728470.
 
 @doc raw"""
     pole_frame(t)
-    
-Return the pole unit vector in the inertial frame ``\mathbf{p}_\mathrm{E}``, computed by 
+
+Return the pole unit vector in the inertial frame ``\mathbf{p}_\mathrm{E}``, computed by
 precessing the pole of date with an estimated linear correction
 ```math
 \mathbf{p}_\mathrm{E} = R_z(\zeta_A)R_y(-\theta_A)R_z(z_A)R_x(-\phi_x)R_y(-\phi_y)\mathbf{p}_\mathrm{d},
 ```
-where ``t`` is the TDB time in Julian days from J2000.0, ``\mathbf{p}_d`` is the true pole 
-of date unit vector, ``(\zeta_A, \theta_A, z_A)`` are the equatorial precession angles and 
+where ``t`` is the TDB time in Julian days from J2000.0, ``\mathbf{p}_d`` is the true pole
+of date unit vector, ``(\zeta_A, \theta_A, z_A)`` are the equatorial precession angles and
 ``(\phi_x, \phi_y)`` are the linear corrections.
 
 See equation (25) in page 11 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract.
@@ -123,8 +125,8 @@ Return the X-axis linear correction to precession (in radians)
 ```math
 \phi_x = \phi_{x0} + 100T\times \frac{d\phi_x}{dt},
 ```
-where ``t = 36,525 T`` is the TDB time in Julian days from J2000.0, ``\phi_{x0}`` is the 
-X–axis rotation at J2000.0 (in arcseconds) and ``\frac{d\phi_x}{dt}`` is the negative 
+where ``t = 36,525 T`` is the TDB time in Julian days from J2000.0, ``\phi_{x0}`` is the
+X–axis rotation at J2000.0 (in arcseconds) and ``\frac{d\phi_x}{dt}`` is the negative
 obliquity rate correction (in arcseconds per year).
 
 See equation (25) in page 11 and Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract.
@@ -143,8 +145,8 @@ Return the Y-axis linear correction to precession (in radians)
 ```math
 \phi_y = \phi_{y0} + 100T\times \frac{d\phi_y}{dt},
 ```
-where ``t = 36,525 T`` is the TDB time in Julian days from J2000.0, ``\phi_{y0}`` is the 
-Y–axis rotation at J2000.0 (in arcseconds) and ``\frac{d\phi_y}{dt}`` is precession rate 
+where ``t = 36,525 T`` is the TDB time in Julian days from J2000.0, ``\phi_{y0}`` is the
+Y–axis rotation at J2000.0 (in arcseconds) and ``\frac{d\phi_y}{dt}`` is precession rate
 correction times sine of obliquity (in arcseconds per year).
 
 See equation (25) in page 11 and Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract.
@@ -158,7 +160,7 @@ const Dt_phi_y = -1.2118591216559240E-03   # Precession rate correction times si
 
 @doc raw"""
     Zeta(t)
-    
+
 Return the ``\zeta_A`` equatorial precession angle (in radians)
 ```math
 \zeta_A(t) = 2306''.2181 T + 0''.30188 T^2 + 0''.017998 T^3,
@@ -179,7 +181,7 @@ end
 
 @doc raw"""
     Theta(t)
-    
+
 Return the ``\theta_A`` equatorial precession angle (in radians)
 ```math
 \theta_A(t) = 2004''.3109 T - 0''.42665 T^2 - 0''.041833 T^3,
@@ -200,7 +202,7 @@ end
 
 @doc raw"""
     zeta(t)
-    
+
 Return the ``z_A`` equatorial precession angle (in radians)
 ```math
 z_A(t) = 2306''.2181 T + 1''.09468 T^2 + 0''.018203 T^3,
@@ -226,16 +228,16 @@ end
 
 Return the rotation matrix around the x-axis
 ```math
-R_x(\alpha) = 
+R_x(\alpha) =
 \left[
 \begin{array}{ccc}
     1 & 0 & 0 \\
     0 & \cos\alpha & \sin\alpha \\
-    0 & -\sin\alpha & \cos\alpha \\    
+    0 & -\sin\alpha & \cos\alpha \\
 \end{array}
 \right],
 ```
-where ``\alpha`` is an angle in radians. 
+where ``\alpha`` is an angle in radians.
 
 See equation (11) in page 9 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract.
 
@@ -244,12 +246,12 @@ See also [`Ry`](@ref) and [`Rz`](@ref).
 function Rx(alpha::T) where {T<:Number}
     # Allocate memmory
     res = Array{T}(undef, 3, 3)
-    # Local variables 
+    # Local variables
     one_alpha = one(alpha)
     zero_alpha = zero(alpha)
     cos_alpha = cos(alpha)
     sin_alpha = sin(alpha)
-    # Matrix elements 
+    # Matrix elements
     res[1, 1] = one_alpha
     res[2, 1] = zero_alpha
     res[3, 1] = zero_alpha
@@ -267,22 +269,22 @@ end
 
 Return the rotation matrix around the y-axis
 ```math
-R_y(\alpha) = 
+R_y(\alpha) =
 \left[
 \begin{array}{ccc}
     \cos\alpha & 0 & -\sin\alpha \\
     0 & 1 & 0 \\
-    \sin\alpha & 0 & \cos\alpha \\    
+    \sin\alpha & 0 & \cos\alpha \\
 \end{array}
 \right],
 ```
-where ``\alpha`` is an angle in radians. 
+where ``\alpha`` is an angle in radians.
 
 See equation (12) in page 9 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract.
 
-``\textbf{Note:}`` Lieske et al. (1977, 1979) introduces the convention that this matrix 
-has opposite signs outside the sine terms (with respect to `Rx`, `Rz`). See equation (4) 
-in page 3 of https://ui.adsabs.harvard.edu/abs/1977A%26A....58....1L/abstract and equation 
+``\textbf{Note:}`` Lieske et al. (1977, 1979) introduces the convention that this matrix
+has opposite signs outside the sine terms (with respect to `Rx`, `Rz`). See equation (4)
+in page 3 of https://ui.adsabs.harvard.edu/abs/1977A%26A....58....1L/abstract and equation
 (3) in page 283 of https://ui.adsabs.harvard.edu/abs/1979A%26A....73..282L/abstract.
 
 See also [`Rx`](@ref) and [`Rz`](@ref).
@@ -313,16 +315,16 @@ end
 
 Return the rotation matrix around the z-axis
 ```math
-R_z(\alpha) = 
+R_z(\alpha) =
 \left[
 \begin{array}{ccc}
     \cos\alpha & \sin\alpha & 0 \\
     -\sin\alpha & \cos\alpha & 0 \\
-    0 & 0 & 1 \\    
+    0 & 0 & 1 \\
 \end{array}
 \right],
 ```
-where ``\alpha`` is an angle in radians. 
+where ``\alpha`` is an angle in radians.
 
 See equation (13) in page 9 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract.
 
@@ -408,7 +410,7 @@ end
 @doc raw"""
     pole_rotation(α::T, δ::T, W::T=zero(α)) where {T <: Number}
 
-Return the rotation matrix from the inertial frame to the frame with pole at right 
+Return the rotation matrix from the inertial frame to the frame with pole at right
 ascension ``\alpha``, declination ``\delta`` and prime meridian at ``W``
 ```math
 A = R_z(W + \Delta W)R_x\left(\frac{\pi}{2} - \delta - \Delta\delta\right)R_z\left(\alpha + \Delta\alpha + \frac{\pi}{2}\right).
@@ -416,7 +418,7 @@ A = R_z(W + \Delta W)R_x\left(\frac{\pi}{2} - \delta - \Delta\delta\right)R_z\le
 
 See equation (6-3) in page 6-5 of https://doi.org/10.1002/0471728470.
 
-``\textbf{Note:}`` Rotation matrices ``(R_x, R_y, R_z)`` convention is the same as 
+``\textbf{Note:}`` Rotation matrices ``(R_x, R_y, R_z)`` convention is the same as
 equations (11), (12) and (13) in page 9 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract.
 
 See also [`Rx`](@ref) and [`Rz`](@ref).
@@ -446,9 +448,9 @@ Return the IAU 1980 nutation matrix (Explanatory Supplement to the Astronomical 
 ```math
 N = R_x(-\bar{\epsilon}(t) - \Delta\epsilon(t))R_z(-\Delta\psi(t))R_x(\bar{\epsilon}(t)),
 ```
-where ``t`` is the TDB time in Julian days from J2000.0, ``\bar{\epsilon}`` is the mean 
-obliquity, ``\Delta \psi`` is the nutation in longitude and ``\Delta\epsilon`` is the 
-nutation in obliquity. All angles are in radians. 
+where ``t`` is the TDB time in Julian days from J2000.0, ``\bar{\epsilon}`` is the mean
+obliquity, ``\Delta \psi`` is the nutation in longitude and ``\Delta\epsilon`` is the
+nutation in obliquity. All angles are in radians.
 
 See equation (5-152) in page 5-60 of https://doi.org/10.1002/0471728470.
 
@@ -486,7 +488,7 @@ end
 @doc raw"""
     c2t_jpl_de430(t)
 
-Return the matrix for celestial-to-terrestrial coordinate transformation, according to 
+Return the matrix for celestial-to-terrestrial coordinate transformation, according to
 JPL DE 430/431 Earth orientation model
 ```math
 \texttt{c2t_jpl_de430}(t) = A\times C\times N,
@@ -512,8 +514,8 @@ end
 
 @doc raw"""
     moon_omega(ϕ::Taylor1, θ::Taylor1, ψ::Taylor1)
-    
-Return the Moon's angular velocity, computed by differentiating the Euler angles 
+
+Return the Moon's angular velocity, computed by differentiating the Euler angles
 ``(\phi, \theta, \psi)``
 ```math
 \begin{align*}
@@ -547,7 +549,7 @@ Return the first term of the time-dependent part of lunar total moment of intert
 \end{array}
 \right],
 ```
-where ``\mathbf{r} = (x, y, z)`` is the position of the Moon relative to Earth referred to 
+where ``\mathbf{r} = (x, y, z)`` is the position of the Moon relative to Earth referred to
 the mantle frame, ``k_{2,M}`` is the lunar potential Love number, ``m_E`` is the mass of
 the Earth and ``R_M`` is the equatorial radius of the Moon.
 
@@ -588,8 +590,8 @@ Return the second term of the time-dependent part of lunar total moment of inter
 \end{array}
 \right],
 ```
-where ``\mathbf{\omega}_m = (\omega_{m,x}, \omega_{m,y}, \omega_{m,z})`` is the angular 
-velocity of the mantle in the mantle frame, ``k_{2,M}`` is the lunar potential Love number, 
+where ``\mathbf{\omega}_m = (\omega_{m,x}, \omega_{m,y}, \omega_{m,z})`` is the angular
+velocity of the mantle in the mantle frame, ``k_{2,M}`` is the lunar potential Love number,
 ``R_M`` is the equatorial radius of the Moon and ``n`` is the lunar mean motion.
 
 ``\textbf{Note:}`` Euler angles must be evaluated at time ``t-τ_M``.
@@ -601,7 +603,7 @@ See also [`ITM1`](@ref) and [`ITM`](@ref).
 function ITM2(ωx::T, ωy::T, ωz::T) where {T <: Number}
     # Compute corresponding matrix elements
     m = Matrix{T}(undef, 3, 3)
-    ωx2 = ωx*ωx       
+    ωx2 = ωx*ωx
     ωy2 = ωy*ωy
     ωz2 = ωz*ωz
     # Angular speed
@@ -626,7 +628,7 @@ end
 
 Return lunar mantle inertia tensor
 ```math
-\mathbf{I}_m(t) = \tilde{\mathbf{I}}_m 
+\mathbf{I}_m(t) = \tilde{\mathbf{I}}_m
 -
 \frac{k_{2,M} m_E R_M^5}{r^5}
 \left[

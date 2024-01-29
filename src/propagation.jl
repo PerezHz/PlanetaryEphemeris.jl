@@ -1,3 +1,5 @@
+# This file is part of the PlanetaryEphemeris.jl package; MIT licensed
+
 @doc raw"""
     loadeph(ss16asteph::TaylorInterpolant, μ::Vector{<:Real})
 
@@ -193,13 +195,9 @@ for V_dense in (:(Val{true}), :(Val{false}))
                                     maxsteps, parse_eqs)
 
             if $V_dense == Val{true}
-
-                return TaylorInterpolant{T, T, 2}(jd0 - J2000, sol[1], sol[3])
-
+                return TaylorInterpolant{T, T, 2, SubArray{T,1}, SubArray{Taylor1{T},2}}(jd0 - J2000, sol[1], sol[3])
             else
-
                 return sol
-
             end
 
         end

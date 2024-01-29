@@ -2,62 +2,68 @@
 
 @doc raw"""
     TaylorInterpolant{T, U, N}
- 
-Collection of Taylor polynomials that interpolate a dependent variable as a function of 
-an independent variable. For example, the ``x``-axis position of the Earth as a function of 
+
+Collection of Taylor polynomials that interpolate a dependent variable as a function of
+an independent variable. For example, the ``x``-axis position of the Earth as a function of
 time ``x(t)``; or a lunar core Euler angle as a function of time ``\theta_c(t)``.
 
 # Fields
 
 - `t0::T`: Start time.
-- `t::AbstractVector{T}`: Vector of time instances when the timespan of the ``i``-th element of `x` ends and the ``(i+1)``-th element of `x` starts being valid. 
+- `t::AbstractVector{T}`: Vector of time instances when the timespan of the ``i``-th element of `x` ends and the ``(i+1)``-th element of `x` starts being valid.
 - `x::AbstractArray{Taylor1{U},N}`: Array of Taylor polynomials that interpolate the dependent variable as a function of the independent variable.
 """
-@auto_hash_equals struct TaylorInterpolant{T, U, N}
+@auto_hash_equals struct TaylorInterpolant{T<:Number, U<:Number, N, VT<:AbstractVector{T}, X<:AbstractArray{Taylor1{U}, N}}
     t0::T
-    t::AbstractVector{T}
-    x::AbstractArray{Taylor1{U}, N}
+    t::VT
+    x::X
     # Inner constructor
-    function TaylorInterpolant{T, U, N}(t0::T, t::AbstractVector{T}, x::AbstractArray{Taylor1{U}, N}) where {T <: Real, U <: Number, N}
+    function TaylorInterpolant{T, U, N, VT, X}(t0::T, t::VT, x::X) where {T<:Number, U<:Number, N, VT<:AbstractVector{T}, X<:AbstractArray{Taylor1{U}, N}}
         @assert size(x)[1] == length(t)-1
         @assert issorted(t) || issorted(t, rev = true)
-        return new{T, U, N}(t0, t, x)
+        return new{T, U, N, VT, X}(t0, t, x)
     end
 end
 
+const TaylorInterpCallingArgs{T,U} = Union{T, U, Taylor1{U}, TaylorN{U}, Taylor1{TaylorN{U}}} where {T,U}
+
 # Outer constructors
-function TaylorInterpolant(t0::T, t::AbstractVector{T}, x::AbstractArray{Taylor1{U}, N}) where {T <: Real, U <: Number, N}
+function TaylorInterpolant{T, U, N}(t0::T, t::VT, x::X) where {T<:Number, U<:Number, N, VT<:AbstractVector{T}, X<:AbstractArray{Taylor1{U}, N}}
+    return TaylorInterpolant{T, U, N, Vector{T}, Array{Taylor1{U},N}}(t0, convert(Vector{T},t), convert(Array{Taylor1{U},N},x))
+end
+
+function TaylorInterpolant(t0::T, t::VT, x::X) where {T<:Number, U<:Number, N, VT<:AbstractVector{T}, X<:AbstractArray{Taylor1{U}, N}}
+    return TaylorInterpolant{T, U, N, VT, X}(t0, t, x)
+end
+
+function TaylorInterpolant(t0::T, t::SubArray{T, 1}, x::SubArray{Taylor1{U}, N}) where {T<:Number, U<:Number, N}
     return TaylorInterpolant{T, U, N}(t0, t, x)
 end
 
-function TaylorInterpolant(t0::T, t::SubArray{T, 1}, x::SubArray{Taylor1{U}, N}) where {T <: Real, U <: Number, N}
-    return TaylorInterpolant{T, U, N}(t0, t.parent[t.indices...], x.parent[x.indices...])
-end 
-
-# Custom print 
-function show(io::IO, interp::TaylorInterpolant{T, U, N}) where {T, U, N}
+# Custom print
+function show(io::IO, interp::T) where {U, V, N, T<:TaylorInterpolant{U,V,N}}
     t_range = minmax(interp.t0 + interp.t[1], interp.t0 + interp.t[end])
     S = eltype(interp.x)
     if isone(N)
         print(io, "t: ", t_range, ", x: 1 ", S, " variable")
-    else 
+    else
         L = size(interp.x, 2)
         print(io, "t: ", t_range, ", x: ", L, " ", S, " variables")
     end
-end 
+end
 
 @doc raw"""
     convert(::Type{T}, interp::TaylorInterpolant) where {T <: Real}
 
-Convert `inter.t0`, `inter.t` and coefficients of `interp.x` to type `T`. 
+Convert `inter.t0`, `inter.t` and coefficients of `interp.x` to type `T`.
 """
 function convert(::Type{T}, interp::TaylorInterpolant) where {T <: Real}
     return TaylorInterpolant(
-        T(interp.t0), 
-        T.(interp.t), 
+        T(interp.t0),
+        T.(interp.t),
         map( x -> Taylor1( T.(x.coeffs) ), interp.x)
     )
-end 
+end
 
 @doc raw"""
     getinterpindex(tinterp::TaylorInterpolant{T,U,N}, t::V) where {T<:Real, U<:Number, V<:Number, N}
@@ -65,7 +71,7 @@ end
 Return the index of `tinterp.t` corresponding to `t` and the time elapsed from `tinterp.t0`
 to `t`.
 """
-function getinterpindex(tinterp::TaylorInterpolant{T, U, N}, t::V) where {T<:Real, U<:Number, V<:Number, N}
+function getinterpindex(tinterp::TaylorInterpolant{T,U,N}, t::TT) where {T,U,N,TT<:TaylorInterpCallingArgs{T,U}}
     t00 = constant_term(constant_term(t))                # Current time
     tmin, tmax = minmax(tinterp.t[end], tinterp.t[1])    # Min and max time in tinterp
     Δt = t-tinterp.t0                                    # Time since start of tinterp
@@ -81,75 +87,86 @@ function getinterpindex(tinterp::TaylorInterpolant{T, U, N}, t::V) where {T<:Rea
         ind = searchsortedlast(tinterp.t, Δt00, rev=true)
     end
 
-    # Return index and elapsed time
-    return ind, Δt
+    # Time since the start of the ind-th timestep
+    δt = Δt-tinterp.t[ind]
+
+    # Return index and elapsed time since i-th timestep
+    return ind::Int, δt::TT
 end
 
 @doc raw"""
     numberofbodies(interp::TaylorInterpolant{T, U, 2}) where {T, U}
 
-Return the number of bodies saved in a `TaylorInterpolant` produced by `PlanetaryEphemeris`. 
+Return the number of bodies saved in a `TaylorInterpolant` produced by `PlanetaryEphemeris`.
 """
 numberofbodies(L::Int) = (L - 13) ÷ 6
 numberofbodies(v::Vector{T}) where {T} = numberofbodies(length(v))
 numberofbodies(m::Matrix{T}) where {T} = numberofbodies(size(m, 2))
-numberofbodies(interp::TaylorInterpolant{T, U, 2}) where {T, U} = numberofbodies(size(interp.x, 2))
+numberofbodies(interp::TaylorInterpolant) = numberofbodies(size(interp.x, 2))
 
 # Function-like (callability) methods
 
 @doc raw"""
-    (tinterp::TaylorInterpolant{T,U,1})(t::V) where {T<:Real, U<:Number, V<:Number}
-    (tinterp::TaylorInterpolant{T,U,2})(t::V) where {T<:Real, U<:Number, V<:Number}
-    (tinterp::TaylorInterpolant{T,U,2})(target::Int, t::V) where {T<:Real, U<:Number, V<:Number}
-    (tinterp::TaylorInterpolant{T,U,2})(target::Int, observer::Int, t::V) where {T<:Real, U<:Number, V<:Number}
+    (tinterp::TaylorInterpolant{T, U, 1})(t::T) where {T, U}
+    (tinterp::TaylorInterpolant{T, U, 1})(t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}}
+    (tinterp::TaylorInterpolant{T, U, 2})(t::T) where {T, U}
+    (tinterp::TaylorInterpolant{T, U, 2})(t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}}
 
 Evaluate `tinterp.x` at time `t`.
 
 See also [`getinterpindex`](@ref).
 """
-function (tinterp::TaylorInterpolant{T,U,1})(t::V) where {T<:Real, U<:Number, V<:Number}
+function (tinterp::TaylorInterpolant{T, U, 1})(t::T) where {T, U}
     # Get index of tinterp.x that interpolates at time t
-    ind, Δt = getinterpindex(tinterp, t)
-    # Time since the start of the ind-th timespan
-    δt = Δt-tinterp.t[ind]
+    ind::Int, δt::T = getinterpindex(tinterp, t)
     # Evaluate tinterp.x[ind] at δt
-    return tinterp.x[ind](δt)
+    return (tinterp.x[ind])(δt)::U
+end
+function (tinterp::TaylorInterpolant{T, U, 1})(t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}}
+    # Get index of tinterp.x that interpolates at time t
+    ind::Int, δt::TT = getinterpindex(tinterp, t)
+    # Evaluate tinterp.x[ind] at δt
+    return (tinterp.x[ind])(δt)::TT
 end
 
-function (tinterp::TaylorInterpolant{T,U,2})(t::V) where {T<:Real, U<:Number, V<:Number}
+function (tinterp::TaylorInterpolant{T, U, 2})(t::T) where {T, U}
     # Get index of tinterp.x that interpolates at time t
-    ind, Δt = getinterpindex(tinterp, t)
-    # Time since the start of the ind-th timespan
-    δt = Δt-tinterp.t[ind]
+    ind::Int, δt::T = getinterpindex(tinterp, t)
     # Evaluate tinterp.x[ind] at δt
-    return tinterp.x[ind,:](δt)
+    return view(tinterp.x, ind, :)(δt)::Vector{U}
+end
+function (tinterp::TaylorInterpolant{T, U, 2})(t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}}
+    # Get index of tinterp.x that interpolates at time t
+    ind::Int, δt::TT = getinterpindex(tinterp, t)
+    # Evaluate tinterp.x[ind] at δt
+    return view(tinterp.x, ind, :)(δt)::Vector{TT}
 end
 
-function (tinterp::TaylorInterpolant{T,U,2})(target::Int, observer::Int, t::V) where {T<:Real, U<:Number, V<:Number}
+function (tinterp::TaylorInterpolant{T, U, 2})(target::Int, observer::Int, t::T)  where {T, U}
     # Number of bodies in tinterp
     N = numberofbodies(tinterp)
     # Ephemeris at time t
     eph_t = tinterp(t)
-    # Relative state vector 
+    # Relative state vector
     if observer == 0
         return eph_t[nbodyind(N, target)]
     else
         return eph_t[nbodyind(N, target)] - eph_t[nbodyind(N, observer)]
-    end 
+    end
 end
 
-(tinterp::TaylorInterpolant{T,U,2})(target::Int, t::V) where {T<:Real, U<:Number, V<:Number} = tinterp(target, 0, t)
+(tinterp::TaylorInterpolant{T,U,2})(target::Int, t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}} = tinterp(target, 0, t)
 
 @doc raw"""
     reverse(tinterp::TaylorInterpolant{T,U,N}) where {T<:Real, U<:Number, N}
 
-Return a `TaylorInterpolant` object with the same information as `tinterp` but 
+Return a `TaylorInterpolant` object with the same information as `tinterp` but
 the independent variable reversed.
 
 See also [`TaylorInterpolant`](@ref).
 """
 function reverse(tinterp::TaylorInterpolant{T,U,N}) where {T<:Real, U<:Number, N}
-    # tinterp end time is the new start time 
+    # tinterp end time is the new start time
     tinterp_rev_t0 = tinterp.t[end]
     # reverse independent variable vector tinterp.t
     tinterp_rev_t = tinterp.t[end:-1:1] .- tinterp_rev_t0
@@ -164,24 +181,24 @@ end
               ttmtdb::Bool = false) where {T <: Real, U <: Number}
     selecteph(eph::TaylorInterpolant{T, U, 2}, i::Int) where {T <: Real, U <: Number}
 
-Return a `TaylorInterpolant` with only the ephemeris of the bodies with indices `bodyind/i`. The keyword arguments allow to 
-include lunar euler angles and/or TT-TDB.  
+Return a `TaylorInterpolant` with only the ephemeris of the bodies with indices `bodyind/i`. The keyword arguments allow to
+include lunar euler angles and/or TT-TDB.
 """
 function selecteph(eph::TaylorInterpolant{T, U, 2}, bodyind::AbstractVector{Int}; euler::Bool = false,
-                   ttmtdb::Bool = false) where {T <: Real, U <: Number}
+                   ttmtdb::Bool = false) where {T, U}
     N = numberofbodies(eph)
     idxs = nbodyind(N, bodyind)
-    if euler 
+    if euler
         idxs = union(idxs, 6N+1:6N+12)
-    end 
+    end
     if ttmtdb
         idxs = union(idxs, 6N+13)
-    end 
-    x = eph.x[:, idxs]
-    return TaylorInterpolant{T, U, 2}(eph.t0, eph.t, x)
-end 
+    end
+    x = view(eph.x, :, idxs)
+    return TaylorInterpolant(eph.t0, eph.t, x)
+end
 
-selecteph(eph::TaylorInterpolant{T, U, 2}, i::Int) where {T <: Real, U <: Number} = selecteph(eph, i:i)
+selecteph(eph::TaylorInterpolant, i::Int) = selecteph(eph, i:i)
 
 function join(bwd::TaylorInterpolant{T, U, 2}, fwd::TaylorInterpolant{T, U, 2}) where {T, U}
     @assert bwd.t0 == fwd.t0 "Initial time must be the same for both TaylorInterpolant"
@@ -190,12 +207,12 @@ function join(bwd::TaylorInterpolant{T, U, 2}, fwd::TaylorInterpolant{T, U, 2}) 
     @assert order_bwd == order_fwd "Expansion order must be the same for both TaylorInterpolant"
 
     t0 = bwd.t0 + bwd.t[end]
-    t_1 = abs.(bwd.t)
-    t = vcat(t_1, t_1[end] .+ fwd.t[2:end])
+    t1 = abs.(bwd.t)
+    t = vcat(t1, t1[end] .+ fwd.t[2:end])
     x = vcat(reverse(bwd.x, dims = 1), fwd.x)
 
     return TaylorInterpolant(t0, t, x)
-end 
+end
 
 @doc raw"""
     kmsec2auday(pv)
@@ -219,19 +236,19 @@ function auday2kmsec(pv)
     return pv
 end
 
-# Custom serialization 
+# Custom serialization
 
 @doc raw"""
     PlanetaryEphemerisSerialization{T}
 
-Custom serialization struct to save a `TaylorInterpolant{T, T, 2}` to a `.jld2` file. 
+Custom serialization struct to save a `TaylorInterpolant{T, T, 2}` to a `.jld2` file.
 
 # Fields
 - `order::Int`: order of Taylor polynomials.
-- `dims::Tuple{Int, Int}`: matrix dimensions. 
+- `dims::Tuple{Int, Int}`: matrix dimensions.
 - `t0::T`: initial time.
-- `t::Vector{T}`: vector of times. 
-- `x::Vector{T}`: vector of coefficients. 
+- `t::Vector{T}`: vector of times.
+- `x::Vector{T}`: vector of coefficients.
 """
 struct PlanetaryEphemerisSerialization{T}
     order::Int
@@ -239,13 +256,13 @@ struct PlanetaryEphemerisSerialization{T}
     t0::T
     t::Vector{T}
     x::Vector{T}
-end 
+end
 
 # Tell JLD2 to save TaylorInterpolant{T, T, 2} as PlanetaryEphemerisSerialization{T}
-writeas(::Type{TaylorInterpolant{T, T, 2}}) where {T} = PlanetaryEphemerisSerialization{T}
+writeas(::Type{TaylorInterpolant{T, T, 2}}) where {T<:Real} = PlanetaryEphemerisSerialization{T}
 
 # Convert method to write .jld2 files
-function convert(::Type{PlanetaryEphemerisSerialization{T}}, eph::TaylorInterpolant{T, T, 2}) where {T}
+function convert(::Type{PlanetaryEphemerisSerialization{T}}, eph::TaylorInterpolant{T, T, 2}) where {T <: Real}
     # Taylor polynomials order
     order = eph.x[1, 1].order
     # Number of coefficients in each polynomial
@@ -254,18 +271,18 @@ function convert(::Type{PlanetaryEphemerisSerialization{T}}, eph::TaylorInterpol
     dims = size(eph.x)
     # Number of elements in matrix
     N = dims[1] * dims[2]
-    # Vector of coefficients 
+    # Vector of coefficients
     x = Vector{T}(undef, k * N)
-    # Save coefficients 
+    # Save coefficients
     for i in 1:N
         x[(i-1)*k+1 : i*k] = eph.x[i].coeffs
-    end 
+    end
 
     return PlanetaryEphemerisSerialization{T}(order, dims, eph.t0, eph.t, x)
-end 
+end
 
 # Convert method to read .jld2 files
-function convert(::Type{TaylorInterpolant{T, T, 2}}, eph::PlanetaryEphemerisSerialization{T}) where {T} 
+function convert(::Type{TaylorInterpolant{T, T, 2}}, eph::PlanetaryEphemerisSerialization{T}) where {T<:Real}
     # Taylor polynomials order
     order = eph.order
     # Number of coefficients in each polynomial
@@ -273,22 +290,22 @@ function convert(::Type{TaylorInterpolant{T, T, 2}}, eph::PlanetaryEphemerisSeri
     # Matrix dimensions
     dims = eph.dims
     # Number of elements in matrix
-    N = dims[1] * dims[2] 
-    # Matrix of Taylor polynomials 
+    N = dims[1] * dims[2]
+    # Matrix of Taylor polynomials
     x = Matrix{Taylor1{T}}(undef, dims[1], dims[2])
-    # Reconstruct Taylor polynomials 
+    # Reconstruct Taylor polynomials
     for i in 1:N
         x[i] = Taylor1{T}(eph.x[(i-1)*k+1 : i*k], order)
-    end 
+    end
 
     return TaylorInterpolant{T, T, 2}(eph.t0, eph.t, x)
-end 
+end
 
 @doc raw"""
     Taylor1Serialization{T}
 
-Custom serialization struct used in previous versions (<= 0.4) of `PlanetaryEphemeris`. Currently, it is only used to 
-read old `.jld2` files. 
+Custom serialization struct used in previous versions (<= 0.4) of `PlanetaryEphemeris`. Currently, it is only used to
+read old `.jld2` files.
 """
 struct Taylor1Serialization{T}
     x::Vector{T}

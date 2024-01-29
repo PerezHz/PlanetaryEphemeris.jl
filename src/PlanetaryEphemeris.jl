@@ -26,12 +26,14 @@ import JLD2: writeas
 include("constants.jl")
 include("jpl-de-430-431-earth-orientation-model.jl")
 include("initial_conditions.jl")
-include("dynamical_model.jl")
-include("jetcoeffs.jl")
 include("interpolation.jl")
 include("propagation.jl")
 include("osculating.jl")
 include("barycenter.jl")
 #include("precompile.jl")
+
+include("dynamics/trivial.jl")
+include("dynamics/dynamical_model.jl")
+include("dynamics/jetcoeffs.jl")
 
 end # module
