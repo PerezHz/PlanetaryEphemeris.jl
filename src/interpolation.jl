@@ -259,7 +259,7 @@ struct PlanetaryEphemerisSerialization{T}
 end
 
 # Tell JLD2 to save TaylorInterpolant{T, T, 2} as PlanetaryEphemerisSerialization{T}
-writeas(::Type{TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}}) where {T<:Real} = PlanetaryEphemerisSerialization{T}
+writeas(::Type{TaylorInterpolant{T, T, 2}}) where {T<:Real} = PlanetaryEphemerisSerialization{T}
 
 # Convert method to write .jld2 files
 function convert(::Type{PlanetaryEphemerisSerialization{T}}, eph::TaylorInterpolant{T, T, 2}) where {T <: Real}
