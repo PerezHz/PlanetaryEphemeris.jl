@@ -29,7 +29,7 @@ const TaylorInterpCallingArgs{T,U} = Union{T, U, Taylor1{U}, TaylorN{U}, Taylor1
 
 # Outer constructors
 function TaylorInterpolant{T, U, N}(t0::T, t::VT, x::X) where {T<:Number, U<:Number, N, VT<:AbstractVector{T}, X<:AbstractArray{Taylor1{U}, N}}
-    return TaylorInterpolant{T, U, N, VT, X}(t0, t, x)
+    return TaylorInterpolant{T, U, N, Vector{T}, Array{Taylor1{U},N}}(t0, convert(Vector{T},t), convert(Array{Taylor1{U},N},x))
 end
 
 function TaylorInterpolant(t0::T, t::VT, x::X) where {T<:Number, U<:Number, N, VT<:AbstractVector{T}, X<:AbstractArray{Taylor1{U}, N}}
@@ -37,7 +37,7 @@ function TaylorInterpolant(t0::T, t::VT, x::X) where {T<:Number, U<:Number, N, V
 end
 
 function TaylorInterpolant(t0::T, t::SubArray{T, 1}, x::SubArray{Taylor1{U}, N}) where {T<:Number, U<:Number, N}
-    return TaylorInterpolant{T, U, N, Vector{T}, Array{Taylor1{U}, N}}(t0, t.parent[t.indices...], x.parent[x.indices...])
+    return TaylorInterpolant{T, U, N}(t0, t, x)
 end
 
 # Custom print
@@ -262,7 +262,7 @@ end
 writeas(::Type{TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}}) where {T<:Real} = PlanetaryEphemerisSerialization{T}
 
 # Convert method to write .jld2 files
-function convert(::Type{PlanetaryEphemerisSerialization{T}}, eph::TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}) where {T <: Real}
+function convert(::Type{PlanetaryEphemerisSerialization{T}}, eph::TaylorInterpolant{T, T, 2}) where {T <: Real}
     # Taylor polynomials order
     order = eph.x[1, 1].order
     # Number of coefficients in each polynomial
@@ -282,7 +282,7 @@ function convert(::Type{PlanetaryEphemerisSerialization{T}}, eph::TaylorInterpol
 end
 
 # Convert method to read .jld2 files
-function convert(::Type{TaylorInterpolant{T, T, 2, Vector{T}, Array{Taylor1{T},2}}}, eph::PlanetaryEphemerisSerialization{T}) where {T<:Real}
+function convert(::Type{TaylorInterpolant{T, T, 2}}, eph::PlanetaryEphemerisSerialization{T}) where {T<:Real}
     # Taylor polynomials order
     order = eph.order
     # Number of coefficients in each polynomial
@@ -298,7 +298,7 @@ function convert(::Type{TaylorInterpolant{T, T, 2, Vector{T}, Array{Taylor1{T},2
         x[i] = Taylor1{T}(eph.x[(i-1)*k+1 : i*k], order)
     end
 
-    return TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}(eph.t0, eph.t, x)
+    return TaylorInterpolant{T, T, 2}(eph.t0, eph.t, x)
 end
 
 @doc raw"""
