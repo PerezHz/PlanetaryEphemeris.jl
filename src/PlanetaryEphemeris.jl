@@ -19,7 +19,7 @@ using DelimitedFiles
 using JLD2
 using Quadmath
 
-import Base: convert, reverse, show, join
+import Base: convert, reverse, show, join, zero, iszero
 import Dates: julian2datetime
 import JLD2: writeas
 
