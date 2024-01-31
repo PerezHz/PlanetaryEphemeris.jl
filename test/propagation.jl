@@ -60,6 +60,13 @@ using LinearAlgebra: norm
     end
 
     @testset "TaylorInterpolant" begin
+        # Test zero TaylorInterpolant
+        T = Float64
+        U = TaylorN{T}
+        @test iszero(zero(TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}))
+        @test iszero(zero(TaylorInterpolant{T, U, 2, Vector{T}, Matrix{Taylor1{U}}}))
+        @test iszero(zero(TaylorInterpolant{T, T, 2, SubArray{T, 1}, SubArray{Taylor1{T}, 2}}))
+        @test iszero(zero(TaylorInterpolant{T, U, 2, SubArray{T, 1}, SubArray{Taylor1{U}, 2}}))
         # Test integration
         sol = propagate(5, jd0, nyears, dense; dynamics=PlanetaryEphemeris.trivialdynamics!, order, abstol)
         @test sol isa TaylorInterpolant{Float64,Float64,2}

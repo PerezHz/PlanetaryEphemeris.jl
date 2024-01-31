@@ -40,6 +40,15 @@ function TaylorInterpolant(t0::T, t::SubArray{T, 1}, x::SubArray{Taylor1{U}, N})
     return TaylorInterpolant{T, U, N}(t0, t, x)
 end
 
+# Definition of zero TaylorInterpolant
+function zero(::Type{TaylorInterpolant{T, U, N, VT, X}}) where {T <: Number, U <: Number, N, VT <: AbstractVector{T}, X <: AbstractArray{Taylor1{U}, N}}
+    return TaylorInterpolant(zero(T), zeros(T, 1), Array{Taylor1{U}, N}(undef, zeros(Int, N)...))
+end
+
+function iszero(x::TaylorInterpolant{T, U, N, VT, X}) where {T <: Number, U <: Number, N, VT <: AbstractVector{T}, X <: AbstractArray{Taylor1{U}, N}}
+    return x == zero(TaylorInterpolant{T, U, N, VT, X})
+end
+
 # Custom print
 function show(io::IO, interp::T) where {U, V, N, T<:TaylorInterpolant{U,V,N}}
     t_range = minmax(interp.t0 + interp.t[1], interp.t0 + interp.t[end])
