@@ -98,6 +98,24 @@ using LinearAlgebra: norm
 
         @test selecteph(sol64, bodyind, euler = true, ttmtdb = true) == recovered_sol64
 
+        # Test selecteph
+        t0 = sol64.t0 + sol64.t[end]/3
+        tf = sol64.t0 + 2*sol64.t[end]/3
+        idxs = vcat(nbodyind(N, [su, ea, mo]), 6N+1:6N+13)
+        i_0 = searchsortedlast(sol64.t, t0)
+        i_f = searchsortedfirst(sol64.t, tf)
+
+        subsol = selecteph(sol64, [su, ea, mo], t0, tf; euler = true, ttmtdb = true)
+
+        @test subsol.t0 == sol64.t0
+        @test subsol.t0 + subsol.t[1] ≤ t0
+        @test subsol.t0 + subsol.t[end] ≥ tf
+        @test size(subsol.x) == (i_f - i_0, length(idxs))
+        @test subsol.x == sol64.x[i_0:i_f-1, idxs]
+        @test subsol(t0) == sol64(t0)[idxs]
+        @test subsol(tf) == sol64(tf)[idxs]
+
+        # Kernels URLs
         LSK = "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls"
         TTmTDBK = "https://ssd.jpl.nasa.gov/ftp/eph/planets/bsp/TTmTDB.de430.19feb2015.bsp"
         SPK = "https://ssd.jpl.nasa.gov/ftp/eph/planets/bsp/de430_1850-2150.bsp"

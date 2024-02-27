@@ -186,28 +186,40 @@ function reverse(tinterp::TaylorInterpolant{T,U,N}) where {T<:Real, U<:Number, N
 end
 
 @doc raw"""
-    selecteph(eph::TaylorInterpolant{T, U, 2}, bodyind::AbstractVector{Int}; euler::Bool = false,
-              ttmtdb::Bool = false) where {T <: Real, U <: Number}
-    selecteph(eph::TaylorInterpolant{T, U, 2}, i::Int) where {T <: Real, U <: Number}
+    selecteph(eph::TaylorInterpolant, bodyind::Union{Int, AbstractVector{Int}}, t0::T = eph.t0,
+              tf::T = eph.t0 + eph.t[end]; euler::Bool = false, ttmtdb::Bool = false) where {T <: Real}
 
-Return a `TaylorInterpolant` with only the ephemeris of the bodies with indices `bodyind/i`. The keyword arguments allow to
-include lunar euler angles and/or TT-TDB.
+Return a subset of `eph` with only the ephemeris of bodies `bodyind` in timerange `[t0, tf]`.
+The keyword arguments allow to include lunar euler angles and/or TT-TDB.
 """
-function selecteph(eph::TaylorInterpolant{T, U, 2}, bodyind::AbstractVector{Int}; euler::Bool = false,
-                   ttmtdb::Bool = false) where {T, U}
+function selecteph(eph::TaylorInterpolant, bodyind::Union{Int, AbstractVector{Int}}, t0::T = eph.t0,
+                   tf::T = eph.t0 + eph.t[end]; euler::Bool = false, ttmtdb::Bool = false) where {T <: Real}
+    # Times
+    tmin, tmax = minmax(eph.t0, eph.t0 + eph.t[end])
+    @assert tmin ≤ t0 ≤ tf ≤ tmax "$tmin ≤ t0 ≤ tf ≤ $tmax"
+    if issorted(eph.t)
+        i_0 = searchsortedlast(eph.t, t0)
+        i_f = searchsortedfirst(eph.t, tf)
+    else
+        i_0 = searchsortedlast(eph.t, tf, rev = true)
+        i_f = searchsortedfirst(eph.t, t0, rev = true)
+    end
+    # Degrees of freedom
     N = numberofbodies(eph)
+    @assert all(bodyind .< N) "bodyind .< $N" 
     idxs = nbodyind(N, bodyind)
     if euler
-        idxs = union(idxs, 6N+1:6N+12)
+        idxs = vcat(idxs, 6N+1:6N+12)
     end
     if ttmtdb
-        idxs = union(idxs, 6N+13)
+        idxs = vcat(idxs, 6N+13)
     end
-    x = view(eph.x, :, idxs)
-    return TaylorInterpolant(eph.t0, eph.t, x)
+    # Views
+    t = view(eph.t, i_0:i_f)
+    x = view(eph.x, i_0:i_f-1, idxs)
+    # New TaylorInterpolant
+    return TaylorInterpolant(eph.t0, t, x)
 end
-
-selecteph(eph::TaylorInterpolant, i::Int) = selecteph(eph, i:i)
 
 function join(bwd::TaylorInterpolant{T, U, 2}, fwd::TaylorInterpolant{T, U, 2}) where {T, U}
     @assert bwd.t0 == fwd.t0 "Initial time must be the same for both TaylorInterpolant"
