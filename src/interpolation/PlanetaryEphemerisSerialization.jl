@@ -21,10 +21,12 @@ struct PlanetaryEphemerisSerialization{T}
 end
 
 # Tell JLD2 to save TaylorInterpolant{T, T, 2} as PlanetaryEphemerisSerialization{T}
-writeas(::Type{TaylorInterpolant{T, T, 2}}) where {T<:Real} = PlanetaryEphemerisSerialization{T}
+function writeas(::Type{<:TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}}) where {T<:Real}
+    return PlanetaryEphemerisSerialization{T}
+end
 
 # Convert method to write .jld2 files
-function convert(::Type{PlanetaryEphemerisSerialization{T}}, eph::TaylorInterpolant{T, T, 2}) where {T <: Real}
+function convert(::Type{PlanetaryEphemerisSerialization{T}}, eph::TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}) where {T <: Real}
     # Taylor polynomials order
     order = eph.x[1, 1].order
     # Number of coefficients in each polynomial
@@ -44,7 +46,7 @@ function convert(::Type{PlanetaryEphemerisSerialization{T}}, eph::TaylorInterpol
 end
 
 # Convert method to read .jld2 files
-function convert(::Type{TaylorInterpolant{T, T, 2}}, eph::PlanetaryEphemerisSerialization{T}) where {T<:Real}
+function convert(::Type{TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}}, eph::PlanetaryEphemerisSerialization{T}) where {T<:Real}
     # Taylor polynomials order
     order = eph.order
     # Number of coefficients in each polynomial
@@ -61,4 +63,8 @@ function convert(::Type{TaylorInterpolant{T, T, 2}}, eph::PlanetaryEphemerisSeri
     end
 
     return TaylorInterpolant{T, T, 2}(eph.t0, eph.t, x)
+end
+
+function convert(::Type{TaylorInterpolant{T, T, 2}}, eph::PlanetaryEphemerisSerialization{T}) where {T<:Real}
+    return convert(TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}, eph)
 end

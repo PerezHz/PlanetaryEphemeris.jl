@@ -22,11 +22,13 @@ struct TaylorInterpolantNSerialization{T}
     x::Vector{T}
 end
 
-# Tell JLD2 to save TaylorInterpolant{T, TaylorN{T}, 2} as TaylorInterpolantNSerialization{T}
-writeas(::Type{TaylorInterpolant{T, TaylorN{T}, 2}}) where {T} = TaylorInterpolantNSerialization{T}
+# Tell JLD2 to save <:TaylorInterpolant{T, TaylorN{T}, 2} as TaylorInterpolantNSerialization{T}
+function writeas(::Type{<:TaylorInterpolant{T, TaylorN{T}, 2, Vector{T}, Matrix{Taylor1{TaylorN{T}}}}}) where {T<:Real}
+    return TaylorInterpolantNSerialization{T}
+end
 
 # Convert method to write .jld2 files
-function convert(::Type{TaylorInterpolantNSerialization{T}}, eph::TaylorInterpolant{T, TaylorN{T}, 2}) where {T}
+function convert(::Type{TaylorInterpolantNSerialization{T}}, eph::TaylorInterpolant{T, TaylorN{T}, 2, Vector{T}, Matrix{Taylor1{TaylorN{T}}}}) where {T}
     # Variables
     vars = TS.get_variable_names()
     # Number of variables
@@ -45,7 +47,6 @@ function convert(::Type{TaylorInterpolantNSerialization{T}}, eph::TaylorInterpol
     L = varorder + 1
     # Number of coefficients in each HomogeneousPolynomial
     M = binomial(n + varorder, varorder)
-    # M = sum(binomial(n + i_3 - 1, i_3) for i_3 in 0:varorder)
 
     # Vector of coefficients
     x = Vector{T}(undef, N * k * M)
@@ -71,7 +72,7 @@ function convert(::Type{TaylorInterpolantNSerialization{T}}, eph::TaylorInterpol
 end
 
 # Convert method to read .jld2 files
-function convert(::Type{TaylorInterpolant{T, TaylorN{T}, 2}}, eph::TaylorInterpolantNSerialization{T}) where {T}
+function convert(::Type{TaylorInterpolant{T, TaylorN{T}, 2, Vector{T}, Matrix{Taylor1{TaylorN{T}}}}}, eph::TaylorInterpolantNSerialization{T}) where {T}
     # Variables
     vars = eph.vars
     # Number of variables
@@ -120,4 +121,8 @@ function convert(::Type{TaylorInterpolant{T, TaylorN{T}, 2}}, eph::TaylorInterpo
     end
 
     return TaylorInterpolant{T, TaylorN{T}, 2}(eph.t0, eph.t, x)
+end
+
+function convert(::Type{TaylorInterpolant{T, TaylorN{T}, 2}}, eph::PlanetaryEphemerisSerialization{T}) where {T<:Real}
+    return convert(TaylorInterpolant{T, TaylorN{T}, 2, Vector{T}, Matrix{Taylor1{TaylorN{T}}}}, eph)
 end
