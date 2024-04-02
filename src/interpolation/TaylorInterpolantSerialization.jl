@@ -1,7 +1,7 @@
 # Custom serialization
 
 @doc raw"""
-    PlanetaryEphemerisSerialization{T}
+    TaylorInterpolantSerialization{T}
 
 Custom serialization struct to save a `TaylorInterpolant{T, T, 2}` to a `.jld2` file.
 
@@ -12,7 +12,7 @@ Custom serialization struct to save a `TaylorInterpolant{T, T, 2}` to a `.jld2` 
 - `t::Vector{T}`: vector of times.
 - `x::Vector{T}`: vector of coefficients.
 """
-struct PlanetaryEphemerisSerialization{T}
+struct TaylorInterpolantSerialization{T}
     order::Int
     dims::Tuple{Int, Int}
     t0::T
@@ -20,13 +20,16 @@ struct PlanetaryEphemerisSerialization{T}
     x::Vector{T}
 end
 
-# Tell JLD2 to save TaylorInterpolant{T, T, 2} as PlanetaryEphemerisSerialization{T}
+# backwards-compatibility alias
+const PlanetaryEphemerisSerialization{T} = TaylorInterpolantSerialization{T} where {T}
+
+# Tell JLD2 to save TaylorInterpolant{T, T, 2} as TaylorInterpolantSerialization{T}
 function writeas(::Type{<:TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}}) where {T<:Real}
-    return PlanetaryEphemerisSerialization{T}
+    return TaylorInterpolantSerialization{T}
 end
 
 # Convert method to write .jld2 files
-function convert(::Type{PlanetaryEphemerisSerialization{T}}, eph::TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}) where {T <: Real}
+function convert(::Type{TaylorInterpolantSerialization{T}}, eph::TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}) where {T <: Real}
     # Taylor polynomials order
     order = eph.x[1, 1].order
     # Number of coefficients in each polynomial
@@ -42,11 +45,11 @@ function convert(::Type{PlanetaryEphemerisSerialization{T}}, eph::TaylorInterpol
         x[(i-1)*k+1 : i*k] = eph.x[i].coeffs
     end
 
-    return PlanetaryEphemerisSerialization{T}(order, dims, eph.t0, eph.t, x)
+    return TaylorInterpolantSerialization{T}(order, dims, eph.t0, eph.t, x)
 end
 
 # Convert method to read .jld2 files
-function convert(::Type{TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}}, eph::PlanetaryEphemerisSerialization{T}) where {T<:Real}
+function convert(::Type{TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}}, eph::TaylorInterpolantSerialization{T}) where {T<:Real}
     # Taylor polynomials order
     order = eph.order
     # Number of coefficients in each polynomial
@@ -65,6 +68,6 @@ function convert(::Type{TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}
     return TaylorInterpolant{T, T, 2}(eph.t0, eph.t, x)
 end
 
-function convert(::Type{TaylorInterpolant{T, T, 2}}, eph::PlanetaryEphemerisSerialization{T}) where {T<:Real}
+function convert(::Type{TaylorInterpolant{T, T, 2}}, eph::TaylorInterpolantSerialization{T}) where {T<:Real}
     return convert(TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}, eph)
 end
