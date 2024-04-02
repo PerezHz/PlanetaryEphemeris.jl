@@ -85,12 +85,14 @@ using LinearAlgebra: norm
         @test sol1N(sol.t0)() == sol(sol.t0)
         @test sol1N(tmid)() == sol(tmid)
         # Test PlanetaryEphemerisSerialization
+        @test JLD2.writeas(typeof(sol)) == PlanetaryEphemeris.PlanetaryEphemerisSerialization{Float64}
         jldsave("test.jld2"; sol)
         sol_file = JLD2.load("test.jld2", "sol")
         rm("test.jld2")
         @test sol_file == sol
         # Test TaylorInterpolantNSerialization
         sol1N = TaylorInterpolant(sol.t0, sol.t, sol.x .* Taylor1(one(dq[1]), 25))
+        @test JLD2.writeas(typeof(sol1N)) == PlanetaryEphemeris.TaylorInterpolantNSerialization{Float64}
         jldsave("test.jld2"; sol1N)
         sol1N_file = JLD2.load("test.jld2", "sol1N")
         @test sol1N_file == sol1N
