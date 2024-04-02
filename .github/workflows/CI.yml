@@ -4,8 +4,6 @@ on:
     paths-ignore:
       - 'LICENSE.md'
       - 'README.md'
-    tags: ['*']
-  pull_request:
 concurrency:
   # Skip intermediate builds: always.
   # Cancel intermediate builds: only if it is a pull request build.

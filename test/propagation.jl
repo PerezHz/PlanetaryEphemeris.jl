@@ -68,19 +68,35 @@ using LinearAlgebra: norm
         @test iszero(zero(TaylorInterpolant{T, T, 2, SubArray{T, 1}, SubArray{Taylor1{T}, 2}}))
         @test iszero(zero(TaylorInterpolant{T, U, 2, SubArray{T, 1}, SubArray{Taylor1{U}, 2}}))
         # Test integration
-        sol = propagate(5, jd0, nyears, dense; dynamics=PlanetaryEphemeris.trivialdynamics!, order, abstol)
-        @test sol isa TaylorInterpolant{Float64,Float64,2}
+        sol = propagate(5, jd0, nyears, dense; dynamics=PlanetaryEphemeris.freeparticle!, order, abstol)
+        @test sol isa TaylorInterpolant{Float64, Float64, 2}
         q0 = initialcond(N, jd0)
         @test sol(sol.t0) == q0
         @test sol.t0 == 0.0
         @test length(sol.t) == size(sol.x, 1) + 1
         @test length(q0) == size(sol.x, 2)
         dq = TaylorSeries.set_variables("dq", order=2, numvars=2)
-        tmid = sol.t0 + sol.t[1]/2
+        tmid = sol.t0 + sol.t[2]/2
         @test sol(tmid) isa Vector{Float64}
         @test sol(tmid + Taylor1(order)) isa Vector{Taylor1{Float64}}
         @test sol(tmid + dq[1] + dq[1]*dq[2]) isa Vector{TaylorN{Float64}}
-        @test sol(tmid + Taylor1([dq[1],dq[1]*dq[2]],order)) isa Vector{Taylor1{TaylorN{Float64}}}
+        @test sol(tmid + Taylor1([dq[1],dq[1]*dq[2]], order)) isa Vector{Taylor1{TaylorN{Float64}}}
+        sol1N = TaylorInterpolant(sol.t0, sol.t, sol.x .+ Taylor1(dq[1], 25))
+        @test sol1N(sol.t0)() == sol(sol.t0)
+        @test sol1N(tmid)() == sol(tmid)
+        # Test PlanetaryEphemerisSerialization
+        @test JLD2.writeas(typeof(sol)) == PlanetaryEphemeris.PlanetaryEphemerisSerialization{Float64}
+        jldsave("test.jld2"; sol)
+        sol_file = JLD2.load("test.jld2", "sol")
+        rm("test.jld2")
+        @test sol_file == sol
+        # Test TaylorInterpolantNSerialization
+        sol1N = TaylorInterpolant(sol.t0, sol.t, sol.x .* Taylor1(one(dq[1]), 25))
+        @test JLD2.writeas(typeof(sol1N)) == PlanetaryEphemeris.TaylorInterpolantNSerialization{Float64}
+        jldsave("test.jld2"; sol1N)
+        sol1N_file = JLD2.load("test.jld2", "sol1N")
+        @test sol1N_file == sol1N
+        rm("test.jld2")
     end
 
     @testset "Propagation: DE430 dynamical model" begin
