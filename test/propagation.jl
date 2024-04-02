@@ -84,8 +84,8 @@ using LinearAlgebra: norm
         sol1N = TaylorInterpolant(sol.t0, sol.t, sol.x .+ Taylor1(dq[1], 25))
         @test sol1N(sol.t0)() == sol(sol.t0)
         @test sol1N(tmid)() == sol(tmid)
-        # Test PlanetaryEphemerisSerialization
-        @test JLD2.writeas(typeof(sol)) == PlanetaryEphemeris.PlanetaryEphemerisSerialization{Float64}
+        # Test TaylorInterpolantSerialization
+        @test JLD2.writeas(typeof(sol)) == PlanetaryEphemeris.TaylorInterpolantSerialization{Float64}
         jldsave("test.jld2"; sol)
         sol_file = JLD2.load("test.jld2", "sol")
         rm("test.jld2")

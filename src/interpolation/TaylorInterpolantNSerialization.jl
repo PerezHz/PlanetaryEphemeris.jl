@@ -123,6 +123,6 @@ function convert(::Type{TaylorInterpolant{T, TaylorN{T}, 2, Vector{T}, Matrix{Ta
     return TaylorInterpolant{T, TaylorN{T}, 2}(eph.t0, eph.t, x)
 end
 
-function convert(::Type{TaylorInterpolant{T, TaylorN{T}, 2}}, eph::PlanetaryEphemerisSerialization{T}) where {T<:Real}
+function convert(::Type{TaylorInterpolant{T, TaylorN{T}, 2}}, eph::TaylorInterpolantSerialization{T}) where {T<:Real}
     return convert(TaylorInterpolant{T, TaylorN{T}, 2, Vector{T}, Matrix{Taylor1{TaylorN{T}}}}, eph)
 end
