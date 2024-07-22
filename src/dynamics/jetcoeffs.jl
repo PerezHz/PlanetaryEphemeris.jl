@@ -3526,7 +3526,7 @@ function TaylorIntegration.jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_threads!}, t:
         TaylorSeries.mul!(dq[6N + 12], inv_I_c_t[3, 3], Ic_dωc_3, ord)
         TaylorSeries.identity!(dq[6N + 13], zero_q_1, ord)
         for __idx = eachindex(q)
-            TaylorIntegration.ode!(q[__idx], dq[__idx], ordnext)
+            TaylorIntegration.solcoeff!(q[__idx], dq[__idx], ordnext)
         end
     end
     return nothing
@@ -8111,7 +8111,7 @@ function TaylorIntegration.jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::Abstract
         TaylorSeries.add!(tmp4044, tmp4041, tmp4043, ord)
         TaylorSeries.mul!(dq[6N + 13], daysec, tmp4044, ord)
         for __idx = eachindex(q)
-            TaylorIntegration.ode!(q[__idx], dq[__idx], ordnext)
+            TaylorIntegration.solcoeff!(q[__idx], dq[__idx], ordnext)
         end
     end
     return nothing
