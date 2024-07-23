@@ -39,8 +39,8 @@ contains an example script. This script may be called as:
 
 ## Acknowledgments
 
-We acknowledge financial support from UNAM-PAPIIT grant IG100819 and computing
-resources provided by LANCAD-UNAM-DGTIC-284.
+We acknowledge financial support from UNAM-PAPIIT grants IG-100819 and IG-101122, as well as
+computing resources provided by LANCAD-UNAM-DGTIC-284.
 
 ## References
 
