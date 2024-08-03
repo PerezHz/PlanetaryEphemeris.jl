@@ -151,7 +151,7 @@ function save2jld2andcheck(outfilename::String, sol)
 end
 
 @doc raw"""
-    propagate(maxsteps::Int, jd0::T, tspan::T, ::Val{false/true}; dynamics::Function = NBP_pN_A_J23E_J23M_J2S_threads!,
+    propagate(maxsteps::Int, jd0::T, tspan::T; dynamics::Function = NBP_pN_A_J23E_J23M_J2S_threads!,
               nast::Int = 343, order::Int = order, abstol::T = abstol, parse_eqs::Bool = true) where {T <: Real}
 
 Integrate the Solar System via the Taylor method.
@@ -161,7 +161,6 @@ Integrate the Solar System via the Taylor method.
 - `maxsteps::Int`: maximum number of steps for the integration.
 - `jd0::T`: initial Julian date.
 - `tspan::T`: time span of the integration (in Julian days).
-- `::Val{false/true}`: whether to save the Taylor polynomials at each step (`true`) or not (`false`).
 - `dynamics::Function`: dynamical model function.
 - `nast::Int`: number of asteroids to be considered in the integration.
 - `order::Int`: order of the Taylor expansions to be used in the integration.
@@ -169,48 +168,37 @@ Integrate the Solar System via the Taylor method.
 - `parse_eqs::Bool`: whether to use the specialized method of `jetcoeffs!` (`true`) created with `@taylorize` or not.
 """ propagate
 
-for V_dense in (:(Val{true}), :(Val{false}))
-    @eval begin
+function propagate(maxsteps::Int, jd0::T, tspan::T; dynamics::Function = NBP_pN_A_J23E_J23M_J2S_threads!,
+                    nast::Int = 343, order::Int = order, abstol::T = abstol, parse_eqs::Bool = true) where {T <: Real}
 
-        function propagate(maxsteps::Int, jd0::T, tspan::T, ::$V_dense; dynamics::Function = NBP_pN_A_J23E_J23M_J2S_threads!,
-                           nast::Int = 343, order::Int = order, abstol::T = abstol, parse_eqs::Bool = true) where {T <: Real}
+    # Total number of bodies (Sun + 8 planets + Moon + Pluto + Asteroid)
+    N = 11 + nast
 
-            # Total number of bodies (Sun + 8 planets + Moon + Pluto + Asteroid)
-            N = 11 + nast
+    # Get 6N + 13 initial conditions (3N positions + 3N velocities + 6 lunar mantle angles + 6 lunar core angles + TT-TDB)
+    q0 = initialcond(N, jd0)
 
-            # Get 6N + 13 initial conditions (3N positions + 3N velocities + 6 lunar mantle angles + 6 lunar core angles + TT-TDB)
-            q0 = initialcond(N, jd0)
+    # Set initial time equal to zero (improves accuracy in data reductions)
+    t0 = zero(T)
 
-            # Set initial time equal to zero (improves accuracy in data reductions)
-            t0 = zero(T)
+    # Parameters for dynamical function
+    params = (N, jd0)
 
-            # Parameters for dynamical function
-            params = (N, jd0)
+    # Final time of integration (days)
+    tmax = t0 + tspan*yr
 
-            # Final time of integration (days)
-            tmax = t0 + tspan*yr
+    # Integration
+    sol = @time taylorinteg(dynamics, q0, t0, tmax, order, abstol, params;
+                            maxsteps, parse_eqs)
 
-            # Integration
-            sol = @time taylorinteg(dynamics, q0, t0, tmax, order, abstol, $V_dense(), params;
-                                    maxsteps, parse_eqs)
+    return TaylorInterpolant{T, T, 2}(jd0 - J2000, sol.t, sol.p)
+end
 
-            if $V_dense == Val{true}
-                return TaylorInterpolant{T, T, 2}(jd0 - J2000, sol[1], sol[3])
-            else
-                return sol
-            end
+function propagate(maxsteps::Int, jd0::T1, tspan::T2; dynamics::Function = NBP_pN_A_J23E_J23M_J2S_threads!,
+                    nast::Int = 343, order::Int = order, abstol::T3 = abstol, parse_eqs::Bool = true) where {T1, T2, T3 <: Real}
 
-        end
+    _jd0, _tspan, _abstol = promote(jd0, tspan, abstol)
 
-        function propagate(maxsteps::Int, jd0::T1, tspan::T2, ::$V_dense; dynamics::Function = NBP_pN_A_J23E_J23M_J2S_threads!,
-                           nast::Int = 343, order::Int = order, abstol::T3 = abstol, parse_eqs::Bool = true) where {T1, T2, T3 <: Real}
+    return propagate(maxsteps, _jd0, _tspan; dynamics = dynamics, nast = nast, order = order,
+                        abstol = _abstol, parse_eqs = parse_eqs)
 
-            _jd0, _tspan, _abstol = promote(jd0, tspan, abstol)
-
-            return propagate(maxsteps, _jd0, _tspan, $V_dense(); dynamics = dynamics, nast = nast, order = order,
-                             abstol = _abstol, parse_eqs = parse_eqs)
-
-        end
-
-    end
 end
