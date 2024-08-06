@@ -33,6 +33,7 @@ include("propagation.jl")
 include("osculating.jl")
 include("barycenter.jl")
 #include("precompile.jl")
+include("deprecated.jl")
 
 include("dynamics/trivial.jl")
 include("dynamics/dynamical_model.jl")

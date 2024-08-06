@@ -26,8 +26,6 @@ using LinearAlgebra: norm
     local jd0 = datetime2julian(DateTime(2000,1,1,12))
     # Number of years
     local nyears = 2031.0 - year(julian2datetime(jd0))
-    # Dense output
-    local dense = Val(true)
     # Dynamical function
     local dynamics = DE430!
 
@@ -68,7 +66,7 @@ using LinearAlgebra: norm
         @test iszero(zero(TaylorInterpolant{T, T, 2, SubArray{T, 1}, SubArray{Taylor1{T}, 2}}))
         @test iszero(zero(TaylorInterpolant{T, U, 2, SubArray{T, 1}, SubArray{Taylor1{U}, 2}}))
         # Test integration
-        sol = propagate(5, jd0, nyears, dense; dynamics=PlanetaryEphemeris.freeparticle!, order, abstol)
+        sol = propagate(5, jd0, nyears; dynamics=PlanetaryEphemeris.freeparticle!, order, abstol)
         @test sol isa TaylorInterpolant{Float64, Float64, 2}
         q0 = initialcond(N, jd0)
         @test sol(sol.t0) == q0
@@ -106,7 +104,7 @@ using LinearAlgebra: norm
         # Float64
 
         # Test integration
-        sol64 = propagate(100, jd0, nyears, dense; dynamics, order, abstol)
+        sol64 = propagate(100, jd0, nyears; dynamics, order, abstol)
         # Save solution
         filename = selecteph2jld2(sol64, bodyind, nyears)
         # Recovered solution
@@ -183,7 +181,7 @@ using LinearAlgebra: norm
         # Float 128
         #=
         # Test integration
-        sol128 = propagate(1, Float128(jd0), nyears, dense; dynamics = dynamics, order = order, abstol = abstol)
+        sol128 = propagate(1, Float128(jd0), nyears; dynamics = dynamics, order = order, abstol = abstol)
         # Save solution
         filename = selecteph2jld2(sol128, bodyind, nyears)
         # Recovered solution

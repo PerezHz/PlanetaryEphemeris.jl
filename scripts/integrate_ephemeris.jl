@@ -3,17 +3,17 @@ using ArgParse, PlanetaryEphemeris, Dates
 function parse_commandline()
 
     s = ArgParseSettings()
-    
+
     # Program name (for usage & help screen)
-    s.prog = "integrate_ephemeris.jl"  
+    s.prog = "integrate_ephemeris.jl"
     # Desciption (for help screen)
-    s.description = "Integrates JPL DE430 Ephemeris" 
+    s.description = "Integrates JPL DE430 Ephemeris"
 
     @add_arg_table! s begin
         "--maxsteps"
             help = "Maximum number of steps during integration"
             arg_type = Int
-            default = 1_000_000 
+            default = 1_000_000
         "--jd0"
             help = "Starting time of integration; options are: \"2000-01-01T12:00:00\" or \"1969-06-28T00:00:00\""
             arg_type = DateTime
@@ -41,7 +41,7 @@ function parse_commandline()
         "--parse_eqs"
             help = "Whether to use the taylorized method of jetcoeffs (a-priori faster) or not"
             arg_type = Bool
-            default = true 
+            default = true
         "--bodyind"
             help = "Body indices in output"
             arg_type = UnitRange{Int}
@@ -68,43 +68,43 @@ function print_header(header::String)
     println(repeat("-", L))
     println(header)
     println(repeat("-", L))
-end 
+end
 
 function main(maxsteps::Int, jd0_datetime::DateTime, nyears::Float64, dynamics::Function, nast::Int,
               bodyind::UnitRange{Int}, order::Int, abstol::Float64, parse_eqs::Bool)
-    
-    jd0 = datetime2julian(jd0_datetime) 
+
+    jd0 = datetime2julian(jd0_datetime)
     print_header("Integrator warmup")
-    _ = propagate(1, jd0, nyears, Val(true), dynamics = dynamics, nast = nast, order = order, abstol = abstol, 
+    _ = propagate(1, jd0, nyears, dynamics = dynamics, nast = nast, order = order, abstol = abstol,
                   parse_eqs = parse_eqs)
-    
+
     print_header("Full integration")
     println( "Initial time of integration: ", string(jd0_datetime) )
     println( "Final time of integration: ", string(julian2datetime(jd0 + nyears*yr)) )
-    sol = propagate(maxsteps, jd0, nyears, Val(true), dynamics = dynamics, nast = nast, order = order, abstol = abstol, 
+    sol = propagate(maxsteps, jd0, nyears, dynamics = dynamics, nast = nast, order = order, abstol = abstol,
                     parse_eqs = parse_eqs)
 
     selecteph2jld2(sol, bodyind, nyears)
 
-    nothing 
-end 
+    nothing
+end
 
 function main()
 
-    # Parse arguments from commandline 
+    # Parse arguments from commandline
     parsed_args = parse_commandline()
 
     print_header("Integrate Ephemeris")
     print_header("General parameters")
 
-    # Number of threads 
+    # Number of threads
     println("• Number of threads: ", Threads.nthreads())
 
-    # Dynamical function 
+    # Dynamical function
     dynamics = parsed_args["dynamics"]
     println("• Dynamical function: ", dynamics)
 
-    # Maximum number of steps 
+    # Maximum number of steps
     maxsteps = parsed_args["maxsteps"]
     println("• Maximum number of steps: ", maxsteps)
 
@@ -116,21 +116,21 @@ function main()
     abstol = parsed_args["abstol"]
     println("• Absolute tolerance: ", abstol)
 
-    # Wheter to use @taylorize or not 
+    # Wheter to use @taylorize or not
     parse_eqs = parsed_args["parse_eqs"]
     println("• Use @taylorize: ", parse_eqs)
 
-    # Initial date o fintegration 
+    # Initial date o fintegration
     jd0_datetime = parsed_args["jd0"]
-    # Number of years to be integrated 
+    # Number of years to be integrated
     nyears = parsed_args["nyears"]
-    # Number of asteroids to be saved 
+    # Number of asteroids to be saved
     nast = parsed_args["nast"]
-    # Indexes of bodies to be saved 
+    # Indexes of bodies to be saved
     bodyind = parsed_args["bodyind"]
 
     main(maxsteps, jd0_datetime, nyears, dynamics, nast, bodyind, order, abstol, parse_eqs)
-    
+
 end
 
 main()
