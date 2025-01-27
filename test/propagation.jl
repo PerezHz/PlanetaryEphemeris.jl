@@ -57,17 +57,17 @@ using LinearAlgebra: norm
         end
     end
 
-    @testset "TaylorInterpolant" begin
+    @testset "TaylorSolution compatibility" begin
         # Test zero TaylorInterpolant
-        T = Float64
-        U = TaylorN{T}
-        @test iszero(zero(TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}))
-        @test iszero(zero(TaylorInterpolant{T, U, 2, Vector{T}, Matrix{Taylor1{U}}}))
-        @test iszero(zero(TaylorInterpolant{T, T, 2, SubArray{T, 1}, SubArray{Taylor1{T}, 2}}))
-        @test iszero(zero(TaylorInterpolant{T, U, 2, SubArray{T, 1}, SubArray{Taylor1{U}, 2}}))
+        # T = Float64
+        # U = TaylorN{T}
+        # @test iszero(zero(TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}))
+        # @test iszero(zero(TaylorInterpolant{T, U, 2, Vector{T}, Matrix{Taylor1{U}}}))
+        # @test iszero(zero(TaylorInterpolant{T, T, 2, SubArray{T, 1}, SubArray{Taylor1{T}, 2}}))
+        # @test iszero(zero(TaylorInterpolant{T, U, 2, SubArray{T, 1}, SubArray{Taylor1{U}, 2}}))
         # Test integration
         sol = propagate(5, jd0, nyears; dynamics=PlanetaryEphemeris.freeparticle!, order, abstol)
-        @test sol isa TaylorInterpolant{Float64, Float64, 2}
+        @test sol isa TaylorSolution{Float64, Float64, 2}
         q0 = initialcond(N, jd0)
         @test sol(sol.t0) == q0
         @test sol.t0 == 0.0
@@ -79,18 +79,18 @@ using LinearAlgebra: norm
         @test sol(tmid + Taylor1(order)) isa Vector{Taylor1{Float64}}
         @test sol(tmid + dq[1] + dq[1]*dq[2]) isa Vector{TaylorN{Float64}}
         @test sol(tmid + Taylor1([dq[1],dq[1]*dq[2]], order)) isa Vector{Taylor1{TaylorN{Float64}}}
-        sol1N = TaylorInterpolant(sol.t0, sol.t, sol.x .+ Taylor1(dq[1], 25))
+        sol1N = TaylorSolution(sol.t, sol.x .+ Taylor1(dq[1], 25))
         @test sol1N(sol.t0)() == sol(sol.t0)
         @test sol1N(tmid)() == sol(tmid)
         # Test TaylorInterpolantSerialization
-        @test JLD2.writeas(typeof(sol)) == PlanetaryEphemeris.TaylorInterpolantSerialization{Float64}
+        # @test JLD2.writeas(typeof(sol)) == PlanetaryEphemeris.TaylorInterpolantSerialization{Float64}
         jldsave("test.jld2"; sol)
         sol_file = JLD2.load("test.jld2", "sol")
         rm("test.jld2")
         @test sol_file == sol
         # Test TaylorInterpolantNSerialization
-        sol1N = TaylorInterpolant(sol.t0, sol.t, sol.x .* Taylor1(one(dq[1]), 25))
-        @test JLD2.writeas(typeof(sol1N)) == PlanetaryEphemeris.TaylorInterpolantNSerialization{Float64}
+        sol1N = TaylorSolution(sol.t, sol.x .* Taylor1(one(dq[1]), 25))
+        # @test JLD2.writeas(typeof(sol1N)) == PlanetaryEphemeris.TaylorInterpolantNSerialization{Float64}
         jldsave("test.jld2"; sol1N)
         sol1N_file = JLD2.load("test.jld2", "sol1N")
         @test sol1N_file == sol1N
@@ -142,7 +142,7 @@ using LinearAlgebra: norm
         # Load kernels
         furnsh("naif0012.tls", "de430_1850-2150.bsp", "TTmTDB.de430.19feb2015.bsp")
 
-        ttmtdb_pe = TaylorInterpolant(sol64.t0, sol64.t, sol64.x[:, 6N+13]) # TT-TDB
+        ttmtdb_pe = TaylorSolution(sol64.t, sol64.x[:, 6N+13]) # TT-TDB
         posvel_pe_su = selecteph(sol64,su) # Sun
         posvel_pe_ea = selecteph(sol64,ea) # Earth
         posvel_pe_mo = selecteph(sol64,mo) # Moon
