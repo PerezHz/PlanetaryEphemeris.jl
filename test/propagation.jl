@@ -153,7 +153,7 @@ using LinearAlgebra: norm
         # Load kernels
         furnsh("naif0012.tls", "de430_1850-2150.bsp", "TTmTDB.de430.19feb2015.bsp")
 
-        ttmtdb_pe = TaylorSolution(sol64.t, sol64.x[:, 6N+13]) # TT-TDB
+        ttmtdb_pe = TaylorSolution(sol64.t, sol64.x[:, 6N+13], sol64.p[:, 6N+13]) # TT-TDB
         posvel_pe_su = selecteph(sol64,su) # Sun
         posvel_pe_ea = selecteph(sol64,ea) # Earth
         posvel_pe_mo = selecteph(sol64,mo) # Moon
@@ -167,7 +167,7 @@ using LinearAlgebra: norm
         posvel_jpl_ma(et) = kmsec2auday(spkgeo(4, et, "J2000", 0)[1]) # Mars
         posvel_jpl_ju(et) = kmsec2auday(spkgeo(5, et, "J2000", 0)[1]) # Jupiter
 
-        tv = range(sol64.t0, sol64.t[end], 10)
+        tv = range(sol64.t[1], sol64.t[end], 10)
         for t in tv
             et = t * daysec
             @show t, et
