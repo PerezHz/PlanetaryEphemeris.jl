@@ -20,10 +20,12 @@ potential.
 function loadeph(sseph::TaylorSolution, μ::Vector{T}) where {T <: Real}
     # Number of bodies and timesteps
     Nb = numberofbodies(sseph)
-    Nt = size(sseph.p, 1)
+    Nt = length(sseph.t)
     # Initialize memory for the Newtonian point-mass accelerations and N-body potentials
-    acc_eph = TaylorSolution(sseph.t, [zero(sseph.p[1]) for i in 1:Nt for j in 1:3Nb])
-    pot_eph = TaylorSolution(sseph.t, [zero(sseph.p[1]) for i in 1:Nt for j in 1:Nb])
+    acc_eph = TaylorSolution(sseph.t, [zero(sseph.x[1]) for i in 1:Nt, j in 1:3Nb],
+        [zero(sseph.p[1]) for i in 1:Nt-1, j in 1:3Nb])
+    pot_eph = TaylorSolution(sseph.t, [zero(sseph.x[1]) for i in 1:Nt, j in 1:Nb],
+        [zero(sseph.p[1]) for i in 1:Nt-1, j in 1:Nb])
     # Iterate over all bodies
     for j in 1:Nb
         for i in 1:Nb
@@ -35,9 +37,9 @@ function loadeph(sseph::TaylorSolution, μ::Vector{T}) where {T <: Real}
                 Y_ij = sseph.p[:, 3i-1] - sseph.p[:, 3j-1]
                 Z_ij = sseph.p[:, 3i  ] - sseph.p[:, 3j  ]
                 # Distance between two bodies squared ||\mathbf{r}_i - \mathbf{r}_j||^2
-                @. r_p2_ij = ( (X_ij^2) + (Y_ij^2) ) + (Z_ij^2)
+                r_p2_ij = @. ( (X_ij^2) + (Y_ij^2) ) + (Z_ij^2)
                 # Distance between two bodies ||\mathbf{r}_i - \mathbf{r}_j||
-                @. r_ij = sqrt(r_p2_ij)
+                r_ij = @. sqrt(r_p2_ij)
                 # Newtonian potential
                 @. pot_eph.p[:, j] += (μ[i]/r_ij)
             end
@@ -89,7 +91,7 @@ function selecteph(eph::TaylorSolution, bodyind::Union{Int, AbstractVector{Int}}
     end
     # Subsets of eph.x and eph.p containing bodies in bodyind and spanning [t0, tf]
     x = view(eph.x, j0:jf, idxs)
-    p = view(eph.p, j0:jf, idxs)
+    p = view(eph.p, j0:jf-1, idxs)
 
     return TaylorSolution(t, x, p)
 end

@@ -5,6 +5,7 @@ using Dates
 using Quadmath
 using JLD2
 using TaylorSeries
+using TaylorIntegration
 using Test
 
 using PlanetaryEphemeris: initialcond, ssic_1969, ssic_2000, astic_1969, astic_2000
@@ -68,32 +69,38 @@ using LinearAlgebra: norm
         # Test integration
         sol = propagate(5, jd0, nyears; dynamics=PlanetaryEphemeris.freeparticle!, order, abstol)
         @test sol isa TaylorSolution{Float64, Float64, 2}
+        @test length(sol.t) == size(sol.x, 1) == size(sol.p, 1) + 1
+        @test numberofbodies(sol) == N
+        @test sol.t == [0.0, nyears * yr]
         q0 = initialcond(N, jd0)
-        @test sol(sol.t0) == q0
-        @test sol.t0 == 0.0
-        @test length(sol.t) == size(sol.x, 1) + 1
-        @test length(q0) == size(sol.x, 2)
+        @test sol(sol.t[1]) == q0
+        @test length(q0) == size(sol.x, 2) == size(sol.p, 2)
+        # Test jet transport evaluation
         dq = TaylorSeries.set_variables("dq", order=2, numvars=2)
-        tmid = sol.t0 + sol.t[2]/2
+        one_dq = one(dq[1])
+        tmid = sol.t[1] + sol.t[2]/2
         @test sol(tmid) isa Vector{Float64}
         @test sol(tmid + Taylor1(order)) isa Vector{Taylor1{Float64}}
         @test sol(tmid + dq[1] + dq[1]*dq[2]) isa Vector{TaylorN{Float64}}
         @test sol(tmid + Taylor1([dq[1],dq[1]*dq[2]], order)) isa Vector{Taylor1{TaylorN{Float64}}}
-        sol1N = TaylorSolution(sol.t, sol.x .+ Taylor1(dq[1], 25))
-        @test sol1N(sol.t0)() == sol(sol.t0)
+        sol1N = TaylorSolution(sol.t, sol.x .* one_dq, sol.p .* Taylor1(one_dq, 25))
+        @test sol1N(sol.t[1])() == sol(sol.t[1])
         @test sol1N(tmid)() == sol(tmid)
         # Test TaylorInterpolantSerialization
         # @test JLD2.writeas(typeof(sol)) == PlanetaryEphemeris.TaylorInterpolantSerialization{Float64}
         jldsave("test.jld2"; sol)
         sol_file = JLD2.load("test.jld2", "sol")
         rm("test.jld2")
-        @test sol_file == sol
+        @test sol_file.t == sol.t
+        @test sol_file.x == sol.x
+        @test sol_file.p == sol.p
         # Test TaylorInterpolantNSerialization
-        sol1N = TaylorSolution(sol.t, sol.x .* Taylor1(one(dq[1]), 25))
         # @test JLD2.writeas(typeof(sol1N)) == PlanetaryEphemeris.TaylorInterpolantNSerialization{Float64}
         jldsave("test.jld2"; sol1N)
         sol1N_file = JLD2.load("test.jld2", "sol1N")
-        @test sol1N_file == sol1N
+        @test sol1N_file.t == sol1N.t
+        @test sol1N_file.x == sol1N.x
+        @test sol1N_file.p == sol1N.p
         rm("test.jld2")
     end
 
@@ -107,25 +114,29 @@ using LinearAlgebra: norm
         sol64 = propagate(100, jd0, nyears; dynamics, order, abstol)
         # Save solution
         filename = selecteph2jld2(sol64, bodyind, nyears)
-        # Recovered solution
-        recovered_sol64 = JLD2.load(filename, "ss16ast_eph")
+        # Recovered and restricted solution
+        recovered_sol64 = JLD2.load(filename, "sseph")
+        restricted_sol64 = selecteph(sol64, bodyind, euler = true, ttmtdb = true)
 
-        @test selecteph(sol64, bodyind, euler = true, ttmtdb = true) == recovered_sol64
+        @test restricted_sol64.t == recovered_sol64.t
+        @test restricted_sol64.x == recovered_sol64.x
+        @test restricted_sol64.p == recovered_sol64.p
 
         # Test selecteph
-        t0 = sol64.t0 + sol64.t[end]/3
-        tf = sol64.t0 + 2*sol64.t[end]/3
+        t0 = sol64.t[1] + sol64.t[end]/3
+        tf = sol64.t[1] + 2*sol64.t[end]/3
         idxs = vcat(nbodyind(N, [su, ea, mo]), 6N+1:6N+13)
-        i_0 = searchsortedlast(sol64.t, t0)
-        i_f = searchsortedfirst(sol64.t, tf)
+        j0 = searchsortedlast(sol64.t, t0)
+        jf = searchsortedfirst(sol64.t, tf)
 
         subsol = selecteph(sol64, [su, ea, mo], t0, tf; euler = true, ttmtdb = true)
 
-        @test subsol.t0 == sol64.t0
-        @test subsol.t0 + subsol.t[1] ≤ t0
-        @test subsol.t0 + subsol.t[end] ≥ tf
-        @test size(subsol.x) == (i_f - i_0, length(idxs))
-        @test subsol.x == sol64.x[i_0:i_f-1, idxs]
+        @test subsol.t[1] ≤ t0 ≤ tf ≤ subsol.t[end]
+        @test size(subsol.x) == (jf - j0 + 1, length(idxs))
+        @test size(subsol.p) == (jf - j0, length(idxs))
+        @test subsol.t == sol64.t[j0:jf]
+        @test subsol.x == sol64.x[j0:jf, idxs]
+        @test subsol.p == sol64.p[j0:jf-1, idxs]
         @test subsol(t0) == sol64(t0)[idxs]
         @test subsol(tf) == sol64(tf)[idxs]
 
