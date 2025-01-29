@@ -78,7 +78,7 @@ function selecteph(eph::TaylorSolution, bodyind::Union{Int, AbstractVector{Int}}
         j0 = searchsortedlast(eph.t, tf, rev = true)
         jf = searchsortedfirst(eph.t, t0, rev = true)
     end
-    t = view(eph.t, j0:jf)
+    t = eph.t[j0:jf]
     # Indices of bodies in bodyind (+ lunar euler angles + TT-TDB)
     N = numberofbodies(eph)
     @assert all(bodyind .< N) "bodyind is beyond ephemeris number of bodies ($N)"
@@ -90,8 +90,8 @@ function selecteph(eph::TaylorSolution, bodyind::Union{Int, AbstractVector{Int}}
         idxs = vcat(idxs, 6N+13)
     end
     # Subsets of eph.x and eph.p containing bodies in bodyind and spanning [t0, tf]
-    x = view(eph.x, j0:jf, idxs)
-    p = view(eph.p, j0:jf-1, idxs)
+    x = eph.x[j0:jf, idxs]
+    p = eph.p[j0:jf-1, idxs]
 
     return TaylorSolution(t, x, p)
 end
