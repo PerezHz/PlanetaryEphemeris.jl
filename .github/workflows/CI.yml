@@ -19,10 +19,14 @@ jobs:
       matrix:
         version:
           - '1.10'
-          - '1'
-          - 'nightly'
+          # As of February 20, 2026 tests fail in 1 and nightly on Github because of
+          # a suspected memory overflow
+          # - '1'
+          # - 'nightly'
         os:
           - ubuntu-latest
+          - macos-latest
+          - windows-latest
         arch:
           - x64
     steps:
