@@ -82,6 +82,12 @@ using LinearAlgebra: norm
         sol1N = TaylorInterpolant(sol.t0, sol.t, sol.x .+ Taylor1(dq[1], 25))
         @test sol1N(sol.t0)() == sol(sol.t0)
         @test sol1N(tmid)() == sol(tmid)
+        # flipsign
+        fsol = flipsign(sol)
+        @test fsol.t0 == sol.t0
+        @test fsol.t == -sol.t
+        @test fsol.x == sol.x(-Taylor1(order))
+        @test norm(fsol(-nyears*yr) - sol(nyears*yr)) < eps()
         # Test TaylorInterpolantSerialization
         @test JLD2.writeas(typeof(sol)) == PlanetaryEphemeris.TaylorInterpolantSerialization{Float64}
         jldsave("test.jld2"; sol)

@@ -185,6 +185,23 @@ function reverse(tinterp::TaylorInterpolant{T,U,N}) where {T<:Real, U<:Number, N
     return TaylorInterpolant(tinterp_rev_t0, tinterp_rev_t, tinterp_rev_x)
 end
 
+"""
+    flipsign(::TaylorInterpolant)
+
+Flip the sign of the independent variable in an interpolant. This function
+assumes that the initial value of the independent variable is zero.
+"""
+function flipsign(eph::TaylorInterpolant)
+    # Flip vector of times
+    t = flipsign.(eph.t, -1)
+    t[1] = eph.t0
+    # Flip taylor expansions
+    order = get_order(eph.x[1])
+    dt = Taylor1(order)
+    x = eph.x(-dt)
+    return TaylorInterpolant(eph.t0, t, x)
+end
+
 @doc raw"""
     selecteph(eph::TaylorInterpolant, bodyind::Union{Int, AbstractVector{Int}}, t0::T = eph.t0,
               tf::T = eph.t0 + eph.t[end]; euler::Bool = false, ttmtdb::Bool = false) where {T <: Real}
