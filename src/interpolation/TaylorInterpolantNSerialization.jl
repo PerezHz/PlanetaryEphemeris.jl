@@ -22,6 +22,9 @@ struct TaylorInterpolantNSerialization{T}
     x::Vector{T}
 end
 
+# Override get_order
+get_order(x::TaylorInterpolantNSerialization) = x.order
+
 # Tell JLD2 to save <:TaylorInterpolant{T, TaylorN{T}, 2} as TaylorInterpolantNSerialization{T}
 function writeas(::Type{<:TaylorInterpolant{T, TaylorN{T}, 2, Vector{T}, Matrix{Taylor1{TaylorN{T}}}}}) where {T<:Real}
     return TaylorInterpolantNSerialization{T}
@@ -38,11 +41,11 @@ function convert(::Type{TaylorInterpolantNSerialization{T}}, eph::TaylorInterpol
     # Number of elements in matrix
     N = length(eph.x)
     # Taylor1 order
-    order = get_order(eph.x[1, 1])
+    order = get_order(eph)
     # Number of coefficients in each Taylor1
     k = order + 1
     # TaylorN order
-    varorder = get_order(eph.x[1, 1].coeffs[1])
+    varorder = get_order(eph.x[1].coeffs[1])
     # Number of coefficients in each TaylorN
     L = varorder + 1
     # Number of coefficients in each HomogeneousPolynomial

@@ -22,6 +22,7 @@ using Quadmath
 import Base: convert, reverse, show, join, zero, iszero, flipsign
 import Dates: julian2datetime
 import JLD2: writeas
+import TaylorSeries: get_order
 
 include("constants.jl")
 include("jpl-de-430-431-earth-orientation-model.jl")
