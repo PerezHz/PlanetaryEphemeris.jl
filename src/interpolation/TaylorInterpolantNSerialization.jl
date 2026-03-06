@@ -38,11 +38,11 @@ function convert(::Type{TaylorInterpolantNSerialization{T}}, eph::TaylorInterpol
     # Number of elements in matrix
     N = length(eph.x)
     # Taylor1 order
-    order = eph.x[1, 1].order
+    order = get_order(eph.x[1, 1])
     # Number of coefficients in each Taylor1
     k = order + 1
     # TaylorN order
-    varorder = eph.x[1, 1].coeffs[1].order
+    varorder = get_order(eph.x[1, 1].coeffs[1])
     # Number of coefficients in each TaylorN
     L = varorder + 1
     # Number of coefficients in each HomogeneousPolynomial
@@ -82,7 +82,7 @@ function convert(::Type{TaylorInterpolant{T, TaylorN{T}, 2, Vector{T}, Matrix{Ta
     # Number of elements in matrix
     N = dims[1] * dims[2]
     # Taylor1 order
-    order = eph.order
+    order = get_order(eph)
     # Number of coefficients in each Taylor1
     k = order + 1
     # TaylorN order

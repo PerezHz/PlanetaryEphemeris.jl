@@ -180,7 +180,7 @@ function reverse(tinterp::TaylorInterpolant{T,U,N}) where {T<:Real, U<:Number, N
     # reverse independent variable vector tinterp.t
     tinterp_rev_t = tinterp.t[end:-1:1] .- tinterp_rev_t0
     # reverse dependent variable vector tinterp.x
-    tinterp_rev_x = vcat(tinterp(tinterp.t[end]+Taylor1(tinterp.x[1].order))', tinterp.x[end:-1:2,:])
+    tinterp_rev_x = vcat(tinterp(tinterp.t[end]+Taylor1(get_order(tinterp.x[1])))', tinterp.x[end:-1:2,:])
     # Return reversed TaylorInterpolant
     return TaylorInterpolant(tinterp_rev_t0, tinterp_rev_t, tinterp_rev_x)
 end
