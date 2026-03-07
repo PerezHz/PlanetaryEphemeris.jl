@@ -1,3 +1,7 @@
 *.jld
 *.jld2
+*.bsp
+*.out
+*.err
 Manifest.toml
+*.DS_Store

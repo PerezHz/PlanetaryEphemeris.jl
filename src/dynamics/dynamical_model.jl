@@ -1096,7 +1096,7 @@ function DE430!(dq, q, params, t)
     # jd0: initial Julian date
     local N, jd0 = params
     # Time Taylor variable
-    local __t = Taylor1(numtype(t), t.order)
+    local __t = Taylor1(numtype(t), get_order(t))
     # Type of positions/velocities components
     local S = eltype(q)
     # Zero of type S
@@ -1111,7 +1111,7 @@ function DE430!(dq, q, params, t)
     # Parameters
     local params_bwd = (N_bwd, jd0)
     # Positions
-    local qq_bwd = Taylor1.(constant_term.(  q[ union(nbodyind(N,1:N_bwd),6N+1:6N+13) ]), t.order )::Vector{S}
+    local qq_bwd = Taylor1.(constant_term.(  q[ union(nbodyind(N,1:N_bwd),6N+1:6N+13) ]), get_order(t) )::Vector{S}
     # Velocities
     local dqq_bwd = similar(qq_bwd)
     # Vector of auxiliaries

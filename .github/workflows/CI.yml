@@ -19,8 +19,8 @@ jobs:
       matrix:
         version:
           - '1.10'
-          # As of February 20, 2026 tests fail in 1 and nightly on Github because of
-          # a suspected memory overflow
+          # As of March 7, 2026 tests in github take significantly more time
+          # in 1 and nightly than in 1.10
           # - '1'
           # - 'nightly'
         os:
