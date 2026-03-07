@@ -19,12 +19,14 @@ jobs:
       matrix:
         version:
           - '1.10'
-          - '1'
-          - 'nightly'
+          # As of March 7, 2026 tests in github take significantly more time
+          # in 1 and nightly than in 1.10
+          # - '1'
+          # - 'nightly'
         os:
           - ubuntu-latest
-          # - macos-latest
-          # - windows-latest
+          - macos-latest
+          - windows-latest
         arch:
           - x64
     steps:
