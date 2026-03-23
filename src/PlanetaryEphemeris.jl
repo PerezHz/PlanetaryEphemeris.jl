@@ -18,6 +18,7 @@ export PE, au, yr, sundofs, earthdofs, c_au_per_day, μ, su, ea, mo, au, yr, day
 using AutoHashEquals
 using TaylorIntegration, LinearAlgebra
 using TaylorSeries: numtype
+using Parameters: @unpack
 using Printf
 using Dates: DateTime, datetime2julian, year
 using DelimitedFiles
@@ -40,7 +41,6 @@ include("propagation.jl")
 include("osculating.jl")
 include("barycenter.jl")
 #include("precompile.jl")
-include("deprecated.jl")
 
 include("dynamics/trivial.jl")
 include("dynamics/dynamical_model.jl")
