@@ -75,12 +75,10 @@ function main()
 
     # Initial date
     d0::DateTime = parsed_args["d0"]
-    jd0 = datetime2julian(d0)
     println("• Initial date: ", d0)
 
     # Initial conditions file
     filename::String = parsed_args["q0"]
-    q0 = read_initial_conditions(filename)
     println("• Initial conditions file: ", filename)
 
     # Number of years
@@ -108,17 +106,20 @@ function main()
     println("• Body indices in output: ", parse_eqs)
 
     # Planetary ephemeris problem
+    jd0 = datetime2julian(d0)
+    tspan = (jd0, jd0 + nyears * yr)
+    q0 = read_initial_conditions(filename)
     N = (length(q0) - 13) ÷ 6
     params = (N, jd0)
-    PE = PlanetaryEphemerisProblem(DE430!, jd0, q0, params)
+    PE = PlanetaryEphemerisProblem(DE430!, tspan, q0, params)
 
     printitle("Integrator warmup", "-")
-    @time propagate(PE, nyears; maxsteps = 1, order, abstol, parse_eqs)
+    @time propagate(PE; maxsteps = 1, order, abstol, parse_eqs)
 
     printitle("Full integration", "-")
-    println( "Initial time of integration: ", string(d0) )
-    println( "Final time of integration: ", string(julian2datetime(jd0 + nyears * yr)))
-    @time sol = propagate(PE, nyears; maxsteps, order, abstol, parse_eqs)
+    println( "Initial time of integration: ", string(julian2datetime(PE.tspan[1])) )
+    println( "Final time of integration: ", string(julian2datetime(PE.tspan[2])))
+    @time sol = propagate(PE; maxsteps, order, abstol, parse_eqs)
 
     # Save results
     selecteph2jld2(sol, bodyind, nyears)

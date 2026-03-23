@@ -51,10 +51,11 @@ using LinearAlgebra: norm
         @test iszero(zero(TaylorInterpolant{T, U, 2, SubArray{T, 1}, SubArray{Taylor1{U}, 2}}))
 
         # Test propagation
+        tspan = (J2000, J2000 + nyears * yr)
         filename = joinpath(pkgdir(PlanetaryEphemeris), "data", "de430ic_2000Jan1.txt")
         q0 = read_initial_conditions(filename)
-        PP = PlanetaryEphemerisProblem(freeparticle!, J2000, q0, params)
-        sol = propagate(PP, nyears; order, abstol)
+        PP = PlanetaryEphemerisProblem(freeparticle!, tspan, q0, params)
+        sol = propagate(PP; order, abstol)
 
         @test sol isa TaylorInterpolant{T, T, 2}
         @test sol(sol.t0) == q0
@@ -103,12 +104,13 @@ using LinearAlgebra: norm
         @show Threads.nthreads()
 
         # Planetary ephemeris problem
+        tspan = (J2000, J2000 + nyears * yr)ß
         filename = joinpath(pkgdir(PlanetaryEphemeris), "data", "de430ic_2000Jan1.txt")
         q0 = read_initial_conditions(filename)
-        PP = PlanetaryEphemerisProblem(DE430!, J2000, q0, params)
+        PP = PlanetaryEphemerisProblem(DE430!, tspan, q0, params)
         # Test propagation
-        propagate(PP, nyears; maxsteps = 1, order, abstol)
-        sol = propagate(PP, nyears; maxsteps = 100, order, abstol)
+        propagate(PP; maxsteps = 1, order, abstol)
+        sol = propagate(PP; maxsteps = 100, order, abstol)
 
         # Indices of bodies to be saved
         bodyind = 1:(11+16)

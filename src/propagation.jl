@@ -151,10 +151,10 @@ function save2jld2andcheck(outfilename::String, sol)
 end
 
 """
-    propagate(PE, tmax; kwargs...)
+    propagate(PE; kwargs...)
 
-Propagate a planetary ephemeris problem `PE` for a period of `tmax` [years]
-using the Taylor Method implemented in `TaylorIntegration`.
+Propagate a planetary ephemeris problem `PE` using the Taylor method
+implemented in `TaylorIntegration`.
 
 # Keyword arguments
 
@@ -165,14 +165,14 @@ using the Taylor Method implemented in `TaylorIntegration`.
 - `parse_eqs::Bool`: whether to use the specialized method of `jetcoeffs` or not
     (default: `true`).
 """
-function propagate(PE::PlanetaryEphemerisProblem{D, T, P}, tmax::T;
+function propagate(PE::PlanetaryEphemerisProblem{D, T, P};
                    maxsteps::Int = 500, order::Int = order,
                    abstol::T = abstol, parse_eqs::Bool = true) where {D, T, P}
     # Unpack
-    @unpack dynamics, epoch, initcond, params = PE
+    @unpack dynamics, tspan, initcond, params = PE
     # Integration
-    sol = taylorinteg(dynamics, initcond, zero(T), tmax * yr, order, abstol, params;
-                      maxsteps, parse_eqs)
+    sol = taylorinteg(dynamics, initcond, zero(T), tspan[2] - tspan[1], order,
+                      abstol, params; maxsteps, parse_eqs)
     # Convert from TaylorSolution to TaylorInterpolant
-    return TaylorInterpolant{T, T, 2}(epoch - J2000, sol.t, sol.p)
+    return TaylorInterpolant{T, T, 2}(tspan[1] - J2000, sol.t, sol.p)
 end
