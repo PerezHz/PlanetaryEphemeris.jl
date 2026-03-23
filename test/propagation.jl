@@ -104,7 +104,7 @@ using LinearAlgebra: norm
         @show Threads.nthreads()
 
         # Planetary ephemeris problem
-        tspan = (J2000, J2000 + nyears * yr)ß
+        tspan = (J2000, J2000 + nyears * yr)
         filename = joinpath(pkgdir(PlanetaryEphemeris), "data", "de430ic_2000Jan1.txt")
         q0 = read_initial_conditions(filename)
         PP = PlanetaryEphemerisProblem(DE430!, tspan, q0, params)
