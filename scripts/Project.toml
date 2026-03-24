@@ -1,0 +1,7 @@
+[deps]
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
+PlanetaryEphemeris = "d83715d0-7e5f-11e9-1a59-4137b20d8363"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+SPICE = "5bab7191-041a-5c2e-a744-024b9c3a5062"

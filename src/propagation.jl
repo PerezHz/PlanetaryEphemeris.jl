@@ -44,9 +44,9 @@ function loadeph(ss16asteph::TaylorInterpolant, μ::Vector{<:Real})
         end
 
         # Fill acelerations by differentiating velocities
-        acc_eph.x[:, 3j-2] .= NEOs.ordpres_differentiate.(ss16asteph.x[:, 3(Nm1+j)-2])  # X-axis component
-        acc_eph.x[:, 3j-1] .= NEOs.ordpres_differentiate.(ss16asteph.x[:, 3(Nm1+j)-1])  # Y-axis component
-        acc_eph.x[:, 3j  ] .= NEOs.ordpres_differentiate.(ss16asteph.x[:, 3(Nm1+j)  ])  # Z-axis component
+        acc_eph.x[:, 3j-2] .= ordpres_differentiate.(ss16asteph.x[:, 3(Nm1+j)-2])  # X-axis component
+        acc_eph.x[:, 3j-1] .= ordpres_differentiate.(ss16asteph.x[:, 3(Nm1+j)-1])  # Y-axis component
+        acc_eph.x[:, 3j  ] .= ordpres_differentiate.(ss16asteph.x[:, 3(Nm1+j)  ])  # Z-axis component
     end
 
     return acc_eph, pot_eph
@@ -150,55 +150,29 @@ function save2jld2andcheck(outfilename::String, sol)
     return nothing
 end
 
-@doc raw"""
-    propagate(maxsteps::Int, jd0::T, tspan::T; dynamics::Function = NBP_pN_A_J23E_J23M_J2S_threads!,
-              nast::Int = 343, order::Int = order, abstol::T = abstol, parse_eqs::Bool = true) where {T <: Real}
+"""
+    propagate(PE; kwargs...)
 
-Integrate the Solar System via the Taylor method.
+Propagate a planetary ephemeris problem `PE` using the Taylor method
+implemented in `TaylorIntegration`.
 
-# Arguments
+# Keyword arguments
 
-- `maxsteps::Int`: maximum number of steps for the integration.
-- `jd0::T`: initial Julian date.
-- `tspan::T`: time span of the integration (in Julian days).
-- `dynamics::Function`: dynamical model function.
-- `nast::Int`: number of asteroids to be considered in the integration.
-- `order::Int`: order of the Taylor expansions to be used in the integration.
-- `abstol::T`: absolute tolerance.
-- `parse_eqs::Bool`: whether to use the specialized method of `jetcoeffs!` (`true`) created with `@taylorize` or not.
-""" propagate
-
-function propagate(maxsteps::Int, jd0::T, tspan::T; dynamics::Function = NBP_pN_A_J23E_J23M_J2S_threads!,
-                    nast::Int = 343, order::Int = order, abstol::T = abstol, parse_eqs::Bool = true) where {T <: Real}
-
-    # Total number of bodies (Sun + 8 planets + Moon + Pluto + Asteroid)
-    N = 11 + nast
-
-    # Get 6N + 13 initial conditions (3N positions + 3N velocities + 6 lunar mantle angles + 6 lunar core angles + TT-TDB)
-    q0 = initialcond(N, jd0)
-
-    # Set initial time equal to zero (improves accuracy in data reductions)
-    t0 = zero(T)
-
-    # Parameters for dynamical function
-    params = (N, jd0)
-
-    # Final time of integration (days)
-    tmax = t0 + tspan*yr
-
+- `maxsteps::Int`: maximum number of steps for the integration (default: `500`).
+- `order::Int`: order of Taylor expansions wrt time (default: 25).
+- `abstol::T`: absolute tolerance used to compute the propagation timestep
+    (default: `1E-20`).
+- `parse_eqs::Bool`: whether to use the specialized method of `jetcoeffs` or not
+    (default: `true`).
+"""
+function propagate(PE::PlanetaryEphemerisProblem{D, T, P};
+                   maxsteps::Int = 500, order::Int = order,
+                   abstol::T = abstol, parse_eqs::Bool = true) where {D, T, P}
+    # Unpack
+    @unpack dynamics, tspan, initcond, params = PE
     # Integration
-    sol = @time taylorinteg(dynamics, q0, t0, tmax, order, abstol, params;
-                            maxsteps, parse_eqs)
-
-    return TaylorInterpolant{T, T, 2}(jd0 - J2000, sol.t, sol.p)
-end
-
-function propagate(maxsteps::Int, jd0::T1, tspan::T2; dynamics::Function = NBP_pN_A_J23E_J23M_J2S_threads!,
-                    nast::Int = 343, order::Int = order, abstol::T3 = abstol, parse_eqs::Bool = true) where {T1, T2, T3 <: Real}
-
-    _jd0, _tspan, _abstol = promote(jd0, tspan, abstol)
-
-    return propagate(maxsteps, _jd0, _tspan; dynamics = dynamics, nast = nast, order = order,
-                        abstol = _abstol, parse_eqs = parse_eqs)
-
+    sol = taylorinteg(dynamics, initcond, zero(T), tspan[2] - tspan[1], order,
+                      abstol, params; maxsteps, parse_eqs)
+    # Convert from TaylorSolution to TaylorInterpolant
+    return TaylorInterpolant{T, T, 2}(tspan[1] - J2000, sol.t, sol.p)
 end
