@@ -6,11 +6,13 @@ using Quadmath
 using JLD2
 using TaylorSeries
 using Test
-using Downloads
 
 using PlanetaryEphemeris: freeparticle!
 using SPICE: furnsh, spkgeo
 using LinearAlgebra: norm
+
+const PKG_DATA = joinpath(pkgdir(PlanetaryEphemeris), "data")
+const TEST_DATA = joinpath(pkgdir(PlanetaryEphemeris), "test", "data")
 
 @testset "Propagation" begin
 
@@ -28,8 +30,7 @@ using LinearAlgebra: norm
     @testset "Initial conditions" begin
         # read_initial_conditions
         for date in (DateTime(1969, 6, 28), DateTime(2000, 1, 1, 12))
-            filename = joinpath(pkgdir(PlanetaryEphemeris), "data",
-                string("de430ic_", Dates.format(date, "yyyyud"), ".txt"))
+            filename = joinpath(PKG_DATA, string("de430ic_", Dates.format(date, "yyyyud"), ".txt"))
             q0_64 = read_initial_conditions(filename)
             q0_128 = Float128.(q0_64)
 
@@ -52,7 +53,7 @@ using LinearAlgebra: norm
 
         # Test propagation
         tspan = (J2000, J2000 + nyears * yr)
-        filename = joinpath(pkgdir(PlanetaryEphemeris), "data", "de430ic_2000Jan1.txt")
+        filename = joinpath(PKG_DATA, "de430ic_2000Jan1.txt")
         q0 = read_initial_conditions(filename)
         PP = PlanetaryEphemerisProblem(freeparticle!, tspan, q0, params)
         sol = propagate(PP; order, abstol)
@@ -105,12 +106,12 @@ using LinearAlgebra: norm
 
         # Planetary ephemeris problem
         tspan = (J2000, J2000 + nyears * yr)
-        filename = joinpath(pkgdir(PlanetaryEphemeris), "data", "de430ic_2000Jan1.txt")
+        filename = joinpath(PKG_DATA, "de430ic_2000Jan1.txt")
         q0 = read_initial_conditions(filename)
         PP = PlanetaryEphemerisProblem(DE430!, tspan, q0, params)
         # Test propagation
-        propagate(PP; maxsteps = 1, order, abstol)
-        sol = propagate(PP; maxsteps = 100, order, abstol)
+        @time propagate(PP; maxsteps = 1, order, abstol)
+        @time sol = propagate(PP; maxsteps = 100, order, abstol)
 
         # Indices of bodies to be saved
         bodyind = 1:(11+16)
@@ -138,18 +139,11 @@ using LinearAlgebra: norm
         @test subsol(t0) == sol(t0)[idxs]
         @test subsol(tf) == sol(tf)[idxs]
 
-        # Kernels URLs
-        LSK = "https://naif.jpl.nasa.gov/pub/naif/generic_kernels/lsk/naif0012.tls"
-        TTmTDBK = "https://ssd.jpl.nasa.gov/ftp/eph/planets/bsp/TTmTDB.de430.19feb2015.bsp"
-        SPK = "https://ssd.jpl.nasa.gov/ftp/eph/planets/bsp/de430_1850-2150.bsp"
-
-        # Download kernels
-        Downloads.download(LSK, "naif0012.tls")
-        Downloads.download(SPK, "de430_1850-2150.bsp")
-        Downloads.download(TTmTDBK, "TTmTDB.de430.19feb2015.bsp")
-
         # Load kernels
-        furnsh("naif0012.tls", "de430_1850-2150.bsp", "TTmTDB.de430.19feb2015.bsp")
+        furnsh(
+            joinpath(TEST_DATA, "naif0012.tls"),
+            joinpath(TEST_DATA, "de430_2000-2002.bsp")
+        )
 
         ttmtdb_pe = TaylorInterpolant(sol.t0, sol.t, sol.x[:, 6N+13]) # TT-TDB
         posvel_pe_su = selecteph(sol, su) # Sun
@@ -183,9 +177,6 @@ using LinearAlgebra: norm
             @test norm(posvel_jpl_ma(et) - posvel_pe_ma(t), Inf) < 1E-12
             @test norm(posvel_jpl_ju(et) - posvel_pe_ju(t), Inf) < 1E-13
         end
-
-        # Remove files
-        rm.((filename, "naif0012.tls", "de430_1850-2150.bsp", "TTmTDB.de430.19feb2015.bsp"))
 
         # TO DO: test propagation with Float128
 
