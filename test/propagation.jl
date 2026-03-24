@@ -7,25 +7,71 @@ using JLD2
 using TaylorSeries
 using Test
 
-using PlanetaryEphemeris: freeparticle!
+using PlanetaryEphemeris: freeparticle!, sun_posvel_pN, loadeph
 using SPICE: furnsh, spkgeo
 using LinearAlgebra: norm
 
 const PKG_DATA = joinpath(pkgdir(PlanetaryEphemeris), "data")
 const TEST_DATA = joinpath(pkgdir(PlanetaryEphemeris), "test", "data")
 
-@testset "Propagation" begin
+# Total number of bodies
+const N = 11 + 343
+# Parameters
+const params = (N, J2000)
+# Number of years
+const nyears = 30.0
+# Order of Taylor expansions wrt time
+const order = 15
+# Absolute tolerance
+const abstol = 1E-12
 
-    # Total number of bodies
-    local N = 11 + 343
-    # Parameters
-    local params = (N, J2000)
-    # Number of years
-    local nyears = 30.0
-    # Order of Taylor expansions wrt time
-    local order = 15
-    # Absolute tolerance
-    local abstol = 1E-12
+# Maximum relative error
+mre(x, y, z) = maximum(@. abs(x - y) / z)
+
+@testset "Osculating elements" begin
+    # Pérez-Hernández & Benet (2022) Apophis OR7 orbit
+    # See Tables 2 and 3 of the Supplementary Information in
+    # https://doi.org/10.1038/s43247-021-00337-x
+
+    # Reference epoch [JDTDB]
+    jd0 = 2459200.5
+    # Gravitational parameters [au^3/day^2]
+    μ_S, μ_A = PE.GMS, 0.0
+
+    # Cartesian state vector [au, au/day]
+    rv = [-0.17380033054708824, 0.99450381407683, -0.057081276307106465,
+          -0.016259012007155557, -0.00011129354506606208, -0.0003802783732738447]
+    drv = [7.12E−9, 1.94E−9, 5.41E−9, 4.79E−11, 6.72E−11, 1.38E−10]
+
+    # Keplerian elements
+    e, de = 0.19150886716, 1.60E-9
+    q, dq = 0.74585305033, 1.54E−9                           # au
+    a, da = q / (1 - e), hypot(dq/(1-e), q*de/(1-e)^2)       # au
+    i, di = 3.336773201, 1.74E−7                             # deg
+    Ω, dΩ = 204.04199116, 8.81E−6                            # deg
+    ω, dω = 126.65396094, 9.37E−6                            # deg
+    tp, dtp = 2459101.04092537, 1.17E−6                      # JDTDB
+    M = rad2deg(sqrt(μ_S / a^3)) * (jd0 - tp)                # deg
+    dM = hypot(-3*M*da/(2a), -M*dtp/(jd0 - tp))
+
+    _a_ = semimajoraxis(rv..., μ_S, μ_A)
+    _e_ = eccentricity(rv..., μ_S, μ_A)
+    _i_ = rad2deg(inclination(rv...))
+    _Ω_ = rad2deg(longascnode(rv...))
+    _ω_ = rad2deg(argperi(rv..., μ_S, μ_A))
+    _tp_ = timeperipass(jd0, rv..., μ_S, μ_A)
+    _M_ = rad2deg(meananomaly(rv..., μ_S, μ_A))
+
+    @test mre(_a_, a, da) < 0.05
+    @test mre(_e_, e, de) < 0.05
+    @test mre(_i_, i, di) < 0.05
+    @test mre(_Ω_, Ω, dΩ) < 0.05
+    @test mre(_ω_, ω, dω) < 0.05
+    @test mre(_tp_, tp, dtp) < 0.05
+    @test mre(_M_, M, dM) < 0.05
+end
+
+@testset "Propagation" begin
 
     @testset "Initial conditions" begin
         # read_initial_conditions
@@ -58,6 +104,7 @@ const TEST_DATA = joinpath(pkgdir(PlanetaryEphemeris), "test", "data")
         PP = PlanetaryEphemerisProblem(freeparticle!, tspan, q0, params)
         sol = propagate(PP; order, abstol)
 
+        @test isa(string(PP), String)
         @test sol isa TaylorInterpolant{T, T, 2}
         @test sol(sol.t0) == q0
         @test sol.t0 == 0.0
@@ -113,14 +160,45 @@ const TEST_DATA = joinpath(pkgdir(PlanetaryEphemeris), "test", "data")
         @time propagate(PP; maxsteps = 1, order, abstol)
         @time sol = propagate(PP; maxsteps = 100, order, abstol)
 
-        # Indices of bodies to be saved
+        # Solar system barycenter
+        rvec_ssb, vvec_ssb, μ_star_SSB = ssb_posvel_pN(PE.μ, q0)
+        rvec_sun, vvec_sun = sun_posvel_pN(PE.μ, q0)
+
+        _rvec_ssb_ = [
+            sum(PE.μ[i] * q0[j] for (i, j) in enumerate(1:3:3N)),
+            sum(PE.μ[i] * q0[j] for (i, j) in enumerate(2:3:3N)),
+            sum(PE.μ[i] * q0[j] for (i, j) in enumerate(3:3:3N))
+        ]
+        _vvec_ssb_ = [
+            sum(PE.μ[i] * q0[j] for (i, j) in enumerate(3N+1:3:6N)),
+            sum(PE.μ[i] * q0[j] for (i, j) in enumerate(3N+2:3:6N)),
+            sum(PE.μ[i] * q0[j] for (i, j) in enumerate(3N+3:3:6N))
+        ]
+
+        @test norm(rvec_ssb) < norm(_rvec_ssb_)
+        @test norm(vvec_ssb) < norm(_vvec_ssb_)
+        @test μ_star_SSB ≈ sum(PE.μ)
+        @test q0[sundofs] ≈ vcat(rvec_sun, vvec_sun)
+
+        # Save results
         bodyind = 1:(11+16)
-        # Save solution
         filename = selecteph2jld2(sol, bodyind, nyears)
-        # Recovered solution
         recovered_sol = JLD2.load(filename, "ss16ast_eph")
 
         @test selecteph(sol, bodyind, euler = true, ttmtdb = true) == recovered_sol
+
+        acceph, poteph = loadeph(recovered_sol, PE.μ)
+
+        @test size(acceph.x, 1) == size(poteph.x, 1) == size(recovered_sol.x, 1)
+        @test size(acceph.x, 2) == (size(recovered_sol.x, 2) - 13) ÷ 2
+        @test size(poteph.x, 2) == (size(recovered_sol.x, 2) - 13) ÷ 6
+
+        @test isnothing(save2jld2andcheck(filename, Dict(
+           "sseph" => recovered_sol,
+           "acceph" => acceph,
+           "poteph" => poteph
+       )))
+        rm(filename)
 
         # Test selecteph
         t0 = sol.t0 + sol.t[end]/3

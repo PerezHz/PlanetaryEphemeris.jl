@@ -44,9 +44,9 @@ function loadeph(ss16asteph::TaylorInterpolant, μ::Vector{<:Real})
         end
 
         # Fill acelerations by differentiating velocities
-        acc_eph.x[:, 3j-2] .= NEOs.ordpres_differentiate.(ss16asteph.x[:, 3(Nm1+j)-2])  # X-axis component
-        acc_eph.x[:, 3j-1] .= NEOs.ordpres_differentiate.(ss16asteph.x[:, 3(Nm1+j)-1])  # Y-axis component
-        acc_eph.x[:, 3j  ] .= NEOs.ordpres_differentiate.(ss16asteph.x[:, 3(Nm1+j)  ])  # Z-axis component
+        acc_eph.x[:, 3j-2] .= ordpres_differentiate.(ss16asteph.x[:, 3(Nm1+j)-2])  # X-axis component
+        acc_eph.x[:, 3j-1] .= ordpres_differentiate.(ss16asteph.x[:, 3(Nm1+j)-1])  # Y-axis component
+        acc_eph.x[:, 3j  ] .= ordpres_differentiate.(ss16asteph.x[:, 3(Nm1+j)  ])  # Z-axis component
     end
 
     return acc_eph, pot_eph
