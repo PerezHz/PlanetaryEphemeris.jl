@@ -2,7 +2,7 @@ module PlanetaryEphemeris
 
 # __precompile__(false)
 
-export PlanetaryEphemerisProblem, TaylorInterpolant
+export PlanetaryEphemerisProblem, TaylorInterpolant, DE430Params
 export NBP_pN_A_J23E_J23M_J2S_threads!, DE430!
 export semimajoraxis, eccentricity, inclination, longascnode, argperi, longperi, ecanomaly,
        trueanomaly,  meananomaly, timeperipass, lrlvec, eccentricanomaly, meanan2truean,
@@ -15,15 +15,13 @@ export PE, au, yr, sundofs, earthdofs, c_au_per_day, μ, su, ea, mo, au, yr, day
        τ_M, k_2M, JSEM, CM, SM, n1SEM, n2M, J2E, J2EDOT, RE, k_20E, k_21E, k_22E,
        τ_0p, τ_1p, τ_2p, τ_0, τ_1, τ_2, ω_E, EMRAT
 
-using AutoHashEquals
-using TaylorIntegration, LinearAlgebra
-using TaylorSeries: numtype
-using Parameters: @unpack
-using Printf
+using AutoHashEquals, TaylorIntegration, LinearAlgebra, Printf, DelimitedFiles, JLD2,
+      Quadmath
+
 using Dates: DateTime, datetime2julian, year
-using DelimitedFiles
-using JLD2
-using Quadmath
+using Parameters: @unpack
+using TaylorIntegration: RetAlloc, _determine_parsing!, init_expansions
+using TaylorSeries: numtype
 
 import Base: convert, reverse, show, join, zero, iszero, flipsign
 import Dates: julian2datetime
@@ -42,8 +40,9 @@ include("osculating.jl")
 include("barycenter.jl")
 #include("precompile.jl")
 
-include("dynamics/trivial.jl")
-include("dynamics/dynamical_model.jl")
-include("dynamics/jetcoeffs.jl")
+include("trivial.jl")
+include("DE430/params.jl")
+include("DE430/dynamicalmodel.jl")
+include("DE430/jetcoeffs.jl")
 
 end # module
