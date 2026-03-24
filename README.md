@@ -11,12 +11,11 @@ ephemeris dynamical model (Folkner et al., 2014), based on
 
 ## Authors
 
-- [Jorge A. Pérez Hernández](https://github.com/PerezHz),
-Instituto de Ciencias Físicas, Universidad Nacional Autónoma de México (UNAM)
+- [Jorge A. Pérez Hernández](https://github.com/PerezHz), Minor Planet Center, Harvard & Smithsonian Center for Astrophysics
 - [Luis Benet](http://www.cicc.unam.mx/~benet/),
 Instituto de Ciencias Físicas, Universidad Nacional Autónoma de México (UNAM)
 - [Luis Eduardo Ramírez Montoya](https://github.com/LuEdRaMo),
-Facultad de Ciencias, Universidad Nacional Autónoma de México (UNAM)
+Instituto de Ciencias Físicas, Universidad Nacional Autónoma de México (UNAM)
 
 ## Installation
 
@@ -28,14 +27,14 @@ The current version of this package may be installed in Julia pkg manager via:
 ## Usage
 
 `PlanetaryEphemeris.propagate` is a high-level function which performs the
-numerical integration. The file `integrate_ephemeris.jl` in the `scripts` directory
+numerical integration. The file `de430.jl` in the `scripts` directory
 contains an example script. This script may be called as:
 
-`julia --project integrate_ephemeris.jl --help`
+`julia --project de430.jl --help`
 
 `PlanetaryEphemeris.propagate` also supports multi-threading:
 
-`julia -t <number-of-threads> --project integrate_ephemeris.jl --help`
+`julia -t <number-of-threads> --project de430.jl --help`
 
 ## Acknowledgments
 
