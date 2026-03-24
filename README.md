@@ -4,6 +4,7 @@
 [![CI](https://github.com/PerezHz/PlanetaryEphemeris.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/PerezHz/PlanetaryEphemeris.jl/actions/workflows/CI.yml)
 [![Coverage Status](https://coveralls.io/repos/github/PerezHz/PlanetaryEphemeris.jl/badge.svg?branch=main)](https://coveralls.io/github/PerezHz/PlanetaryEphemeris.jl?branch=main)
 [![codecov](https://codecov.io/gh/PerezHz/PlanetaryEphemeris.jl/branch/main/graph/badge.svg?token=CZE0SONYYX)](https://codecov.io/gh/PerezHz/PlanetaryEphemeris.jl)
+[![Hypercommit](https://img.shields.io/badge/Hypercommit-DB2475)](https://hypercommit.com/planetaryephemeris-jl)
 
 `PlanetaryEphemeris.jl` is a Taylor integrator for the JPL DE430 planetary
 ephemeris dynamical model (Folkner et al., 2014), based on
