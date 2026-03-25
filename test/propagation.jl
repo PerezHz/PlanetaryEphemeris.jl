@@ -16,8 +16,6 @@ const TEST_DATA = joinpath(pkgdir(PlanetaryEphemeris), "test", "data")
 
 # Total number of bodies
 const N = 11 + 343
-# Parameters
-const params = (N, J2000)
 # Number of years
 const nyears = 30.0
 # Order of Taylor expansions wrt time
@@ -101,6 +99,7 @@ end
         tspan = (J2000, J2000 + nyears * yr)
         filename = joinpath(PKG_DATA, "de430ic_2000Jan1.txt")
         q0 = read_initial_conditions(filename)
+        params = (N, J2000)
         PP = PlanetaryEphemerisProblem(freeparticle!, tspan, q0, params)
         sol = propagate(PP; order, abstol)
 
@@ -155,6 +154,7 @@ end
         tspan = (J2000, J2000 + nyears * yr)
         filename = joinpath(PKG_DATA, "de430ic_2000Jan1.txt")
         q0 = read_initial_conditions(filename)
+        params = DE430Params(J2000, q0, order)
         PP = PlanetaryEphemerisProblem(DE430!, tspan, q0, params)
         # Test propagation
         @time propagate(PP; maxsteps = 1, order, abstol)
@@ -197,7 +197,7 @@ end
            "sseph" => recovered_sol,
            "acceph" => acceph,
            "poteph" => poteph
-       )))
+        )))
         rm(filename)
 
         # Test selecteph

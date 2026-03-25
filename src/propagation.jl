@@ -1,5 +1,35 @@
 # This file is part of the PlanetaryEphemeris.jl package; MIT licensed
 
+@doc """
+    ordpres_differentiate(a::Taylor1)
+
+Returns the derivative of `a`, but preserving the order/degree of `a`. In comparison,
+`TaylorSeries.differentiate` returns the returns a `Taylor1` object with one order/degree
+less than the one of `a`.
+
+See also [`TaylorSeries.differentiate`](@ref).
+"""
+function ordpres_differentiate(a::Taylor1{T}) where {T}
+    res = zero(a)
+    for ord in eachindex(res)
+        TaylorSeries.differentiate!(res, a, ord)
+    end
+    return res
+end
+
+@doc raw"""
+    special_eval(x::Vector{Taylor1{T}}, t::Taylor1{T}) where {T <: Number}
+
+Evaluate each element of `x` at time `t`.
+"""
+function special_eval(x::Vector{Taylor1{T}}, t::Taylor1{T}) where {T <: Number}
+    res = Vector{Taylor1{T}}(undef, length(x))
+    for i in eachindex(res)
+        res[i] = x[i](t)
+    end
+    return res
+end
+
 @doc raw"""
     loadeph(ss16asteph::TaylorInterpolant, μ::Vector{<:Real})
 

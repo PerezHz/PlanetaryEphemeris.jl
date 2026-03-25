@@ -109,8 +109,7 @@ function main()
     jd0 = datetime2julian(d0)
     tspan = (jd0, jd0 + nyears * yr)
     q0 = read_initial_conditions(filename)
-    N = (length(q0) - 13) ÷ 6
-    params = (N, jd0)
+    params = DE430Params(jd0, q0, order)
     PE = PlanetaryEphemerisProblem(DE430!, tspan, q0, params)
 
     printitle("Integrator warmup", "-")

@@ -10,36 +10,6 @@
 # - Kinematic model for the Moons's orientation (Seidelmann et al., 2006)
 # - Tidal secular acceleration of Moon due to rides raised on Earth by both the Moon and the Sun
 
-@doc """
-    ordpres_differentiate(a::Taylor1)
-
-Returns the derivative of `a`, but preserving the order/degree of `a`. In comparison,
-`TaylorSeries.differentiate` returns the returns a `Taylor1` object with one order/degree
-less than the one of `a`.
-
-See also [`TaylorSeries.differentiate`](@ref).
-"""
-function ordpres_differentiate(a::Taylor1{T}) where {T}
-    res = zero(a)
-    for ord in eachindex(res)
-        TaylorSeries.differentiate!(res, a, ord)
-    end
-    return res
-end
-
-@doc raw"""
-    special_eval(x::Vector{Taylor1{T}}, t::Taylor1{T}) where {T <: Number}
-
-Evaluate each element of `x` at time `t`.
-"""
-function special_eval(x::Vector{Taylor1{T}}, t::Taylor1{T}) where {T <: Number}
-    res = Vector{Taylor1{T}}(undef, length(x))
-    for i in eachindex(res)
-        res[i] = x[i](t)
-    end
-    return res
-end
-
 @doc raw"""
 
     NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
@@ -153,10 +123,10 @@ inertial ``XY`` plane, ``\mathbf{I}_c`` is the core moment of inertia; ``\mathbf
 are the mantle and core angular velocities in the mantle frame; and ``\mathbf{N}_{cmb}`` is the torque due
 to interaction between the mantle and core.
 
-""" NBP_pN_A_J23E_J23M_J2S_threads!
+"""
 function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     # N: number of bodies
-    # jd0: initial Julian date
+    # jd0: reference epoch [JDTDB]
     local N, jd0 = params
     local S = eltype(q)   # Type of positions/velocities components
 
@@ -166,11 +136,11 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     # Matrix elements of lunar moment of inertia at time t-τ_M (without tidal distortion)
     # See equations (36) to (41) in pages 16-17 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     # ITM(q_del_τ_M, eulang_del_τ_M)
-    local I_m_t = (ITM_und-I_c).*one_t           # Undistorted moment of inertia of the mantle, see equation (40)
+    local I_m_t = (ITM_und-I_c) .* one_t         # Undistorted moment of inertia of the mantle, see equation (40)
     local dI_m_t = ordpres_differentiate.(I_m_t) # Time-derivative of lunar mantle I at time t-τ_M
-    local inv_I_m_t = inv(I_m_t)                 # Inverse of lunar mantle I matrix at time t-τ_M
-    local I_c_t = I_c.*one_t                     # Lunar core I matrix, see equation (39)
-    local inv_I_c_t = inv(I_c_t)                 # Inverse of lunar core I matrix
+    local inv_I_m_t = inv(I_m_t) .* one_t        # Inverse of lunar mantle I matrix at time t-τ_M
+    local I_c_t = I_c .* one_t                   # Lunar core I matrix, see equation (39)
+    local inv_I_c_t = inv(I_c_t) .* one_t        # Inverse of lunar core I matrix
     local I_M_t = I_m_t+I_c_t                    # Total I matrix (mantle + core)
 
     #=
@@ -1090,11 +1060,12 @@ body is given by ``\mathbf{r}_j^* = \mathbf{\rho}_j^* + \mathbf{z}_j^*``; and ``
 the acceleration of the Moon with respect to Earth, for each tide-raising body.
 
 See also [`NBP_pN_A_J23E_J23M_J2S_threads!`](@ref).
-""" DE430!
+"""
 function DE430!(dq, q, params, t)
-    # N: number of bodies
-    # jd0: initial Julian date
-    local N, jd0 = params
+    # Total number of bodies
+    local N = params.N
+    # Refernce epoch [JDTDB]
+    local jd0 = params.jd0
     # Time Taylor variable
     local __t = Taylor1(numtype(t), get_order(t))
     # Type of positions/velocities components
@@ -1108,17 +1079,15 @@ function DE430!(dq, q, params, t)
 
     # Short backward integration needed to evaluate time-delayed tidal interactions
 
+    # Positions and velocities
+    local idxs_bwd = union(nbodyind(N, 1:N_bwd), 6N+1:6N+13)
+    local qq_bwd = [Taylor1(constant_term(q[i]), get_order(t)) for i in idxs_bwd]
+    local dqq_bwd = [Taylor1(constant_term(dq[i]), get_order(t)) for i in idxs_bwd]
     # Parameters
-    local params_bwd = (N_bwd, jd0)
-    # Positions
-    local qq_bwd = Taylor1.(constant_term.(  q[ union(nbodyind(N,1:N_bwd),6N+1:6N+13) ]), get_order(t) )::Vector{S}
-    # Velocities
-    local dqq_bwd = similar(qq_bwd)
-    # Vector of auxiliaries
-    local xaux_bwd = similar(qq_bwd)
+    local rv = params.rv
+    local params_bwd = (params.N_bwd, jd0)
     # Backward integration
-    # TO DO: Used taylorized method instead of default jetcoeffs!
-    local jc = TaylorIntegration.jetcoeffs!(NBP_pN_A_J23E_J23M_J2S_threads!, t, qq_bwd, dqq_bwd, xaux_bwd, params_bwd)
+    local _ = TaylorIntegration.jetcoeffs!(Val(NBP_pN_A_J23E_J23M_J2S_threads!), t, qq_bwd, dqq_bwd, params_bwd, rv)
 
     # Evaluation of time-delayed positions
     local q_del_τ_M = special_eval(qq_bwd, __t-τ_M)   # τ_M
@@ -1134,9 +1103,9 @@ function DE430!(dq, q, params, t)
     # See equations (36) to (41) in pages 16-17 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     local I_m_t = ITM(q_del_τ_M, eulang_del_τ_M, ω_m_del_τ_M)::Matrix{S}
     local dI_m_t = ordpres_differentiate.(I_m_t) # Time-derivative of lunar mantle I at time t-τ_M
-    local inv_I_m_t = inv(I_m_t)                 # Inverse of lunar mantle I matrix at time t-τ_M
+    local inv_I_m_t = inv(I_m_t) .* one_t        # Inverse of lunar mantle I matrix at time t-τ_M
     local I_c_t = I_c.*one_t                     # Lunar core I matrix, see equation (39)
-    local inv_I_c_t = inv(I_c_t)                 # Inverse of lunar core I matrix
+    local inv_I_c_t = inv(I_c_t) .* one_t        # Inverse of lunar core I matrix
     local I_M_t = I_m_t+I_c_t                    # Total I matrix (mantle + core)
 
     #=
