@@ -255,24 +255,24 @@ function join(bwd::TaylorInterpolant{T, U, 2}, fwd::TaylorInterpolant{T, U, 2}) 
     return TaylorInterpolant(t0, t, x)
 end
 
-@doc raw"""
+"""
     kmsec2auday(pv)
-Convert a `[x, y, z, v_x, v_y, v_z]` state vector from km, km/sec to au, au/day.
+Convert a cartesian state vector from [km, km/sec] to [au, au/day].
 See also [`auday2kmsec`](@ref).
 """
-function kmsec2auday(pv)
-    pv /= au          # (km, km/sec) -> (au, au/sec)
-    pv[4:6] *= daysec # (au, au/sec) -> (au, au/day)
-    return pv
+function kmsec2auday(x::AbstractVector)
+    k = daysec / au
+    y = [x[1] / au, x[2] / au, x[3] / au, x[4] * k, x[5] * k, x[6] * k]
+    return y
 end
 
-@doc raw"""
+"""
     auday2kmsec(pv)
-Convert a `[x, y, z, v_x, v_y, v_z]` state vector from au, au/day to km, km/sec.
+Convert a cartesian state vector from [au, au/day] to [km, km/sec].
 See also [`kmsec2auday`](@ref).
 """
-function auday2kmsec(pv)
-    pv *= au          # (au, au/day) -> (km, km/day)
-    pv[4:6] /= daysec # (km, km/day) -> (km, km/sec)
-    return pv
+function auday2kmsec(x::AbstractVector)
+    k = au / daysec
+    y = [x[1] * au, x[2] * au, x[3] * au, x[4] * k, x[5] * k, x[6] * k]
+    return y
 end

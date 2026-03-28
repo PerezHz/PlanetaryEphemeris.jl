@@ -41,6 +41,9 @@ mre(x, y, z) = maximum(@. abs(x - y) / z)
           -0.016259012007155557, -0.00011129354506606208, -0.0003802783732738447]
     drv = [7.12E−9, 1.94E−9, 5.41E−9, 4.79E−11, 6.72E−11, 1.38E−10]
 
+    @test rv ≈ kmsec2auday(auday2kmsec(rv))
+    @test drv ≈ kmsec2auday(auday2kmsec(drv))
+
     # Keplerian elements
     e, de = 0.19150886716, 1.60E-9
     q, dq = 0.74585305033, 1.54E−9                           # au
@@ -67,6 +70,17 @@ mre(x, y, z) = maximum(@. abs(x - y) / z)
     @test mre(_ω_, ω, dω) < 0.05
     @test mre(_tp_, tp, dtp) < 0.05
     @test mre(_M_, M, dM) < 0.05
+
+    E = eccentricanomaly(e, M)
+    ν = trueanomaly(e, E)
+    @test E ≈ deg2rad(eccentricanomaly(e, M, Val(true)))
+    @test ν ≈ deg2rad(trueanomaly(e, E, Val(true)))
+
+    e, M = 1 + e, 0.0
+    H = deg2rad(eccentricanomaly(e, M, Val(false)))
+    θ = deg2rad(trueanomaly(e, H, Val(false)))
+    @test a * (1 - e^2) / (1 + e * cos(θ)) ≈ a * (1 - e * cosh(H))
+
 end
 
 @testset "Propagation" begin
@@ -83,6 +97,21 @@ end
             @test length(q0_64) == length(q0_128) == 6*N+13
             @test q0_64 == q0_128
         end
+    end
+
+    @testset "Earth orientation model" begin
+        t = Taylor1(order)
+        xTN = Taylor1([rand() * TaylorN(1) + rand() * TaylorN(2) for _ in 0:order])
+        xT1 = Taylor1([Taylor1(rand(7)) for _ in 0:order])
+
+        M0 = t2c_jpl_de430(t)
+        MT = t2c_jpl_de430(t, zero(t))
+        MTN = t2c_jpl_de430(t, zero(xTN))
+        MT1 = t2c_jpl_de430(t, zero(xT1))
+
+        @test MT == M0
+        @test constant_term.(MTN) == constant_term.(M0)
+        @test constant_term.(MT1) == constant_term.(M0)
     end
 
     @testset "TaylorInterpolant" begin
