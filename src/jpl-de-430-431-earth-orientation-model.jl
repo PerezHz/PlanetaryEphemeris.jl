@@ -485,7 +485,7 @@ function t2c_jpl_de430(t)
     return transpose(c2t_jpl_de430(t))
 end
 
-# These methods are used by NEOs.jl for propagations involving
+# The following methods are used by NEOs.jl for propagations involving
 # extended body interactions
 t2c_jpl_de430(dsj2k::Taylor1{T}, zero_q::Taylor1{T}) where {T <: Real} =
     t2c_jpl_de430(dsj2k) .+ zero_q
