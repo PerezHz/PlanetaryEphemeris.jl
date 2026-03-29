@@ -1090,10 +1090,10 @@ function DE430!(dq, q, params, t)
     local _ = TaylorIntegration.jetcoeffs!(Val(NBP_pN_A_J23E_J23M_J2S_threads!), t, qq_bwd, dqq_bwd, params_bwd, rv)
 
     # Evaluation of time-delayed positions
-    local q_del_τ_M = special_eval(qq_bwd, __t-τ_M)   # τ_M
-    local q_del_τ_0 = special_eval(qq_bwd, __t-τ_0p)  # τ_0p
-    local q_del_τ_1 = special_eval(qq_bwd, __t-τ_1p)  # τ_1p
-    local q_del_τ_2 = special_eval(qq_bwd, __t-τ_2p)  # τ_2p
+    local q_del_τ_M = evaluate(qq_bwd, __t-τ_M)   # τ_M
+    local q_del_τ_0 = evaluate(qq_bwd, __t-τ_0p)  # τ_0p
+    local q_del_τ_1 = evaluate(qq_bwd, __t-τ_1p)  # τ_1p
+    local q_del_τ_2 = evaluate(qq_bwd, __t-τ_2p)  # τ_2p
     # Lunar mantle euler angles delayed τ_M
     local eulang_del_τ_M = q_del_τ_M[6N_bwd+1:6N_bwd+3]::Vector{S}
     # Lunar mantle angular velocity delayed τ_M
