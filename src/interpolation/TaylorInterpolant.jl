@@ -118,47 +118,47 @@ numberofbodies(interp::TaylorInterpolant) = numberofbodies(size(interp.x, 2))
 
 # Function-like (callability) methods
 
-@doc raw"""
-    (tinterp::TaylorInterpolant{T, U, 1})(t::T) where {T, U}
-    (tinterp::TaylorInterpolant{T, U, 1})(t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}}
-    (tinterp::TaylorInterpolant{T, U, 2})(t::T) where {T, U}
-    (tinterp::TaylorInterpolant{T, U, 2})(t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}}
+"""
+    (eph::TaylorInterpolant)([target [, observer] ,] t)
 
-Evaluate `tinterp.x` at time `t`.
+Evaluate `eph` at time `t`. If `target` and `observer` are given,
+return the state of `target` relative to `observer`.
 
 See also [`getinterpindex`](@ref).
 """
-function (tinterp::TaylorInterpolant{T, U, 1})(t::T) where {T, U}
-    # Get index of tinterp.x that interpolates at time t
-    ind::Int, δt::T = getinterpindex(tinterp, t)
-    # Evaluate tinterp.x[ind] at δt
-    return (tinterp.x[ind])(δt)::U
-end
-function (tinterp::TaylorInterpolant{T, U, 1})(t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}}
-    # Get index of tinterp.x that interpolates at time t
-    ind::Int, δt::TT = getinterpindex(tinterp, t)
-    # Evaluate tinterp.x[ind] at δt
-    return (tinterp.x[ind])(δt)::TT
+function (eph::TaylorInterpolant{T, U, 1})(t::T) where {T, U}
+    # Get index of eph.x that interpolates at time t
+    ind::Int, δt::T = getinterpindex(eph, t)
+    # Evaluate eph.x[ind] at δt
+    return (eph.x[ind])(δt)::U
 end
 
-function (tinterp::TaylorInterpolant{T, U, 2})(t::T) where {T, U}
-    # Get index of tinterp.x that interpolates at time t
-    ind::Int, δt::T = getinterpindex(tinterp, t)
-    # Evaluate tinterp.x[ind] at δt
-    return view(tinterp.x, ind, :)(δt)::Vector{U}
-end
-function (tinterp::TaylorInterpolant{T, U, 2})(t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}}
-    # Get index of tinterp.x that interpolates at time t
-    ind::Int, δt::TT = getinterpindex(tinterp, t)
-    # Evaluate tinterp.x[ind] at δt
-    return view(tinterp.x, ind, :)(δt)::Vector{TT}
+function (eph::TaylorInterpolant{T, U, 1})(t::TT) where {T, U, TT <: TaylorInterpCallingArgs{T, U}}
+    # Get index of eph.x that interpolates at time t
+    ind::Int, δt::TT = getinterpindex(eph, t)
+    # Evaluate eph.x[ind] at δt
+    return (eph.x[ind])(δt)::TT
 end
 
-function (tinterp::TaylorInterpolant{T, U, 2})(target::Int, observer::Int, t::T)  where {T, U}
-    # Number of bodies in tinterp
-    N = numberofbodies(tinterp)
+function (eph::TaylorInterpolant{T, U, 2})(t::T) where {T, U}
+    # Get index of eph.x that interpolates at time t
+    ind::Int, δt::T = getinterpindex(eph, t)
+    # Evaluate eph.x[ind] at δt
+    return view(eph.x, ind, :)(δt)::Vector{U}
+end
+
+function (eph::TaylorInterpolant{T, U, 2})(t::TT) where {T, U, TT <: TaylorInterpCallingArgs{T, U}}
+    # Get index of eph.x that interpolates at time t
+    ind::Int, δt::TT = getinterpindex(eph, t)
+    # Evaluate eph.x[ind] at δt
+    return view(eph.x, ind, :)(δt)::Vector{TT}
+end
+
+function (eph::TaylorInterpolant{T, U, 2})(target::Int, observer::Int, t::T)  where {T, U}
+    # Number of bodies in eph
+    N = numberofbodies(eph)
     # Ephemeris at time t
-    eph_t = tinterp(t)
+    eph_t = eph(t)
     # Relative state vector
     if observer == 0
         return eph_t[nbodyind(N, target)]
@@ -167,7 +167,8 @@ function (tinterp::TaylorInterpolant{T, U, 2})(target::Int, observer::Int, t::T)
     end
 end
 
-(tinterp::TaylorInterpolant{T,U,2})(target::Int, t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}} = tinterp(target, 0, t)
+(eph::TaylorInterpolant{T, U, 2})(target::Int, t::TT) where
+    {T, U, TT <: TaylorInterpCallingArgs{T, U}} = eph(target, 0, t)
 
 @doc raw"""
     reverse(tinterp::TaylorInterpolant{T,U,N}) where {T<:Real, U<:Number, N}
