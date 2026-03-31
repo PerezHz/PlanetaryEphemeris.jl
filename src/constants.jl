@@ -443,24 +443,19 @@ const c_p2 = 29979.063823897606                # Speed of light^2 in au^2/day^2
 const c_m2 = 3.3356611996764786e-5             # Speed of light^-2 in day^2/au^2
 const c_m4 = 1.1126635639027125e-9             # Speed of light^-4 in day^4/au^4
 
-@doc raw"""
-    nbodyind(N::Int, i::Int)
-    nbodyind(N::Int, ivec::AbstractVector{Int})
+"""
+    nbodyind(N, idxs)
 
-Return the indices of the positions and velocities of the `i`-th body (or the
-`ivec`-th bodies) in a vector with `N` bodies. The function assumes that the vector has
-the form: `3N` positions + `3N` velocities (+ Lunar physical librations + TT-TDB).
+Return the indices of the positions and velocities of the `idxs`-th bodies
+in a vector of the form:  `3N` positions + `3N` velocities + Lunar physical
+librations + TT-TDB.
 """
 nbodyind(N::Int, i::Int) = union(3i-2:3i, 3*(N+i)-2:3*(N+i))
 
-function nbodyind(N::Int, ivec::T) where {T <: AbstractVector{Int}}
-    a = Vector{Int}(undef, 0)
-    for i in ivec
-        i > N && continue
-        a = union(a, nbodyind(N, i))
-    end
-
-    return sort(a)
+function nbodyind(N::Int, idxs::AbstractVector{Int})
+    jdxs = mapreduce(Base.Fix1(nbodyind, N), vcat, idxs)
+    sort!(jdxs)
+    return sort(jdxs)
 end
 
 const sundofs = nbodyind(length(μ), su)        # Sun's position and velocity indices
