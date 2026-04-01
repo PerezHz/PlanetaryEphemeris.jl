@@ -103,7 +103,7 @@ function main()
 
     # Body indices in output
     bodyind::UnitRange{Int} = parsed_args["bodyind"]
-    println("• Body indices in output: ", parse_eqs)
+    println("• Body indices in output: ", bodyind)
 
     # Planetary ephemeris problem
     jd0 = datetime2julian(d0)
