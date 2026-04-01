@@ -113,7 +113,6 @@ function pole_frame(t)
     # Inverse of precession matrix with linear corrections to precession angles
     pm = (Rz(Zeta(t))*Ry(-Theta(t))*Rz(zeta(t))*Rx(-phi_x(t))*Ry(-phi_y(t)))
     return pm*p_d
-
 end
 
 # where
@@ -249,8 +248,7 @@ function Rx(alpha::T) where {T<:Number}
     # Local variables
     one_alpha = one(alpha)
     zero_alpha = zero(alpha)
-    cos_alpha = cos(alpha)
-    sin_alpha = sin(alpha)
+    sin_alpha, cos_alpha = sincos(alpha)
     # Matrix elements
     res[1, 1] = one_alpha
     res[2, 1] = zero_alpha
@@ -295,8 +293,7 @@ function Ry(alpha::T) where {T<:Number}
     # Local variables
     one_alpha = one(alpha)
     zero_alpha = zero(alpha)
-    cos_alpha = cos(alpha)
-    sin_alpha = sin(alpha)
+    sin_alpha, cos_alpha = sincos(alpha)
     # Matrix elements
     res[1, 1] = cos_alpha
     res[2, 1] = zero_alpha
@@ -336,8 +333,7 @@ function Rz(alpha::T) where {T<:Number}
     # Local variables
     one_alpha = one(alpha)
     zero_alpha = zero(alpha)
-    cos_alpha = cos(alpha)
-    sin_alpha = sin(alpha)
+    sin_alpha, cos_alpha = sincos(alpha)
     # Matrix elements
     res[1, 1] = cos_alpha
     res[2, 1] = -sin_alpha
@@ -541,12 +537,14 @@ Return the Moon's angular velocity, computed by differentiating the Euler angles
 ```
 """
 function moon_omega(ϕ::Taylor1, θ::Taylor1, ψ::Taylor1)
-    dϕ = differentiate(ϕ)
-    dθ = differentiate(θ)
-    dψ = differentiate(ψ)
-    ωx = dϕ*sin(θ)*sin(ψ)+dθ*cos(ψ)
-    ωy = dϕ*sin(θ)*cos(ψ)-dθ*sin(ψ)
-    ωz = dψ+dϕ*cos(θ)
+    sinθ, cosθ = sincos(θ)
+    sinψ, cosψ = sincos(ψ)
+    dϕ = ordpres_differentiate(ϕ)
+    dθ = ordpres_differentiate(θ)
+    dψ = ordpres_differentiate(ψ)
+    ωx = dϕ*sinθ*sinψ + dθ*cosψ
+    ωy = dϕ*sinθ*cosψ - dθ*sinψ
+    ωz = dψ + dϕ*cosθ
     return [ωx, ωy, ωz]
 end
 
