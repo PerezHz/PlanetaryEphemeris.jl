@@ -50,19 +50,17 @@ function iszero(x::TaylorInterpolant{T, U, N, VT, X}) where {T <: Number, U <: N
 end
 
 # Custom print
-function show(io::IO, interp::T) where {U, V, N, T<:TaylorInterpolant{U,V,N}}
-    t_range = minmax(interp.t0 + interp.t[1], interp.t0 + interp.t[end])
-    S = eltype(interp.x)
-    if isone(N)
-        print(io, "t: ", t_range, ", x: 1 ", S, " variable")
-    else
-        L = size(interp.x, 2)
-        print(io, "t: ", t_range, ", x: ", L, " ", S, " variables")
-    end
+function show(io::IO, x::TaylorInterpolant)
+    tspan = timespan(x)
+    L = last(size(x.x))
+    S = eltype(x.x)
+    print(io, "t: ", tspan, ", x: ", L, " ", S, " variable(s)")
 end
 
 # Override get_order
 get_order(x::TaylorInterpolant) = get_order(first(x.x))
+
+timespan(x::TaylorInterpolant) = minmax(x.t0 + x.t[1], x.t0 + x.t[end])
 
 @doc raw"""
     convert(::Type{T}, interp::TaylorInterpolant) where {T <: Real}
@@ -206,38 +204,41 @@ function flipsign(eph::TaylorInterpolant)
     return TaylorInterpolant(eph.t0, t, x)
 end
 
-@doc raw"""
-    selecteph(eph::TaylorInterpolant, bodyind::Union{Int, AbstractVector{Int}}, t0::T = eph.t0,
-              tf::T = eph.t0 + eph.t[end]; euler::Bool = false, ttmtdb::Bool = false) where {T <: Real}
-
-Return a subset of `eph` with only the ephemeris of bodies `bodyind` in timerange `[t0, tf]`.
-The keyword arguments allow to include lunar euler angles and/or TT-TDB.
 """
-function selecteph(eph::TaylorInterpolant, bodyind::Union{Int, AbstractVector{Int}}, t0::T = eph.t0,
-                   tf::T = eph.t0 + eph.t[end]; euler::Bool = false, ttmtdb::Bool = false) where {T <: Real}
-    # Times
-    tmin, tmax = minmax(eph.t0, eph.t0 + eph.t[end])
-    @assert tmin ≤ t0 ≤ tf ≤ tmax "$tmin ≤ t0 ≤ tf ≤ $tmax"
-    if issorted(eph.t)
-        i_0 = searchsortedlast(eph.t, t0)
-        i_f = searchsortedfirst(eph.t, tf)
-    else
-        i_0 = searchsortedlast(eph.t, tf, rev = true)
-        i_f = searchsortedfirst(eph.t, t0, rev = true)
-    end
-    # Degrees of freedom
+    selecteph(eph::TaylorInterpolant, bodyind [, t0, tf]; kwargs...)
+
+Return a subset of `eph` containing only the ephemeris of the `bodyind`-th
+bodies and spanning `[t0, tf]`.
+
+# Keyword arguments
+
+- `euler::Bool`: whether to include lunar euler angles (default: `false`).
+- `ttmtdb::Bool`: whether to include TT-TDB (default: `false`).
+"""
+function selecteph(eph::TaylorInterpolant, bodyind::Union{Int, AbstractVector{Int}},
+                   t0::T = eph.t0, tf::T = eph.t0 + eph.t[end]; euler::Bool = false,
+                   ttmtdb::Bool = false) where {T <: Real}
+    # Check whether arguments are compatible with eph
+    tmin, tmax = timespan(eph)
+    @assert tmin ≤ t0 < tf ≤ tmax "$tmin ≤ t0 ≤ tf ≤ $tmax"
     N = numberofbodies(eph)
-    @assert all(bodyind .< N) "bodyind .< $N"
-    idxs = nbodyind(N, bodyind)
+    @assert all(≤(N), bodyind) "All bodyind must be smaller than $N"
+    # Which columns of eph.x to keep
+    cols = nbodyind(N, bodyind)
     if euler
-        idxs = vcat(idxs, 6N+1:6N+12)
+        cols = vcat(cols, 6N+1:6N+12)
     end
     if ttmtdb
-        idxs = vcat(idxs, 6N+13)
+        cols = vcat(cols, 6N+13)
     end
     # Views
-    t = view(eph.t, i_0:i_f)
-    x = view(eph.x, i_0:i_f-1, idxs)
+    dt0, dtf = minmax(abs(t0 - eph.t0), abs(tf - eph.t0))
+    j0, jf = minmax(
+        searchsortedlast(eph.t, dt0, by = abs),
+        searchsortedfirst(eph.t, dtf, by = abs)
+    )
+    t = view(eph.t, j0:jf)
+    x = view(eph.x, j0:jf-1, cols)
     # New TaylorInterpolant
     return TaylorInterpolant(eph.t0, t, x)
 end
