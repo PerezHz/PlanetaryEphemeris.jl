@@ -133,12 +133,34 @@ end
         sol = propagate(PP; order, abstol)
 
         @test isa(string(PP), String)
-        @test sol isa TaylorInterpolant{T, T, 2}
-        @test sol(sol.t0) == q0
+        @test isa(string(sol), String)
+        @test isa(sol, TaylorInterpolant{T, T, 2})
+        @test isa(PP, PlanetaryEphemerisProblem{typeof(freeparticle!), T, Tuple{Int64, T}})
         @test sol.t0 == 0.0
         @test sol.t[end] == nyears * yr
         @test length(sol.t) == size(sol.x, 1) + 1
         @test length(q0) == size(sol.x, 2)
+        @test numberofbodies(size(sol.x, 2)) == numberofbodies(sol.x[1, :]) ==
+              numberofbodies(sol.x) == numberofbodies(sol) == N
+
+        # Evaluation
+        t = Taylor1(order)
+        @test sol(sol.t0) == q0
+        @test constant_term(sol(t)) == q0
+        @test all(iszero, sol(1, 1, sol.t0))
+        @test sol(1, sol.t0) == q0[nbodyind(N, 1)]
+
+        # Convert
+        sol128 = convert(Float128, sol)
+        @test sol128.t0 == Float128(sol.t0)
+        @test sol128.t == Float128.(sol.t)
+        @test all(@. constant_term(sol128.x) == Float128(constant_term(sol.x)))
+
+        # Reverse
+        solrev = reverse(sol)
+        @test solrev.t0 == sol.t0 + sol.t[end]
+        @test solrev.t == -sol.t
+        @test solrev(solrev.t0 + solrev.t[end]) ≈ sol(sol.t0)
 
         dq = TaylorSeries.set_variables("dq", order = 2, numvars = 2)
         tmid = sol.t0 + sol.t[2] / 2

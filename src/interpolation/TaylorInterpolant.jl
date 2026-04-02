@@ -50,19 +50,17 @@ function iszero(x::TaylorInterpolant{T, U, N, VT, X}) where {T <: Number, U <: N
 end
 
 # Custom print
-function show(io::IO, interp::T) where {U, V, N, T<:TaylorInterpolant{U,V,N}}
-    t_range = minmax(interp.t0 + interp.t[1], interp.t0 + interp.t[end])
-    S = eltype(interp.x)
-    if isone(N)
-        print(io, "t: ", t_range, ", x: 1 ", S, " variable")
-    else
-        L = size(interp.x, 2)
-        print(io, "t: ", t_range, ", x: ", L, " ", S, " variables")
-    end
+function show(io::IO, x::TaylorInterpolant)
+    tspan = timespan(x)
+    L = last(size(x.x))
+    S = eltype(x.x)
+    print(io, "t: ", tspan, ", x: ", L, " ", S, " variable(s)")
 end
 
 # Override get_order
 get_order(x::TaylorInterpolant) = get_order(first(x.x))
+
+timespan(x::TaylorInterpolant) = minmax(x.t0 + x.t[1], x.t0 + x.t[end])
 
 @doc raw"""
     convert(::Type{T}, interp::TaylorInterpolant) where {T <: Real}
@@ -118,47 +116,47 @@ numberofbodies(interp::TaylorInterpolant) = numberofbodies(size(interp.x, 2))
 
 # Function-like (callability) methods
 
-@doc raw"""
-    (tinterp::TaylorInterpolant{T, U, 1})(t::T) where {T, U}
-    (tinterp::TaylorInterpolant{T, U, 1})(t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}}
-    (tinterp::TaylorInterpolant{T, U, 2})(t::T) where {T, U}
-    (tinterp::TaylorInterpolant{T, U, 2})(t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}}
+"""
+    (eph::TaylorInterpolant)([target [, observer] ,] t)
 
-Evaluate `tinterp.x` at time `t`.
+Evaluate `eph` at time `t`. If `target` and `observer` are given,
+return the state of `target` relative to `observer`.
 
 See also [`getinterpindex`](@ref).
 """
-function (tinterp::TaylorInterpolant{T, U, 1})(t::T) where {T, U}
-    # Get index of tinterp.x that interpolates at time t
-    ind::Int, δt::T = getinterpindex(tinterp, t)
-    # Evaluate tinterp.x[ind] at δt
-    return (tinterp.x[ind])(δt)::U
-end
-function (tinterp::TaylorInterpolant{T, U, 1})(t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}}
-    # Get index of tinterp.x that interpolates at time t
-    ind::Int, δt::TT = getinterpindex(tinterp, t)
-    # Evaluate tinterp.x[ind] at δt
-    return (tinterp.x[ind])(δt)::TT
+function (eph::TaylorInterpolant{T, U, 1})(t::T) where {T, U}
+    # Get index of eph.x that interpolates at time t
+    ind::Int, δt::T = getinterpindex(eph, t)
+    # Evaluate eph.x[ind] at δt
+    return (eph.x[ind])(δt)::U
 end
 
-function (tinterp::TaylorInterpolant{T, U, 2})(t::T) where {T, U}
-    # Get index of tinterp.x that interpolates at time t
-    ind::Int, δt::T = getinterpindex(tinterp, t)
-    # Evaluate tinterp.x[ind] at δt
-    return view(tinterp.x, ind, :)(δt)::Vector{U}
-end
-function (tinterp::TaylorInterpolant{T, U, 2})(t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}}
-    # Get index of tinterp.x that interpolates at time t
-    ind::Int, δt::TT = getinterpindex(tinterp, t)
-    # Evaluate tinterp.x[ind] at δt
-    return view(tinterp.x, ind, :)(δt)::Vector{TT}
+function (eph::TaylorInterpolant{T, U, 1})(t::TT) where {T, U, TT <: TaylorInterpCallingArgs{T, U}}
+    # Get index of eph.x that interpolates at time t
+    ind::Int, δt::TT = getinterpindex(eph, t)
+    # Evaluate eph.x[ind] at δt
+    return (eph.x[ind])(δt)::TT
 end
 
-function (tinterp::TaylorInterpolant{T, U, 2})(target::Int, observer::Int, t::T)  where {T, U}
-    # Number of bodies in tinterp
-    N = numberofbodies(tinterp)
+function (eph::TaylorInterpolant{T, U, 2})(t::T) where {T, U}
+    # Get index of eph.x that interpolates at time t
+    ind::Int, δt::T = getinterpindex(eph, t)
+    # Evaluate eph.x[ind] at δt
+    return view(eph.x, ind, :)(δt)::Vector{U}
+end
+
+function (eph::TaylorInterpolant{T, U, 2})(t::TT) where {T, U, TT <: TaylorInterpCallingArgs{T, U}}
+    # Get index of eph.x that interpolates at time t
+    ind::Int, δt::TT = getinterpindex(eph, t)
+    # Evaluate eph.x[ind] at δt
+    return view(eph.x, ind, :)(δt)::Vector{TT}
+end
+
+function (eph::TaylorInterpolant{T, U, 2})(target::Int, observer::Int, t::T)  where {T, U}
+    # Number of bodies in eph
+    N = numberofbodies(eph)
     # Ephemeris at time t
-    eph_t = tinterp(t)
+    eph_t = eph(t)
     # Relative state vector
     if observer == 0
         return eph_t[nbodyind(N, target)]
@@ -167,7 +165,8 @@ function (tinterp::TaylorInterpolant{T, U, 2})(target::Int, observer::Int, t::T)
     end
 end
 
-(tinterp::TaylorInterpolant{T,U,2})(target::Int, t::TT) where {T, U, TT<:TaylorInterpCallingArgs{T,U}} = tinterp(target, 0, t)
+(eph::TaylorInterpolant{T, U, 2})(target::Int, t::TT) where
+    {T, U, TT <: TaylorInterpCallingArgs{T, U}} = eph(target, 0, t)
 
 @doc raw"""
     reverse(tinterp::TaylorInterpolant{T,U,N}) where {T<:Real, U<:Number, N}
@@ -205,38 +204,41 @@ function flipsign(eph::TaylorInterpolant)
     return TaylorInterpolant(eph.t0, t, x)
 end
 
-@doc raw"""
-    selecteph(eph::TaylorInterpolant, bodyind::Union{Int, AbstractVector{Int}}, t0::T = eph.t0,
-              tf::T = eph.t0 + eph.t[end]; euler::Bool = false, ttmtdb::Bool = false) where {T <: Real}
-
-Return a subset of `eph` with only the ephemeris of bodies `bodyind` in timerange `[t0, tf]`.
-The keyword arguments allow to include lunar euler angles and/or TT-TDB.
 """
-function selecteph(eph::TaylorInterpolant, bodyind::Union{Int, AbstractVector{Int}}, t0::T = eph.t0,
-                   tf::T = eph.t0 + eph.t[end]; euler::Bool = false, ttmtdb::Bool = false) where {T <: Real}
-    # Times
-    tmin, tmax = minmax(eph.t0, eph.t0 + eph.t[end])
-    @assert tmin ≤ t0 ≤ tf ≤ tmax "$tmin ≤ t0 ≤ tf ≤ $tmax"
-    if issorted(eph.t)
-        i_0 = searchsortedlast(eph.t, t0)
-        i_f = searchsortedfirst(eph.t, tf)
-    else
-        i_0 = searchsortedlast(eph.t, tf, rev = true)
-        i_f = searchsortedfirst(eph.t, t0, rev = true)
-    end
-    # Degrees of freedom
+    selecteph(eph::TaylorInterpolant, bodyind [, t0, tf]; kwargs...)
+
+Return a subset of `eph` containing only the ephemeris of the `bodyind`-th
+bodies and spanning `[t0, tf]`.
+
+# Keyword arguments
+
+- `euler::Bool`: whether to include lunar euler angles (default: `false`).
+- `ttmtdb::Bool`: whether to include TT-TDB (default: `false`).
+"""
+function selecteph(eph::TaylorInterpolant, bodyind::Union{Int, AbstractVector{Int}},
+                   t0::T = eph.t0, tf::T = eph.t0 + eph.t[end]; euler::Bool = false,
+                   ttmtdb::Bool = false) where {T <: Real}
+    # Check whether arguments are compatible with eph
+    tmin, tmax = timespan(eph)
+    @assert tmin ≤ t0 < tf ≤ tmax "$tmin ≤ t0 ≤ tf ≤ $tmax"
     N = numberofbodies(eph)
-    @assert all(bodyind .< N) "bodyind .< $N"
-    idxs = nbodyind(N, bodyind)
+    @assert all(≤(N), bodyind) "All bodyind must be smaller than $N"
+    # Which columns of eph.x to keep
+    cols = nbodyind(N, bodyind)
     if euler
-        idxs = vcat(idxs, 6N+1:6N+12)
+        cols = vcat(cols, 6N+1:6N+12)
     end
     if ttmtdb
-        idxs = vcat(idxs, 6N+13)
+        cols = vcat(cols, 6N+13)
     end
     # Views
-    t = view(eph.t, i_0:i_f)
-    x = view(eph.x, i_0:i_f-1, idxs)
+    dt0, dtf = minmax(abs(t0 - eph.t0), abs(tf - eph.t0))
+    j0, jf = minmax(
+        searchsortedlast(eph.t, dt0, by = abs),
+        searchsortedfirst(eph.t, dtf, by = abs)
+    )
+    t = view(eph.t, j0:jf)
+    x = view(eph.x, j0:jf-1, cols)
     # New TaylorInterpolant
     return TaylorInterpolant(eph.t0, t, x)
 end
