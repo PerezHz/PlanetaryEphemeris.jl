@@ -69,22 +69,20 @@ function loadeph(ss16asteph::TaylorInterpolant, μ::Vector{<:Real})
     return acc_eph, pot_eph
 end
 
-@doc raw"""
-    selecteph2jld2(sseph::TaylorInterpolant, bodyind::T, tspan::S) where {T <: AbstractVector{Int}, S <: Number}
-
-Save the ephemeris, contained in `sseph`, of the bodies with indices `bodyind`, in a `.jld2` file named as follows
-
-    "sseph" * number of asteroids in sseph * "ast" * number of asteroids to be saved in file * "_"
-    * "p" / "m" (forward / backward integration) * number of years in sseph *  "y_et.jld2"
-
-# Arguments
-
-- `sseph::TaylorInterpolant`: ephemeris of all the bodies.
-- `bodyind::T`: indices of the bodies to be saved.
-- `tspan::S`: time span of the integration (positive -> forward integration / negative -> backward integration).
 """
-function selecteph2jld2(sseph::TaylorInterpolant, bodyind::T, tspan::S) where {T <: AbstractVector{Int}, S <: Number}
+    selecteph2jld2(sseph::TaylorInterpolant, bodyind, nyears)
 
+Save a subset of `sseph` containing only the ephemeris of the
+`bodyind`-th bodies in a `.jld2` file named as follows
+
+    sseph{N}ast{n}_{p/m}{nyears}y_et.jld2
+
+where `N` is the number of asteroids in sseph, `n` is the number
+of asteroids to be saved in the file, `p/m` indicates a forward
+or backward integration and `nyears` is the number of years.
+"""
+function selecteph2jld2(sseph::TaylorInterpolant, bodyind::AbstractVector{Int},
+                        nyears::Number)
     # Total number of bodies
     N = numberofbodies(sseph)
     # Number of asteroids in sseph
@@ -92,27 +90,21 @@ function selecteph2jld2(sseph::TaylorInterpolant, bodyind::T, tspan::S) where {T
     # Number of asteroids to be saved
     nastout = length(bodyind) - 11
     # Check nastout <= nast
-    @assert nastout <= nast "Cannot save $nastout asteroids from ephemeris with $nast asteroids"
+    @assert nastout <= nast "Cannot save $nastout asteroids from ephemeris \
+        with $nast asteroids"
     # Prefix to distinguish between forward (p) / backward (m) integration
-    sgn_yrs = signbit(tspan) ? "m" : "p"
+    sgn_yrs = signbit(nyears) ? "m" : "p"
     # Number of years
-    nyrs_int = floor(Int, abs(tspan))
-
-    # Write output to .jld2 file
-
+    nyrs_int = floor(Int, abs(nyears))
     # Name of the file
-    ss16ast_fname = "sseph$(lpad(nast,3,'0'))ast$(lpad(nastout,3,'0'))_" * sgn_yrs * "$(nyrs_int)y_et.jld2"
-
-    # TaylorInterpolant with only the information of the bodies to be saved + Lunar orientation + TT-TDB
-    ss16ast_eph = selecteph(sseph, bodyind, euler = true, ttmtdb = true)
-
-    println("Saving solution to file: ", ss16ast_fname)
-
+    ss16ast_fname = "sseph$(lpad(nast,3,'0'))ast$(lpad(nastout,3,'0'))_" *
+        sgn_yrs * "$(nyrs_int)y_et.jld2"
+    # Select bodies to be saved + Lunar orientation + TT-TDB
+    t0, tf = timespan(sseph)
+    ss16ast_eph = selecteph(sseph, bodyind, t0, tf, euler = true, ttmtdb = true)
     # Open file
-    JLD2.jldopen(ss16ast_fname, "w") do file
-        # Write the ephemeris to file
-        write(file, "ss16ast_eph", ss16ast_eph)
-    end
+    println("Saving solution to file: ", ss16ast_fname)
+    jldsave(ss16ast_fname; ss16ast_eph)
     # Check that written output is equal to original variable ss16ast_eph
     recovered_sol_i = JLD2.load(ss16ast_fname, "ss16ast_eph")
     if recovered_sol_i == ss16ast_eph
