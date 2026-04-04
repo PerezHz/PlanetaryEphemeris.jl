@@ -791,7 +791,7 @@ function nutation_iau80!(res, t::Taylor1, auxNut, auxsR, auxMat)
     Rx!(Rxnϵ, nϵ, auxsR)
     Rz!(RznΔψ, nΔψ, auxsR)
     Rx!(Rxϵ0, ϵ0, auxsR)
-    res .= Rxnϵ*RznΔψ*Rxϵ0
+    res = Rxnϵ*RznΔψ*Rxϵ0
     return nothing
 end
 
@@ -841,21 +841,26 @@ t2c_jpl_de430!(dsj2k::Taylor1{T}, zero_q::Taylor1{<:Number}, ::Nothing) where {T
 function t2c_jpl_de430!(dsj2k::Taylor1{T}, zero_q::Taylor1{T},
                         rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
     c2t_jpl_de430!(dsj2k, rotatBuf)
-    return transpose(rotatBuf.v2[12]) .+ zero_q
+    resdagg = rotatBuf.v2[13]
+    resdagg = transpose(rotatBuf.v2[12])
+    return resdagg .+ zero_q
 end
 
 function t2c_jpl_de430!(dsj2k::Taylor1{T}, zero_q::Taylor1{TaylorN{T}},
                         rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
     c2t_jpl_de430!(dsj2k, rotatBuf)
-    return transpose(rotatBuf.v2[12]) .+ zero_q
+    resdagg = rotatBuf.v2[13]
+    resdagg = transpose(rotatBuf.v2[12])
+    return resdagg .+ zero_q
 end
 
 function t2c_jpl_de430!(dsj2k::Taylor1{T}, zero_q::Taylor1{Taylor1{T}},
                         rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
     c2t_jpl_de430!(dsj2k, rotatBuf)
-    res = transpose(rotatBuf.v2[12])
+    resdagg = rotatBuf.v2[13]
+    resdagg = transpose(rotatBuf.v2[12])
     one_q = one(zero_q.coeffs[1])
-    return @. Taylor1(getfield(res, :coeffs) * one_q)
+    return @. Taylor1(getfield(resdagg, :coeffs) * one_q)
 end
 
 
@@ -915,6 +920,7 @@ function c2t_jpl_de430!(t::Taylor1{T}, rotatBuf::RetAlloc{Taylor1{T}}) where {T<
     # RznΔψ = rotatBuf.v2[10]
     # Rxϵ0 = rotatBuf.v2[11]
     res = rotatBuf.v2[12]
+    Raux = rotatBuf.v2[13]
     # Angles
     zeta!(zt, t, auxs_angles)  # zeta(t)
     Theta!(Tt, t, auxs_angles) # Theta(t)
@@ -928,18 +934,25 @@ function c2t_jpl_de430!(t::Taylor1{T}, rotatBuf::RetAlloc{Taylor1{T}}) where {T<
     Rz!(Rzz, nzt, auxsR)
     Ry!(RyT, Tt, auxsR)
     Rz!(RzZ, nZt, auxsR)
-    P_iau7680 .= Rzz*RyT*RzZ
+    # Raux = Rzz*RyT
+    # P_iau7680 = Raux*RzZ
+    mul!(Raux, Rzz, RyT)
+    mul!(P_iau7680, Raux, RzZ)
     # Linear corrections to precession, see equation (25) in page 11 and Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     # corrections = Ry(phi_y(t))*Rx(phi_x(t))
     phi_y!(phiy, t)
     phi_x!(phix, t)
     Ry!(Ryphiy, phiy, auxsR)
     Rx!(Rxphix, phix, auxsR)
-    corrections .= Ryphiy*Rxphix
+    # corrections = Ryphiy*Rxphix
+    mul!(corrections, Ryphiy, Rxphix)
     # Nutation matrix, see equation (5-152) in page 5-60 of https://doi.org/10.1002/0471728470
     # N_iau80 = nutation_iau80(t)
     nutation_iau80!(N_iau80, t, auxNut, auxsR, view(rotatBuf.v2, 9:11))
-    res .= N_iau80*corrections*P_iau7680
+    # Raux = N_iau80*corrections
+    # res = Raux*P_iau7680
+    mul!(Raux,  N_iau80, corrections)
+    mul!(res,  Raux, P_iau7680)
     return nothing
 end
 
@@ -973,7 +986,8 @@ function allocate_c2t_jpl_de430(t::Taylor1{T}) where {T<:Real}
     RzZ = Rz(nZt)
     # Precession matrix, see equation (5-147) in page (5-59) of https://doi.org/10.1002/0471728470
     # P_iau7680 = Rz(-zeta(t))*Ry(Theta(t))*Rz(-Zeta(t))
-    P_iau7680 = Rzz*RyT*RzZ
+    Raux = Rzz*RyT
+    P_iau7680 = Raux*RzZ
     # Angles and allocations for linear corrections of precession
     phiy = phi_y(t)
     phix = phi_x(t)
@@ -999,14 +1013,17 @@ function allocate_c2t_jpl_de430(t::Taylor1{T}) where {T<:Real}
     Rxnϵ = Rx(nϵ)
     RznΔψ = Rz(nΔψ)
     Rxϵ0 = Rx(ϵ0)
-    N_iau80 = Rxnϵ*RznΔψ*Rxϵ0
+    Raux = Rxnϵ*RznΔψ
+    N_iau80 = Raux*Rxϵ0
     # c2t_jpl_de430
-    res = N_iau80*corrections*P_iau7680
+    Raux = N_iau80*corrections
+    res = Raux*P_iau7680
+    # resdagg = Matrix(transpose(res))
     # Returned RetAlloc{Taylor1{T}} object
     rotatBuf = RetAlloc{Taylor1{T}}(
         [zt, nzt, Tt, Zt, nZt, phiy, phix],
         [auxs_angles, auxsR, auxNut],
-        [Rzz, RyT, RzZ, P_iau7680, Ryphiy, Rxphix, corrections, N_iau80, Rxnϵ, RznΔψ, Rxϵ0, res],
+        [Rzz, RyT, RzZ, P_iau7680, Ryphiy, Rxphix, corrections, N_iau80, Rxnϵ, RznΔψ, Rxϵ0, res, Raux],
         [Array{Taylor1{T}}(undef, 0, 0, 0)],
         [Array{Taylor1{T}}(undef, 0, 0, 0, 0)])
     return rotatBuf
