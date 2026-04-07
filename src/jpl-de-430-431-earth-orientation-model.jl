@@ -788,10 +788,12 @@ function nutation_iau80!(res, t::Taylor1, auxNut, auxsR, auxMat)
     Rxnϵ = auxMat[1]
     RznΔψ = auxMat[2]
     Rxϵ0 = auxMat[3]
+    Raux =  auxMat[5]
     Rx!(Rxnϵ, nϵ, auxsR)
     Rz!(RznΔψ, nΔψ, auxsR)
     Rx!(Rxϵ0, ϵ0, auxsR)
-    res = Rxnϵ*RznΔψ*Rxϵ0
+    matmul!(Raux, RznΔψ, Rxϵ0)
+    matmul!(res, Rxnϵ, Raux)
     return nothing
 end
 
@@ -936,8 +938,8 @@ function c2t_jpl_de430!(t::Taylor1{T}, rotatBuf::RetAlloc{Taylor1{T}}) where {T<
     Rz!(RzZ, nZt, auxsR)
     # Raux = Rzz*RyT
     # P_iau7680 = Raux*RzZ
-    mul!(Raux, Rzz, RyT)
-    mul!(P_iau7680, Raux, RzZ)
+    matmul!(Raux, Rzz, RyT)
+    matmul!(P_iau7680, Raux, RzZ)
     # Linear corrections to precession, see equation (25) in page 11 and Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     # corrections = Ry(phi_y(t))*Rx(phi_x(t))
     phi_y!(phiy, t)
@@ -945,14 +947,14 @@ function c2t_jpl_de430!(t::Taylor1{T}, rotatBuf::RetAlloc{Taylor1{T}}) where {T<
     Ry!(Ryphiy, phiy, auxsR)
     Rx!(Rxphix, phix, auxsR)
     # corrections = Ryphiy*Rxphix
-    mul!(corrections, Ryphiy, Rxphix)
+    matmul!(corrections, Ryphiy, Rxphix)
     # Nutation matrix, see equation (5-152) in page 5-60 of https://doi.org/10.1002/0471728470
     # N_iau80 = nutation_iau80(t)
-    nutation_iau80!(N_iau80, t, auxNut, auxsR, view(rotatBuf.v2, 9:11))
+    nutation_iau80!(N_iau80, t, auxNut, auxsR, view(rotatBuf.v2, 9:13))
     # Raux = N_iau80*corrections
     # res = Raux*P_iau7680
-    mul!(Raux,  N_iau80, corrections)
-    mul!(res,  Raux, P_iau7680)
+    matmul!(Raux,  N_iau80, corrections)
+    matmul!(res,  Raux, P_iau7680)
     return nothing
 end
 
@@ -1018,7 +1020,6 @@ function allocate_c2t_jpl_de430(t::Taylor1{T}) where {T<:Real}
     # c2t_jpl_de430
     Raux = N_iau80*corrections
     res = Raux*P_iau7680
-    # resdagg = Matrix(transpose(res))
     # Returned RetAlloc{Taylor1{T}} object
     rotatBuf = RetAlloc{Taylor1{T}}(
         [zt, nzt, Tt, Zt, nZt, phiy, phix],
