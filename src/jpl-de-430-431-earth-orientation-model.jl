@@ -840,29 +840,42 @@ end
 t2c_jpl_de430!(dsj2k::Taylor1{T}, zero_q::Taylor1{<:Number}, ::Nothing) where {T <: Real} =
     t2c_jpl_de430(dsj2k, zero_q)
 
-function t2c_jpl_de430!(dsj2k::Taylor1{T}, zero_q::Taylor1{T},
-                        rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
+function t2c_jpl_de430!(M::Array{Taylor1{T},3}, ea::Int, dsj2k::Taylor1{T},
+        zero_q::Taylor1{T}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
     c2t_jpl_de430!(dsj2k, rotatBuf)
     resdagg = rotatBuf.v2[13]
-    resdagg = transpose(rotatBuf.v2[12])
-    return resdagg .+ zero_q
+    resdagg .= transpose(rotatBuf.v2[12])
+    M[:, :, ea] = resdagg .+ zero_q
+    return M
 end
 
-function t2c_jpl_de430!(dsj2k::Taylor1{T}, zero_q::Taylor1{TaylorN{T}},
-                        rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
+function t2c_jpl_de430!(M::Array{Taylor1{TaylorN{T}},3}, ea::Int, dsj2k::Taylor1{T},
+        zero_q::Taylor1{TaylorN{T}}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
     c2t_jpl_de430!(dsj2k, rotatBuf)
     resdagg = rotatBuf.v2[13]
-    resdagg = transpose(rotatBuf.v2[12])
-    return resdagg .+ zero_q
+    resdagg .= transpose(rotatBuf.v2[12])
+    # M[:, :, ea] = resdagg .+ zero_q
+    for j in size(M, 2)
+        for i in size(M, 1)
+            M[i, j, ea].coeffs .= getfield(resdagg[i, j], :coeffs) .+ zero_q.coeffs
+        end
+    end
+    return M
 end
 
-function t2c_jpl_de430!(dsj2k::Taylor1{T}, zero_q::Taylor1{Taylor1{T}},
-                        rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
+function t2c_jpl_de430!(M::Array{Taylor1{Taylor1{T}},3}, ea::Int, dsj2k::Taylor1{T},
+        zero_q::Taylor1{Taylor1{T}}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
     c2t_jpl_de430!(dsj2k, rotatBuf)
     resdagg = rotatBuf.v2[13]
-    resdagg = transpose(rotatBuf.v2[12])
+    resdagg .= transpose(rotatBuf.v2[12])
     one_q = one(zero_q.coeffs[1])
-    return @. Taylor1(getfield(resdagg, :coeffs) * one_q)
+    # M[:, :, ea] = @. Taylor1(getfield(resdagg, :coeffs) * one_q)
+    for j in size(M, 2)
+        for i in size(M, 1)
+            M[i, j, ea].coeffs .= getfield(resdagg[i, j], :coeffs) .* one_q
+        end
+    end
+    return M
 end
 
 
