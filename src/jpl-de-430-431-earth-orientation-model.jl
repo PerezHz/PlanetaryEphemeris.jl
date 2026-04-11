@@ -841,23 +841,33 @@ t2c_jpl_de430!(dsj2k::Taylor1{T}, zero_q::Taylor1{<:Number}, ::Nothing) where {T
     t2c_jpl_de430(dsj2k, zero_q)
 
 function t2c_jpl_de430!(M::Array{Taylor1{T},3}, ea::Int, dsj2k::Taylor1{T},
-        zero_q::Taylor1{T}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
+        ::Taylor1{T}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
     c2t_jpl_de430!(dsj2k, rotatBuf)
-    resdagg = rotatBuf.v2[13]
-    resdagg .= transpose(rotatBuf.v2[12])
-    M[:, :, ea] = resdagg .+ zero_q
+    transpose!(rotatBuf.v2[13], rotatBuf.v2[12])
+    for j in size(M, 2)
+        for i in size(M, 1)
+            for k in eachindex(resdagg[i, j])
+                TS.identity!(M[i, j, ea], rotatBuf.v2[13][i, j], k)
+            end
+        end
+    end
     return M
 end
 
 function t2c_jpl_de430!(M::Array{Taylor1{TaylorN{T}},3}, ea::Int, dsj2k::Taylor1{T},
         zero_q::Taylor1{TaylorN{T}}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
     c2t_jpl_de430!(dsj2k, rotatBuf)
-    resdagg = rotatBuf.v2[13]
-    resdagg .= transpose(rotatBuf.v2[12])
-    # M[:, :, ea] = resdagg .+ zero_q
+    transpose!(rotatBuf.v2[13], rotatBuf.v2[12])
     for j in size(M, 2)
         for i in size(M, 1)
-            M[i, j, ea].coeffs .= getfield(resdagg[i, j], :coeffs) .+ zero_q.coeffs
+            for ord in eachindex(M[i, j, ea])
+                for ordN in eachindex(M[i, j, ea][ord])
+                    for k in eachindex(M[i, j, ea][ord][ordN])
+                        M[i, j, ea][ord][ordN][k] =
+                            rotatBuf.v2[13][i, j][ord] + zero_q[ord][ordN][k]
+                    end
+                end
+            end
         end
     end
     return M
@@ -866,13 +876,15 @@ end
 function t2c_jpl_de430!(M::Array{Taylor1{Taylor1{T}},3}, ea::Int, dsj2k::Taylor1{T},
         zero_q::Taylor1{Taylor1{T}}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
     c2t_jpl_de430!(dsj2k, rotatBuf)
-    resdagg = rotatBuf.v2[13]
-    resdagg .= transpose(rotatBuf.v2[12])
+    transpose!(rotatBuf.v2[13], rotatBuf.v2[12])
     one_q = one(zero_q.coeffs[1])
-    # M[:, :, ea] = @. Taylor1(getfield(resdagg, :coeffs) * one_q)
     for j in size(M, 2)
         for i in size(M, 1)
-            M[i, j, ea].coeffs .= getfield(resdagg[i, j], :coeffs) .* one_q
+            for ord in eachindex(M[i, j, ea])
+                for k in eachindex(one_q)
+                    TS.mul!(M[i, j, ea][ord], rotatBuf.v2[13][i, j][ord], one_q, k)
+                end
+            end
         end
     end
     return M
