@@ -837,7 +837,8 @@ function t2c_jpl_de430(dsj2k::Taylor1{T}, zero_q::Taylor1{Taylor1{T}}) where {T 
     return _M_
 end
 
-t2c_jpl_de430!(dsj2k::Taylor1{T}, zero_q::Taylor1{<:Number}, ::Nothing) where {T <: Real} =
+t2c_jpl_de430!(::Array{Taylor1{T},3}, ::Int, dsj2k::Taylor1{T},
+        zero_q::Taylor1{<:Number}, ::Nothing) where {T <: Real} =
     t2c_jpl_de430(dsj2k, zero_q)
 
 function t2c_jpl_de430!(M::Array{Taylor1{T},3}, ea::Int, dsj2k::Taylor1{T},
@@ -846,8 +847,8 @@ function t2c_jpl_de430!(M::Array{Taylor1{T},3}, ea::Int, dsj2k::Taylor1{T},
     transpose!(rotatBuf.v2[13], rotatBuf.v2[12])
     for j in size(M, 2)
         for i in size(M, 1)
-            for k in eachindex(resdagg[i, j])
-                TS.identity!(M[i, j, ea], rotatBuf.v2[13][i, j], k)
+            for k in eachindex(M[i, j])
+                M[i, j, ea][k] = rotatBuf.v2[13][i, j][k]
             end
         end
     end
@@ -855,18 +856,13 @@ function t2c_jpl_de430!(M::Array{Taylor1{T},3}, ea::Int, dsj2k::Taylor1{T},
 end
 
 function t2c_jpl_de430!(M::Array{Taylor1{TaylorN{T}},3}, ea::Int, dsj2k::Taylor1{T},
-        zero_q::Taylor1{TaylorN{T}}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
+        ::Taylor1{TaylorN{T}}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
     c2t_jpl_de430!(dsj2k, rotatBuf)
     transpose!(rotatBuf.v2[13], rotatBuf.v2[12])
     for j in size(M, 2)
         for i in size(M, 1)
             for ord in eachindex(M[i, j, ea])
-                for ordN in eachindex(M[i, j, ea][ord])
-                    for k in eachindex(M[i, j, ea][ord][ordN])
-                        M[i, j, ea][ord][ordN][k] =
-                            rotatBuf.v2[13][i, j][ord] + zero_q[ord][ordN][k]
-                    end
-                end
+                M[i, j, ea][ord][0][1] = rotatBuf.v2[13][i, j][ord]
             end
         end
     end
@@ -874,16 +870,13 @@ function t2c_jpl_de430!(M::Array{Taylor1{TaylorN{T}},3}, ea::Int, dsj2k::Taylor1
 end
 
 function t2c_jpl_de430!(M::Array{Taylor1{Taylor1{T}},3}, ea::Int, dsj2k::Taylor1{T},
-        zero_q::Taylor1{Taylor1{T}}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
+        ::Taylor1{Taylor1{T}}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
     c2t_jpl_de430!(dsj2k, rotatBuf)
     transpose!(rotatBuf.v2[13], rotatBuf.v2[12])
-    one_q = one(zero_q.coeffs[1])
     for j in size(M, 2)
         for i in size(M, 1)
             for ord in eachindex(M[i, j, ea])
-                for k in eachindex(one_q)
-                    TS.mul!(M[i, j, ea][ord], rotatBuf.v2[13][i, j][ord], one_q, k)
-                end
+                M[i, j, ea][ord][0] = rotatBuf.v2[13][i, j][ord]
             end
         end
     end
