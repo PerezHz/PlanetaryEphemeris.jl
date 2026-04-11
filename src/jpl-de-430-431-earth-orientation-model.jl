@@ -837,6 +837,12 @@ function t2c_jpl_de430(dsj2k::Taylor1{T}, zero_q::Taylor1{Taylor1{T}}) where {T 
     return _M_
 end
 
+@doc raw"""
+    t2c_jpl_de430!(M, ea, t::RetAlloc{Taylor1{T}}, zero_q, rotatBuf::Union{Nothing,RetAlloc{Taylor1{T}}})
+
+Inplace version of ``t2c_jpl_de430(t)``; see [`t2c_jpl_de430`](@ref) for details.
+"""
+
 t2c_jpl_de430!(::Array{Taylor1{T},3}, ::Int, dsj2k::Taylor1{T},
         zero_q::Taylor1{<:Number}, ::Nothing) where {T <: Real} =
     t2c_jpl_de430(dsj2k, zero_q)
@@ -979,8 +985,9 @@ end
 @doc raw"""
     allocate_c2t_jpl_de430(t)
 
-Returns ``c2t_jpl_de430(t)`` (see details in [`c2t_jpl_de430`](@ref)) and a `RetAlloc` object with the
-objects that can be used to recicle memory.
+Returns a `RetAlloc{Taylor1{T}}` object with objects that can be used to recicle memory for
+[`c2t_jpl_de430!`](@ref)) and [`t2c_jpl_de430!`](@ref)) methods. Minimum computations
+are performed here.
 """
 function allocate_c2t_jpl_de430(t::Taylor1{T}) where {T<:Real}
     t_cy = t/(100yr)
@@ -989,12 +996,9 @@ function allocate_c2t_jpl_de430(t::Taylor1{T}) where {T<:Real}
     auxhorner = zero(t)
     angle_A = zero(t)
     auxs_angles = [t_cy, auxhorner, angle_A] # auxs for angles
-    zeta!(zt, t, auxs_angles) # zt = zeta(t)
     nzt = -zt
     Tt = zero(t) # Tt = Theta(t)
-    Theta!(Tt, t, auxs_angles) # Theta(t)
     Zt = zero(t) # Zt = Zeta(t)
-    Zeta!(Zt, t, auxs_angles)
     nZt = -Zt
     # Allocations for calculations involving Rx, Ry and Rz
     one_alpha = one(nzt)
@@ -1002,22 +1006,19 @@ function allocate_c2t_jpl_de430(t::Taylor1{T}) where {T<:Real}
     sin_alpha, cos_alpha = sincos(nzt)
     auxsR = [one_alpha, zero_alpha, sin_alpha, cos_alpha]
     Rzz = Rz(nzt)
-    RyT = Ry(Tt)
-    RzZ = Rz(nZt)
-    # Precession matrix, see equation (5-147) in page (5-59) of https://doi.org/10.1002/0471728470
-    # P_iau7680 = Rz(-zeta(t))*Ry(Theta(t))*Rz(-Zeta(t))
-    Raux = Rzz*RyT
-    P_iau7680 = Raux*RzZ
+    RyT = zero.(Rzz)
+    RzZ = zero.(Rzz)
+    # Allocations for precession matrix
+    Raux = zero.(Rzz)
+    P_iau7680 = zero.(Rzz)
     # Angles and allocations for linear corrections of precession
-    phiy = phi_y(t)
-    phix = phi_x(t)
-    Ryphiy = Ry(phiy)
-    Rxphix = Rx(phix)
-    # Linear corrections to precession, see equation (25) in page 11 and Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    # corrections = Ry(phi_y(t))*Rx(phi_x(t))
-    corrections = Ryphiy*Rxphix
-    # Nutation matrix, see equation (5-152) in page 5-60 of https://doi.org/10.1002/0471728470
-    # N_iau80 = nutation_iau80(t)
+    phiy = zero(t)
+    phix = zero(t)
+    Ryphiy = zero.(Rzz)
+    Rxphix = zero.(Rzz)
+    # Allocations for linear corrections to precession
+    corrections = zero.(Rzz)
+    # Allocations for nutation matrix
     ϵ0 = zero(t)        # Mean obliquity (rad)
     Δϵ = zero(t)        # Nutation in obliquity (rad)
     Δψ = zero(t)        # Nutation in longitude (rad)
@@ -1025,19 +1026,11 @@ function allocate_c2t_jpl_de430(t::Taylor1{T}) where {T<:Real}
     nϵ = zero(t)        # ϵ = -(ϵ0 + Δϵ)
     omega_t_cy = zero(t) # Ω(t)
     auxNut = [ϵ0, Δϵ, Δψ, nΔψ, nϵ, omega_t_cy, t_cy, auxhorner, angle_A, sin_alpha, cos_alpha]
-    ϵ̄!(ϵ0, t, auxs_angles)
-    Delta_epsilon!(Δϵ, t, view(auxNut, 6:11))
-    Delta_psi!(Δψ, t, view(auxNut, 6:11))
-    nΔψ = -Δψ           # Negative of nutation in longitude (rad)
-    nϵ = -(ϵ0 + Δϵ)
-    Rxnϵ = Rx(nϵ)
-    RznΔψ = Rz(nΔψ)
-    Rxϵ0 = Rx(ϵ0)
-    Raux = Rxnϵ*RznΔψ
-    N_iau80 = Raux*Rxϵ0
-    # c2t_jpl_de430
-    Raux = N_iau80*corrections
-    res = Raux*P_iau7680
+    Rxnϵ = zero.(Rzz)
+    RznΔψ = zero.(Rzz)
+    Rxϵ0 = zero.(Rzz)
+    res = zero.(Rzz) # c2t_jpl_de430
+    N_iau80 = zero.(Rzz)
     # Returned RetAlloc{Taylor1{T}} object
     rotatBuf = RetAlloc{Taylor1{T}}(
         [zt, nzt, Tt, Zt, nZt, phiy, phix],
