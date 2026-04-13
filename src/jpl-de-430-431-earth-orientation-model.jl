@@ -21,7 +21,33 @@ where ``t = 36,525 T`` is the TDB time in Julian days from J2000.0.
 
 See equation (5-64) in page 5-27 of https://doi.org/10.1002/0471728470.
 """
-Ω(t) = deg2rad( (125+2/60+40.280/3600)-(1934+8/60+10.539/3600)*(t/36525)+(7.455/3600)*(t/36525)^2+(0.008/3600)*(t/36525)^3 )
+Ω(t) = deg2rad( evaluate(Taylor1(coeffs_Ω_A, get_order(t)), t/36525) )
+
+const coeffs_Ω_A = [125+2/60+40.280/3600, -(1934+8/60+10.539/3600), 7.455/3600, 0.008/3600]
+
+@doc raw"""
+    Ω!(res, t, auxs)
+
+Inplace version of ``Ω(t)``; see [`Ω`](@ref) for details.
+"""
+function Ω!(res::Taylor1{T}, t::Taylor1{T}, auxs) where {T<:Real}
+    t_cy = auxs[1]
+    auxhorner = auxs[2] # aux for _horner!
+    Ω_A = auxs[3]  # Ω_A
+    for i in eachindex(coeffs_Ω_A)
+        Ω_A.coeffs[i] = coeffs_Ω_A[i]
+    end
+    for ord in eachindex(t)
+        res[ord] = zero(t[ord])
+        t_cy[ord] = t[ord]/36525 # t/36525
+        auxhorner[ord] = zero(t[ord])
+    end
+    TaylorSeries._horner!(res, Ω_A, t_cy, auxhorner) # Ω_A(t_cy)
+    for ord in eachindex(t)
+        res[ord] = res[ord]*(convert(float(T), pi) / 180)#deg2rad(res[ord])
+    end
+    return nothing
+end
 
 @doc raw"""
     Delta_psi(t)
@@ -40,6 +66,24 @@ See also [`Ω`](@ref).
 Delta_psi(t) = deg2rad( (-17.1996/3600)*sin(Ω(t)) )
 
 @doc raw"""
+    Delta_psi!(res, t, auxs)
+
+Inplace version of ``Delta_psi(t)``; see [`Delta_psi`](@ref) for details.
+"""
+function Delta_psi!(deltapsi::Taylor1{T}, t::Taylor1{T}, auxs) where {T<:Real}
+    numfactor = -17.1996/3600
+    omega_t_cy = auxs[1]
+    Ω!(omega_t_cy, t, view(auxs, 2:4))
+    sinO = auxs[5]
+    cosO = auxs[6]
+    for ord in eachindex(t)
+        TaylorSeries.sincos!(sinO, cosO, omega_t_cy, ord)
+        deltapsi[ord] = numfactor*sinO[ord]*(convert(float(T), pi) / 180)#deg2rad( numfactor*sinO[ord] )
+    end
+    return nothing
+end
+
+@doc raw"""
     Delta_epsilon(t)
 
 Return the nutation in obliquity (in radians)
@@ -54,6 +98,24 @@ See equation (5-190) in page 5-72 of https://doi.org/10.1002/0471728470.
 See also [`Ω`](@ref).
 """
 Delta_epsilon(t) = deg2rad( (9.2025/3600)*cos(Ω(t)) )
+
+@doc raw"""
+    Delta_epsilon!(res, t, auxs)
+
+Inplace version of ``Delta_epsilon(t)``; see [`Delta_epsilon`](@ref) for details.
+"""
+function Delta_epsilon!(deltaepsilon::Taylor1{T}, t::Taylor1{T}, auxs) where {T<:Real}
+    numfactor = 9.2025/3600
+    omega_t_cy = auxs[1]
+    Ω!(omega_t_cy, t, view(auxs, 2:4))
+    sinO = auxs[5]
+    cosO = auxs[6]
+    for ord in eachindex(t)
+        TaylorSeries.sincos!(sinO, cosO, omega_t_cy, ord)
+        deltaepsilon[ord] = numfactor*cosO[ord]*(convert(float(T), pi) / 180)#deg2rad( numfactor*cosO[ord] )
+    end
+    return nothing
+end
 
 @doc raw"""
     pole_date(t)
@@ -88,7 +150,33 @@ where ``t = 36,525 T`` is the TDB time in Julian days from J2000.0.
 
 See equation (5-153) in page 5-61 of https://doi.org/10.1002/0471728470.
 """
-ϵ̄(t) = deg2rad( (84381.448/3600)-(46.815/3600)*(t/36525)-(0.00059/3600)*(t/36525)^2+(0.001813/3600)*(t/36525)^3 )
+ϵ̄(t) = deg2rad( evaluate(Taylor1(coeffs_ϵ̄, get_order(t)), t/36525) )
+
+const coeffs_ϵ̄ = [84381.448/3600, -46.815/3600, -0.00059/3600, 0.001813/3600]
+
+@doc raw"""
+    ϵ̄!(res, t, auxs)
+
+Inplace version of ``ϵ̄(t)``; see [`ϵ̄`](@ref) for details.
+"""
+function ϵ̄!(res::Taylor1{T}, t::Taylor1{T}, auxs) where {T<:Real}
+    t_cy = auxs[1]
+    auxhorner = auxs[2] # aux for _horner!
+    ϵ̄_A = auxs[3]  # ϵ̄_A
+    for i in eachindex(coeffs_ϵ̄)
+        ϵ̄_A.coeffs[i] = coeffs_ϵ̄[i]
+    end
+    for ord in eachindex(t)
+        res[ord] = zero(t[ord])
+        t_cy[ord] = t[ord]/36525 # t/(36525)
+        auxhorner[ord] = zero(t[ord])
+    end
+    TaylorSeries._horner!(res, ϵ̄_A, t_cy, auxhorner) # ϵ̄_A(t_cy)
+    for ord in eachindex(t)
+        res[ord] = res[ord]*(convert(float(T), pi) / 180)#deg2rad(res[ord])
+    end
+    return nothing
+end
 
 @doc raw"""
     pole_frame(t)
@@ -113,7 +201,6 @@ function pole_frame(t)
     # Inverse of precession matrix with linear corrections to precession angles
     pm = (Rz(Zeta(t))*Ry(-Theta(t))*Rz(zeta(t))*Rx(-phi_x(t))*Ry(-phi_y(t)))
     return pm*p_d
-
 end
 
 # where
@@ -133,7 +220,34 @@ See equation (25) in page 11 and Table 10 in page 50 of https://ui.adsabs.harvar
 
 See also [`pole_frame`](@ref).
 """
-phi_x(t) = deg2rad( (phi_x0 + (t/yr)*Dt_phi_x)/3600 )
+function phi_x(t)
+    phix = zero(t)
+    for ord in eachindex(t)
+        phix[ord] = (t[ord]/yr)*Dt_phi_x/3600
+    end
+    phix[0] += phi_x0
+    for ord in eachindex(t)
+        phix[ord] = deg2rad( phix[ord] )
+    end
+    return phix
+end
+
+@doc raw"""
+    phi_x!(res, t)
+
+Inplace version of ``phi_x(t)``; see [`phi_x`](@ref) for details.
+"""
+function phi_x!(phix::Taylor1{T}, t::Taylor1{T}) where {T<:Real}
+    for ord in eachindex(t)
+        phix[ord] = (t[ord]/yr)*Dt_phi_x/3600
+    end
+    phix[0] += phi_x0
+    for ord in eachindex(t)
+        phix[ord] = phix[ord]*(convert(float(T), pi) / 180)#deg2rad( phix[ord] )
+    end
+    return nothing
+end
+
 
 const phi_x0 = 5.6754203322893470E-03     # x-axis rotation at J2000.0 (arcseconds)
 const Dt_phi_x = 2.7689915574483550E-04   # Negative obliquity rate correction (arcseconds/year)
@@ -153,7 +267,33 @@ See equation (25) in page 11 and Table 10 in page 50 of https://ui.adsabs.harvar
 
 See also [`pole_frame`](@ref).
 """
-phi_y(t) = deg2rad( (phi_y0 + (t/yr)*Dt_phi_y)/3600 )
+function phi_y(t)
+    phiy = zero(t)
+    for ord in eachindex(t)
+        phiy[ord] = (t[ord]/yr)*Dt_phi_y/3600
+    end
+    phiy[0] += phi_y0
+    for ord in eachindex(t)
+        phiy[ord] = deg2rad( phiy[ord] )
+    end
+    return phiy
+end
+
+@doc raw"""
+    phi_y!(res, t)
+
+Inplace version of ``phi_y(t)``; see [`phi_y`](@ref) for details.
+"""
+function phi_y!(phiy::Taylor1{T}, t::Taylor1{T}) where {T<:Real}
+    for ord in eachindex(t)
+        phiy[ord] = (t[ord]/yr)*Dt_phi_y/3600
+    end
+    phiy[0] += phi_y0
+    for ord in eachindex(t)
+        phiy[ord] = phiy[ord]*(convert(float(T), pi) / 180)#deg2rad( phiy[ord] )
+    end
+    return nothing
+end
 
 const phi_y0 = -1.7022656914989530E-02     # y-axis rotation at J2000.0 (arcseconds)
 const Dt_phi_y = -1.2118591216559240E-03   # Precession rate correction times sine of obliquity (arcseconds/year)
@@ -173,11 +313,40 @@ See also [`Theta`](@ref) and [`zeta`](@ref).
 """
 function Zeta(t)
     t_cy = t/(100yr)
-    Zeta_arcsec = 0.017998*t_cy
-    Zeta_arcsec = (0.30188 + Zeta_arcsec)*t_cy
-    Zeta_arcsec = (2306.2181 + Zeta_arcsec)*t_cy
+    # Zeta_arcsec = 0.017998*t_cy
+    # Zeta_arcsec = (0.30188 + Zeta_arcsec)*t_cy
+    # Zeta_arcsec = (2306.2181 + Zeta_arcsec)*t_cy
+    ZetaA = Taylor1(coeffs_Zeta, get_order(t))
+    Zeta_arcsec = ZetaA(t_cy)
     return deg2rad(Zeta_arcsec/3600)
 end
+
+@doc raw"""
+    Zeta!(res, t, auxs)
+
+Inplace version of ``Zeta(t)``; see [`Zeta`](@ref) for details.
+"""
+function Zeta!(res::Taylor1{T}, t::Taylor1{T}, auxs) where {T<:Real}
+    t_cy = auxs[1]
+    auxhorner = auxs[2] # aux for _horner!
+    Zeta_A = auxs[3] # Zeta_A
+    for i in eachindex(coeffs_Zeta)
+        Zeta_A.coeffs[i] = coeffs_Zeta[i]
+    end
+    hundyrs = 100yr
+    for ord in eachindex(t)
+        res[ord] = zero(t[ord])
+        t_cy[ord] = t[ord]/hundyrs # t/(100yr)
+        auxhorner[ord] = zero(t[ord])
+    end
+    TaylorSeries._horner!(res, Zeta_A, t_cy, auxhorner) # Zeta_A(t_cy)
+    for ord in eachindex(t)
+        res[ord] = (res[ord]/3600)*(convert(float(T), pi) / 180)#deg2rad(res[ord]/3600)
+    end
+    return nothing
+end
+
+const coeffs_Zeta = [0.0, 2306.2181, 0.30188, 0.017998]
 
 @doc raw"""
     Theta(t)
@@ -194,11 +363,41 @@ See also [`Zeta`](@ref) and [`zeta`](@ref).
 """
 function Theta(t)
     t_cy = t/(100yr)
-    Theta_arcsec = -0.041833*t_cy
-    Theta_arcsec = (-0.42665 + Theta_arcsec)*t_cy
-    Theta_arcsec = (2004.3109 + Theta_arcsec)*t_cy
+    # Theta_arcsec = -0.041833*t_cy
+    # Theta_arcsec = (-0.42665 + Theta_arcsec)*t_cy
+    # Theta_arcsec = (2004.3109 + Theta_arcsec)*t_cy
+    theta_A = Taylor1(coeffs_Theta, get_order(t))
+    Theta_arcsec = theta_A(t_cy)
     return deg2rad(Theta_arcsec/3600)
 end
+
+@doc raw"""
+    Theta!(res, t, auxs)
+
+Inplace version of ``Theta(t)``; see [`Theta`](@ref) for details.
+"""
+function Theta!(res::Taylor1{T}, t::Taylor1{T}, auxs) where {T<:Real}
+    t_cy = auxs[1]
+    auxhorner = auxs[2]
+    theta_A = auxs[3]  # Theta_A
+    for i in eachindex(coeffs_Theta)
+        theta_A.coeffs[i] = coeffs_Theta[i]
+    end
+    hundyrs = 100yr
+    for ord in eachindex(t)
+        res[ord] = zero(t[ord])
+        t_cy[ord] = t[ord]/hundyrs # t/(100yr)
+        auxhorner[ord] = zero(t[ord]) # aux for _horner!
+    end
+    TaylorSeries._horner!(res, theta_A, t_cy, auxhorner) # Theta_A(t_cy)
+    for ord in eachindex(t)
+        res[ord] = (res[ord]/3600)*(convert(float(T), pi) / 180)#deg2rad(res[ord]/3600)
+    end
+    return nothing
+end
+
+const coeffs_Theta = [0.0, 2004.3109, -0.42665, -0.041833]
+
 
 @doc raw"""
     zeta(t)
@@ -215,11 +414,41 @@ See also [`Zeta`](@ref) and [`Theta`](@ref).
 """
 function zeta(t)
     t_cy = t/(100yr)
-    zeta_arcsec = 0.018203*t_cy
-    zeta_arcsec = (1.09468 + zeta_arcsec)*t_cy
-    zeta_arcsec = (2306.2181 + zeta_arcsec)*t_cy
+    # zeta_arcsec = 0.018203*t_cy
+    # zeta_arcsec = (1.09468 + zeta_arcsec)*t_cy
+    # zeta_arcsec = (2306.2181 + zeta_arcsec)*t_cy
+    zeta_A = Taylor1(coeffs_zeta, get_order(t))
+    zeta_arcsec = zeta_A(t_cy)
     return deg2rad(zeta_arcsec/3600)
 end
+
+@doc raw"""
+    zeta!(res, t, auxs)
+
+Inplace version of ``zeta(t)``; see [`zeta`](@ref) for details.
+"""
+function zeta!(res::Taylor1{T}, t::Taylor1{T}, auxs) where {T<:Real}
+    t_cy = auxs[1]
+    auxhorner = auxs[2] # aux for _horner!
+    zeta_A = auxs[3] # zeta_A
+    for i in eachindex(coeffs_zeta)
+        zeta_A.coeffs[i] = coeffs_zeta[i]
+    end
+    hundyrs = 100yr
+    for ord in eachindex(t)
+        res[ord] = zero(t[ord])
+        t_cy[ord] = t[ord]/hundyrs # t/(100yr)
+        auxhorner[ord] = zero(t[ord])
+    end
+    TaylorSeries._horner!(res, zeta_A, t_cy, auxhorner) # zeta_A(t_cy)
+    for ord in eachindex(t)
+        res[ord] = (res[ord]/3600)*(convert(float(T), pi) / 180)#deg2rad(res[ord]/3600)
+    end
+    return nothing
+end
+
+const coeffs_zeta = [0.0, 2306.2181, 1.09468, 0.018203]
+
 
 # The rotation matrices are defined by
 
@@ -244,13 +473,12 @@ See equation (11) in page 9 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C.
 See also [`Ry`](@ref) and [`Rz`](@ref).
 """
 function Rx(alpha::T) where {T<:Number}
-    # Allocate memmory
+    # Allocate memory
     res = Array{T}(undef, 3, 3)
     # Local variables
     one_alpha = one(alpha)
     zero_alpha = zero(alpha)
-    cos_alpha = cos(alpha)
-    sin_alpha = sin(alpha)
+    sin_alpha, cos_alpha = sincos(alpha)
     # Matrix elements
     res[1, 1] = one_alpha
     res[2, 1] = zero_alpha
@@ -262,6 +490,33 @@ function Rx(alpha::T) where {T<:Number}
     res[2, 3] = sin_alpha
     res[3, 3] = cos_alpha
     return res
+end
+
+@doc raw"""
+    Rx!(res, alpha, auxsR)
+
+Inplace version of ``Rx(alpha)``; see [`Rx`](@ref) for details.
+"""
+function Rx!(res::Matrix{Taylor1{T}}, alpha::Taylor1{T}, auxsR) where {T<:Real}
+    # Local variables
+    one_alpha = auxsR[1] # one(alpha)
+    zero_alpha = auxsR[2] # zero(alpha)
+    sin_alpha = auxsR[3] # sin(alpha)
+    cos_alpha = auxsR[4] # cos(alpha)
+    for ord in eachindex(alpha)
+        TaylorSeries.sincos!(sin_alpha, cos_alpha, alpha, ord)
+        # Matrix elements
+        res[1, 1][ord] = one_alpha[ord]
+        res[2, 1][ord] = zero_alpha[ord]
+        res[3, 1][ord] = zero_alpha[ord]
+        res[1, 2][ord] = zero_alpha[ord]
+        res[2, 2][ord] = cos_alpha[ord]
+        res[3, 2][ord] = -sin_alpha[ord]
+        res[1, 3][ord] = zero_alpha[ord]
+        res[2, 3][ord] = sin_alpha[ord]
+        res[3, 3][ord] = cos_alpha[ord]
+    end
+    return nothing
 end
 
 @doc raw"""
@@ -290,13 +545,12 @@ in page 3 of https://ui.adsabs.harvard.edu/abs/1977A%26A....58....1L/abstract an
 See also [`Rx`](@ref) and [`Rz`](@ref).
 """
 function Ry(alpha::T) where {T<:Number}
-    # Allocate memmory
+    # Allocate memory
     res = Array{T}(undef, 3, 3)
     # Local variables
     one_alpha = one(alpha)
     zero_alpha = zero(alpha)
-    cos_alpha = cos(alpha)
-    sin_alpha = sin(alpha)
+    sin_alpha, cos_alpha = sincos(alpha)
     # Matrix elements
     res[1, 1] = cos_alpha
     res[2, 1] = zero_alpha
@@ -308,6 +562,33 @@ function Ry(alpha::T) where {T<:Number}
     res[2, 3] = zero_alpha
     res[3, 3] = cos_alpha
     return res
+end
+
+@doc raw"""
+    Ry!(res, alpha, auxsR)
+
+Inplace version of ``Ry(alpha)``; see [`Ry`](@ref) for details.
+"""
+function Ry!(res::Matrix{Taylor1{T}}, alpha::Taylor1{T}, auxsR) where {T<:Real}
+    # Local variables
+    one_alpha = auxsR[1] # one(alpha)
+    zero_alpha = auxsR[2] # zero(alpha)
+    sin_alpha = auxsR[3] # sin(alpha)
+    cos_alpha = auxsR[4] # cos(alpha)
+    for ord in eachindex(alpha)
+        TaylorSeries.sincos!(sin_alpha, cos_alpha, alpha, ord)
+        # Matrix elements
+        res[1, 1][ord] = cos_alpha[ord]
+        res[2, 1][ord] = zero_alpha[ord]
+        res[3, 1][ord] = sin_alpha[ord]
+        res[1, 2][ord] = zero_alpha[ord]
+        res[2, 2][ord] = one_alpha[ord]
+        res[3, 2][ord] = zero_alpha[ord]
+        res[1, 3][ord] = -sin_alpha[ord]
+        res[2, 3][ord] = zero_alpha[ord]
+        res[3, 3][ord] = cos_alpha[ord]
+    end
+    return nothing
 end
 
 @doc raw"""
@@ -331,13 +612,12 @@ See equation (13) in page 9 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C.
 See also [`Rx`](@ref) and [`Ry`](@ref).
 """
 function Rz(alpha::T) where {T<:Number}
-    # Allocate memmory
+    # Allocate memory
     res = Array{T}(undef, 3, 3)
     # Local variables
     one_alpha = one(alpha)
     zero_alpha = zero(alpha)
-    cos_alpha = cos(alpha)
-    sin_alpha = sin(alpha)
+    sin_alpha, cos_alpha = sincos(alpha)
     # Matrix elements
     res[1, 1] = cos_alpha
     res[2, 1] = -sin_alpha
@@ -349,6 +629,33 @@ function Rz(alpha::T) where {T<:Number}
     res[2, 3] = zero_alpha
     res[3, 3] = one_alpha
     return res
+end
+
+@doc raw"""
+    Rz!(res, alpha, auxsR)
+
+Inplace version of ``Rz(alpha)``; see [`Rz`](@ref) for details.
+"""
+function Rz!(res::Matrix{Taylor1{T}}, alpha::Taylor1{T}, auxsR) where {T<:Real}
+    # Local variables
+    one_alpha = auxsR[1] # one(alpha)
+    zero_alpha = auxsR[2] # zero(alpha)
+    sin_alpha = auxsR[3] # sin(alpha)
+    cos_alpha = auxsR[4] # cos(alpha)
+    for ord in eachindex(alpha)
+        TaylorSeries.sincos!(sin_alpha, cos_alpha, alpha, ord)
+        # Matrix elements
+        res[1, 1][ord] = cos_alpha[ord]
+        res[2, 1][ord] = -sin_alpha[ord]
+        res[3, 1][ord] = zero_alpha[ord]
+        res[1, 2][ord] = sin_alpha[ord]
+        res[2, 2][ord] = cos_alpha[ord]
+        res[3, 2][ord] = zero_alpha[ord]
+        res[1, 3][ord] = zero_alpha[ord]
+        res[2, 3][ord] = zero_alpha[ord]
+        res[3, 3][ord] = one_alpha[ord]
+    end
+    return nothing
 end
 
 # myatan(x, y) = y>=zero(x)?( x>=zero(x)?atan(y/x):(atan(y/x)+pi) ):( x>=zero(x)?(atan(y/x)+2pi):(atan(y/x)+pi) )
@@ -464,6 +771,32 @@ function nutation_iau80(t)
     return Rx(-ϵ)*Rz(-Δψ)*Rx(ϵ0)
 end
 
+function nutation_iau80!(res, t::Taylor1, auxNut, auxsR, auxMat)
+    ϵ0 = auxNut[1]        # Mean obliquity (rad)
+    Δϵ = auxNut[2]        # Nutation in obliquity (rad)
+    Δψ = auxNut[3]        # Nutation in longitude (rad)
+    nΔψ = auxNut[4]       # Negative nutation in longitude (rad)
+    nϵ = auxNut[5]        # ϵ = -(ϵ0 + Δϵ)
+    # omega_t_cy = auxNut[6] # Ω(t)
+    ϵ̄!(ϵ0, t, view(auxNut, 7:9))
+    Delta_epsilon!(Δϵ, t, view(auxNut, 6:11))
+    Delta_psi!(Δψ, t, view(auxNut, 6:11))
+    for ind in eachindex(t)
+        nΔψ[ind] = -Δψ[ind]
+        nϵ[ind] = -(ϵ0[ind] + Δϵ[ind]) # -ϵ
+    end
+    Rxnϵ = auxMat[1]
+    RznΔψ = auxMat[2]
+    Rxϵ0 = auxMat[3]
+    Raux =  auxMat[5]
+    Rx!(Rxnϵ, nϵ, auxsR)
+    Rz!(RznΔψ, nΔψ, auxsR)
+    Rx!(Rxϵ0, ϵ0, auxsR)
+    matmul!(Raux, RznΔψ, Rxϵ0)
+    matmul!(res, Rxnϵ, Raux)
+    return nothing
+end
+
 @doc raw"""
     t2c_jpl_de430(t)
 
@@ -487,11 +820,15 @@ end
 
 # The following methods are used by NEOs.jl for propagations involving
 # extended body interactions
-t2c_jpl_de430(dsj2k::Taylor1{T}, zero_q::Taylor1{T}) where {T <: Real} =
-    t2c_jpl_de430(dsj2k) .+ zero_q
+function t2c_jpl_de430(dsj2k::Taylor1{T}, zero_q::Taylor1{T}) where {T <: Real}
+    M = t2c_jpl_de430(dsj2k)
+    return M .+ zero_q
+end
 
-t2c_jpl_de430(dsj2k::Taylor1{T}, zero_q::Taylor1{TaylorN{T}}) where {T <: Real} =
-    t2c_jpl_de430(dsj2k) .+ zero_q
+function t2c_jpl_de430(dsj2k::Taylor1{T}, zero_q::Taylor1{TaylorN{T}}) where {T <: Real}
+    M = t2c_jpl_de430(dsj2k)
+    return M .+ zero_q
+end
 
 function t2c_jpl_de430(dsj2k::Taylor1{T}, zero_q::Taylor1{Taylor1{T}}) where {T <: Real}
     M = t2c_jpl_de430(dsj2k)
@@ -499,6 +836,59 @@ function t2c_jpl_de430(dsj2k::Taylor1{T}, zero_q::Taylor1{Taylor1{T}}) where {T 
     _M_ = @. Taylor1(getfield(M, :coeffs) * one_q)
     return _M_
 end
+
+@doc raw"""
+    t2c_jpl_de430!(M, ea, t::RetAlloc{Taylor1{T}}, zero_q, rotatBuf::Union{Nothing,RetAlloc{Taylor1{T}}})
+
+Inplace version of ``t2c_jpl_de430(t)``; see [`t2c_jpl_de430`](@ref) for details.
+"""
+
+t2c_jpl_de430!(::Array{Taylor1{S},3}, ::Int, dsj2k::Taylor1{T},
+        zero_q::Taylor1{S}, ::Nothing) where {T <: Real, S <: Number} =
+    t2c_jpl_de430(dsj2k, zero_q)
+
+function t2c_jpl_de430!(M::Array{Taylor1{T},3}, ea::Int, dsj2k::Taylor1{T},
+        ::Taylor1{T}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
+    c2t_jpl_de430!(dsj2k, rotatBuf)
+    transpose!(rotatBuf.v2[13], rotatBuf.v2[12])
+    for j in size(M, 2)
+        for i in size(M, 1)
+            for k in eachindex(M[i, j])
+                M[i, j, ea][k] = rotatBuf.v2[13][i, j][k]
+            end
+        end
+    end
+    return M
+end
+
+function t2c_jpl_de430!(M::Array{Taylor1{TaylorN{T}},3}, ea::Int, dsj2k::Taylor1{T},
+        ::Taylor1{TaylorN{T}}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
+    c2t_jpl_de430!(dsj2k, rotatBuf)
+    transpose!(rotatBuf.v2[13], rotatBuf.v2[12])
+    for j in size(M, 2)
+        for i in size(M, 1)
+            for ord in eachindex(M[i, j, ea])
+                M[i, j, ea][ord][0][1] = rotatBuf.v2[13][i, j][ord]
+            end
+        end
+    end
+    return M
+end
+
+function t2c_jpl_de430!(M::Array{Taylor1{Taylor1{T}},3}, ea::Int, dsj2k::Taylor1{T},
+        ::Taylor1{Taylor1{T}}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
+    c2t_jpl_de430!(dsj2k, rotatBuf)
+    transpose!(rotatBuf.v2[13], rotatBuf.v2[12])
+    for j in size(M, 2)
+        for i in size(M, 1)
+            for ord in eachindex(M[i, j, ea])
+                M[i, j, ea][ord][0] = rotatBuf.v2[13][i, j][ord]
+            end
+        end
+    end
+    return M
+end
+
 
 @doc raw"""
     c2t_jpl_de430(t)
@@ -528,6 +918,130 @@ function c2t_jpl_de430(t)
 end
 
 @doc raw"""
+    c2t_jpl_de430!(t, rotatBuf)
+
+Inplace version of ``c2t_jpl_de430(t)``; see [`c2t_jpl_de430`](@ref) for details.
+"""
+function c2t_jpl_de430!(t::Taylor1{T}, rotatBuf::RetAlloc{Taylor1{T}}) where {T<:Real}
+    # Preliminaries
+    zt = rotatBuf.v0[1]
+    nzt = rotatBuf.v0[2]
+    Tt = rotatBuf.v0[3]
+    Zt = rotatBuf.v0[4]
+    nZt = rotatBuf.v0[5]
+    phiy = rotatBuf.v0[6]
+    phix = rotatBuf.v0[7]
+    auxs_angles = rotatBuf.v1[1]
+    auxsR = rotatBuf.v1[2]
+    auxNut = rotatBuf.v1[3]
+    Rzz = rotatBuf.v2[1]
+    RyT = rotatBuf.v2[2]
+    RzZ = rotatBuf.v2[3]
+    P_iau7680 = rotatBuf.v2[4]
+    Ryphiy = rotatBuf.v2[5]
+    Rxphix = rotatBuf.v2[6]
+    corrections = rotatBuf.v2[7]
+    N_iau80 = rotatBuf.v2[8]
+    # Rxnϵ = rotatBuf.v2[9]
+    # RznΔψ = rotatBuf.v2[10]
+    # Rxϵ0 = rotatBuf.v2[11]
+    res = rotatBuf.v2[12]
+    Raux = rotatBuf.v2[13]
+    # Angles
+    zeta!(zt, t, auxs_angles)  # zeta(t)
+    Theta!(Tt, t, auxs_angles) # Theta(t)
+    Zeta!(Zt, t, auxs_angles)
+    for ord in eachindex(t)
+        nzt[ord] = -zt[ord]
+        nZt[ord] = -Zt[ord]
+    end
+    # Precession matrix, see equation (5-147) in page (5-59) of https://doi.org/10.1002/0471728470
+    # P_iau7680 = Rz(-zeta(t))*Ry(Theta(t))*Rz(-Zeta(t))
+    Rz!(Rzz, nzt, auxsR)
+    Ry!(RyT, Tt, auxsR)
+    Rz!(RzZ, nZt, auxsR)
+    # Raux = Rzz*RyT
+    # P_iau7680 = Raux*RzZ
+    matmul!(Raux, Rzz, RyT)
+    matmul!(P_iau7680, Raux, RzZ)
+    # Linear corrections to precession, see equation (25) in page 11 and Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
+    # corrections = Ry(phi_y(t))*Rx(phi_x(t))
+    phi_y!(phiy, t)
+    phi_x!(phix, t)
+    Ry!(Ryphiy, phiy, auxsR)
+    Rx!(Rxphix, phix, auxsR)
+    # corrections = Ryphiy*Rxphix
+    matmul!(corrections, Ryphiy, Rxphix)
+    # Nutation matrix, see equation (5-152) in page 5-60 of https://doi.org/10.1002/0471728470
+    # N_iau80 = nutation_iau80(t)
+    nutation_iau80!(N_iau80, t, auxNut, auxsR, view(rotatBuf.v2, 9:13))
+    # Raux = N_iau80*corrections
+    # res = Raux*P_iau7680
+    matmul!(Raux,  N_iau80, corrections)
+    matmul!(res,  Raux, P_iau7680)
+    return nothing
+end
+
+@doc raw"""
+    allocate_c2t_jpl_de430(t)
+
+Returns a `RetAlloc{Taylor1{T}}` object with objects that can be used to recicle memory for
+[`c2t_jpl_de430!`](@ref)) and [`t2c_jpl_de430!`](@ref)) methods. Minimum computations
+are performed here.
+"""
+function allocate_c2t_jpl_de430(t::Taylor1{T}) where {T<:Real}
+    t_cy = t/(100yr)
+    # Angles zeta(t), Theta(t), Zeta(t), negatives, and allocations
+    zt = zero(t) # zt = zeta(t)
+    auxhorner = zero(t)
+    angle_A = zero(t)
+    auxs_angles = [t_cy, auxhorner, angle_A] # auxs for angles
+    nzt = -zt
+    Tt = zero(t) # Tt = Theta(t)
+    Zt = zero(t) # Zt = Zeta(t)
+    nZt = -Zt
+    # Allocations for calculations involving Rx, Ry and Rz
+    one_alpha = one(nzt)
+    zero_alpha = zero(nzt)
+    sin_alpha, cos_alpha = sincos(nzt)
+    auxsR = [one_alpha, zero_alpha, sin_alpha, cos_alpha]
+    Rzz = Rz(nzt)
+    RyT = zero.(Rzz)
+    RzZ = zero.(Rzz)
+    # Allocations for precession matrix
+    Raux = zero.(Rzz)
+    P_iau7680 = zero.(Rzz)
+    # Angles and allocations for linear corrections of precession
+    phiy = zero(t)
+    phix = zero(t)
+    Ryphiy = zero.(Rzz)
+    Rxphix = zero.(Rzz)
+    # Allocations for linear corrections to precession
+    corrections = zero.(Rzz)
+    # Allocations for nutation matrix
+    ϵ0 = zero(t)        # Mean obliquity (rad)
+    Δϵ = zero(t)        # Nutation in obliquity (rad)
+    Δψ = zero(t)        # Nutation in longitude (rad)
+    nΔψ = zero(t)       # Negative nutation in longitude (rad)
+    nϵ = zero(t)        # ϵ = -(ϵ0 + Δϵ)
+    omega_t_cy = zero(t) # Ω(t)
+    auxNut = [ϵ0, Δϵ, Δψ, nΔψ, nϵ, omega_t_cy, t_cy, auxhorner, angle_A, sin_alpha, cos_alpha]
+    Rxnϵ = zero.(Rzz)
+    RznΔψ = zero.(Rzz)
+    Rxϵ0 = zero.(Rzz)
+    res = zero.(Rzz) # c2t_jpl_de430
+    N_iau80 = zero.(Rzz)
+    # Returned RetAlloc{Taylor1{T}} object
+    rotatBuf = RetAlloc{Taylor1{T}}(
+        [zt, nzt, Tt, Zt, nZt, phiy, phix],
+        [auxs_angles, auxsR, auxNut],
+        [Rzz, RyT, RzZ, P_iau7680, Ryphiy, Rxphix, corrections, N_iau80, Rxnϵ, RznΔψ, Rxϵ0, res, Raux],
+        [Array{Taylor1{T}}(undef, 0, 0, 0)],
+        [Array{Taylor1{T}}(undef, 0, 0, 0, 0)])
+    return rotatBuf
+end
+
+@doc raw"""
     moon_omega(ϕ::Taylor1, θ::Taylor1, ψ::Taylor1)
 
 Return the Moon's angular velocity, computed by differentiating the Euler angles
@@ -541,12 +1055,14 @@ Return the Moon's angular velocity, computed by differentiating the Euler angles
 ```
 """
 function moon_omega(ϕ::Taylor1, θ::Taylor1, ψ::Taylor1)
-    dϕ = differentiate(ϕ)
-    dθ = differentiate(θ)
-    dψ = differentiate(ψ)
-    ωx = dϕ*sin(θ)*sin(ψ)+dθ*cos(ψ)
-    ωy = dϕ*sin(θ)*cos(ψ)-dθ*sin(ψ)
-    ωz = dψ+dϕ*cos(θ)
+    sinθ, cosθ = sincos(θ)
+    sinψ, cosψ = sincos(ψ)
+    dϕ = ordpres_differentiate(ϕ)
+    dθ = ordpres_differentiate(θ)
+    dψ = ordpres_differentiate(ψ)
+    ωx = dϕ*sinθ*sinψ + dθ*cosψ
+    ωy = dϕ*sinθ*cosψ - dθ*sinψ
+    ωz = dψ + dϕ*cosθ
     return [ωx, ωy, ωz]
 end
 

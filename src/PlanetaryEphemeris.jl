@@ -21,7 +21,7 @@ using AutoHashEquals, TaylorIntegration, LinearAlgebra, Printf, DelimitedFiles, 
 using Dates: DateTime, datetime2julian, year
 using Parameters: @unpack
 using TaylorIntegration: RetAlloc, _determine_parsing!, init_expansions
-using TaylorSeries: numtype
+using TaylorSeries: numtype, matmul!
 
 import Base: convert, reverse, show, join, zero, iszero, flipsign
 import Dates: julian2datetime
