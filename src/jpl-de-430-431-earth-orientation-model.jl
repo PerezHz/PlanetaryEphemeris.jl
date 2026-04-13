@@ -853,7 +853,7 @@ function t2c_jpl_de430!(M::Array{Taylor1{T},3}, ea::Int, dsj2k::Taylor1{T},
     transpose!(rotatBuf.v2[13], rotatBuf.v2[12])
     for j in size(M, 2)
         for i in size(M, 1)
-            for k in eachindex(M[i, j])
+            for k in eachindex(M[i, j, ea])
                 M[i, j, ea][k] = rotatBuf.v2[13][i, j][k]
             end
         end
