@@ -842,7 +842,6 @@ end
 
 Inplace version of ``t2c_jpl_de430(t)``; see [`t2c_jpl_de430`](@ref) for details.
 """
-
 t2c_jpl_de430!(::Array{Taylor1{S},3}, ::Int, dsj2k::Taylor1{T},
         zero_q::Taylor1{S}, ::Nothing) where {T <: Real, S <: Number} =
     t2c_jpl_de430(dsj2k, zero_q)
