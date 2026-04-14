@@ -842,7 +842,6 @@ end
 
 Inplace version of ``t2c_jpl_de430(t)``; see [`t2c_jpl_de430`](@ref) for details.
 """
-
 t2c_jpl_de430!(::Array{Taylor1{S},3}, ::Int, dsj2k::Taylor1{T},
         zero_q::Taylor1{S}, ::Nothing) where {T <: Real, S <: Number} =
     t2c_jpl_de430(dsj2k, zero_q)
@@ -850,11 +849,10 @@ t2c_jpl_de430!(::Array{Taylor1{S},3}, ::Int, dsj2k::Taylor1{T},
 function t2c_jpl_de430!(M::Array{Taylor1{T},3}, ea::Int, dsj2k::Taylor1{T},
         ::Taylor1{T}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
     c2t_jpl_de430!(dsj2k, rotatBuf)
-    transpose!(rotatBuf.v2[13], rotatBuf.v2[12])
-    for j in size(M, 2)
-        for i in size(M, 1)
-            for k in eachindex(M[i, j])
-                M[i, j, ea][k] = rotatBuf.v2[13][i, j][k]
+    for j in axes(M, 2)
+        for i in axes(M, 1)
+            for k in eachindex(M[i, j, ea])
+                M[i, j, ea][k] = rotatBuf.v2[12][j, i][k]
             end
         end
     end
@@ -864,11 +862,10 @@ end
 function t2c_jpl_de430!(M::Array{Taylor1{TaylorN{T}},3}, ea::Int, dsj2k::Taylor1{T},
         ::Taylor1{TaylorN{T}}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
     c2t_jpl_de430!(dsj2k, rotatBuf)
-    transpose!(rotatBuf.v2[13], rotatBuf.v2[12])
-    for j in size(M, 2)
-        for i in size(M, 1)
+    for j in axes(M, 2)
+        for i in axes(M, 1)
             for ord in eachindex(M[i, j, ea])
-                M[i, j, ea][ord][0][1] = rotatBuf.v2[13][i, j][ord]
+                M[i, j, ea][ord][0][1] = rotatBuf.v2[12][j, i][ord]
             end
         end
     end
@@ -878,11 +875,10 @@ end
 function t2c_jpl_de430!(M::Array{Taylor1{Taylor1{T}},3}, ea::Int, dsj2k::Taylor1{T},
         ::Taylor1{Taylor1{T}}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
     c2t_jpl_de430!(dsj2k, rotatBuf)
-    transpose!(rotatBuf.v2[13], rotatBuf.v2[12])
-    for j in size(M, 2)
-        for i in size(M, 1)
+    for j in axes(M, 2)
+        for i in axes(M, 1)
             for ord in eachindex(M[i, j, ea])
-                M[i, j, ea][ord][0] = rotatBuf.v2[13][i, j][ord]
+                M[i, j, ea][ord][0] = rotatBuf.v2[12][j, i][ord]
             end
         end
     end

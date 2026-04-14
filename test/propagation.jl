@@ -100,18 +100,38 @@ end
     end
 
     @testset "Earth orientation model" begin
+        using PlanetaryEphemeris: allocate_c2t_jpl_de430, t2c_jpl_de430!
+
         t = Taylor1(order)
+        xT = Taylor1(rand(order+1))
         xTN = Taylor1([rand() * TaylorN(1) + rand() * TaylorN(2) for _ in 0:order])
         xT1 = Taylor1([Taylor1(rand(7)) for _ in 0:order])
 
         M0 = t2c_jpl_de430(t)
-        MT = t2c_jpl_de430(t, zero(t))
+        MT = t2c_jpl_de430(t, zero(xT))
         MTN = t2c_jpl_de430(t, zero(xTN))
         MT1 = t2c_jpl_de430(t, zero(xT1))
 
         @test MT == M0
         @test constant_term.(MTN) == constant_term.(M0)
         @test constant_term.(MT1) == constant_term.(M0)
+
+        rotatBuf = allocate_c2t_jpl_de430(t)
+        MMT = Array{typeof(xT)}(undef, 3, 3, 10)
+        MMTN = Array{typeof(xTN)}(undef, 3, 3, 10)
+        MMT1 = Array{typeof(xT1)}(undef, 3, 3, 10)
+
+        @. MMT[:, :, ea] = zero(xT)
+        @. MMTN[:, :, ea] = zero(xTN)
+        @. MMT1[:, :, ea] = zero(xT1)
+
+        t2c_jpl_de430!(MMT, ea, t, zero(xT), rotatBuf)
+        t2c_jpl_de430!(MMTN, ea, t, zero(xTN), rotatBuf)
+        t2c_jpl_de430!(MMT1, ea, t, zero(xT1), rotatBuf)
+
+        @test all(@. isapprox(constant_term(MMT[:, :, ea]), constant_term(M0)))
+        @test all(@. isapprox(constant_term(MMTN[:, :, ea]), constant_term(M0)))
+        @test all(@. isapprox(constant_term(MMT1[:, :, ea]), constant_term(M0)))
     end
 
     @testset "TaylorInterpolant" begin
