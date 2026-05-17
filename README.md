@@ -11,7 +11,8 @@ ephemeris dynamical model (Folkner et al., 2014), based on
 
 ## Authors
 
-- [Jorge A. Pérez Hernández](https://github.com/PerezHz), Minor Planet Center, Harvard & Smithsonian Center for Astrophysics
+- [Jorge A. Pérez Hernández](https://github.com/PerezHz),
+Minor Planet Center, Center for Astrophysics | Harvard & Smithsonian
 - [Luis Benet](http://www.cicc.unam.mx/~benet/),
 Instituto de Ciencias Físicas, Universidad Nacional Autónoma de México (UNAM)
 - [Luis Eduardo Ramírez Montoya](https://github.com/LuEdRaMo),
