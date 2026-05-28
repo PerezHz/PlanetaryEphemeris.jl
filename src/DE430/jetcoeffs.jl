@@ -15,7 +15,7 @@
 
 # TaylorIntegration._allocate_jetcoeffs! method for src/dynamical_model.jl: NBP_pN_A_J23E_J23M_J2S_threads!
 function TaylorIntegration._allocate_jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_threads!}, t::Taylor1{_T}, q::AbstractArray{Taylor1{_S}, _N}, dq::AbstractArray{Taylor1{_S}, _N}, params) where {_T <: Real, _S <: Number, _N}
-    order = get_order(t)
+    order = TS.order(t)
     local (N, jd0) = params
     local S = eltype(q)
     local zero_q_1 = zero(q[1])
@@ -1924,7 +1924,7 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_thr
 end
 # TaylorIntegration.jetcoeffs! method for src/dynamical_model.jl: NBP_pN_A_J23E_J23M_J2S_threads!
 function TaylorIntegration.jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_threads!}, t::Taylor1{_T}, q::AbstractArray{Taylor1{_S}, _N}, dq::AbstractArray{Taylor1{_S}, _N}, params, __ralloc::TaylorIntegration.RetAlloc{Taylor1{_S}}) where {_T <: Real, _S <: Number, _N}
-    order = get_order(t)
+    order = TS.order(t)
     tmp1133 = __ralloc.v0[1]
     tmp1134 = __ralloc.v0[2]
     tmp1135 = __ralloc.v0[3]
@@ -3546,17 +3546,17 @@ end
 
 # TaylorIntegration._allocate_jetcoeffs! method for src/dynamical_model.jl: DE430!
 function TaylorIntegration._allocate_jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::AbstractArray{Taylor1{_S}, _N}, dq::AbstractArray{Taylor1{_S}, _N}, params) where {_T <: Real, _S <: Number, _N}
-    order = get_order(t)
+    order = TS.order(t)
     local N = params.N
     local jd0 = params.jd0
-    local __t = Taylor1(numtype(t), get_order(t))
+    local __t = Taylor1(numtype(t), TS.order(t))
     local S = eltype(q)
     local zero_q_1 = zero(q[1])
     local one_t = one(t)
     local dsj2k = t + (jd0 - J2000)
     local idxs_bwd = union(nbodyind(N, 1:N_bwd), 6N + 1:6N + 13)
-    local qq_bwd = [Taylor1(constant_term(q[i]), get_order(t)) for i = idxs_bwd]
-    local dqq_bwd = [Taylor1(constant_term(dq[i]), get_order(t)) for i = idxs_bwd]
+    local qq_bwd = [Taylor1(constant_term(q[i]), TS.order(t)) for i = idxs_bwd]
+    local dqq_bwd = [Taylor1(constant_term(dq[i]), TS.order(t)) for i = idxs_bwd]
     local rv = params.rv
     local params_bwd = (params.N_bwd, jd0)
     local _ = TaylorIntegration.jetcoeffs!(Val(NBP_pN_A_J23E_J23M_J2S_threads!), t, qq_bwd, dqq_bwd, params_bwd, rv)
@@ -5892,7 +5892,7 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q
 end
 # TaylorIntegration.jetcoeffs! method for src/dynamical_model.jl: DE430!
 function TaylorIntegration.jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::AbstractArray{Taylor1{_S}, _N}, dq::AbstractArray{Taylor1{_S}, _N}, params, __ralloc::TaylorIntegration.RetAlloc{Taylor1{_S}}) where {_T <: Real, _S <: Number, _N}
-    order = get_order(t)
+    order = TS.order(t)
     tmp2979 = __ralloc.v0[1]
     tmp2980 = __ralloc.v0[2]
     tmp2981 = __ralloc.v0[3]
@@ -6972,14 +6972,14 @@ function TaylorIntegration.jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::Abstract
     tmp3365 = __ralloc.v4[93]
     local N = params.N
     local jd0 = params.jd0
-    local __t = Taylor1(numtype(t), get_order(t))
+    local __t = Taylor1(numtype(t), TS.order(t))
     local S = eltype(q)
     local zero_q_1 = zero(q[1])
     local one_t = one(t)
     local dsj2k = t + (jd0 - J2000)
     local idxs_bwd = union(nbodyind(N, 1:N_bwd), 6N + 1:6N + 13)
-    local qq_bwd = [Taylor1(constant_term(q[i]), get_order(t)) for i = idxs_bwd]
-    local dqq_bwd = [Taylor1(constant_term(dq[i]), get_order(t)) for i = idxs_bwd]
+    local qq_bwd = [Taylor1(constant_term(q[i]), TS.order(t)) for i = idxs_bwd]
+    local dqq_bwd = [Taylor1(constant_term(dq[i]), TS.order(t)) for i = idxs_bwd]
     local rv = params.rv
     local params_bwd = (params.N_bwd, jd0)
     local _ = TaylorIntegration.jetcoeffs!(Val(NBP_pN_A_J23E_J23M_J2S_threads!), t, qq_bwd, dqq_bwd, params_bwd, rv)

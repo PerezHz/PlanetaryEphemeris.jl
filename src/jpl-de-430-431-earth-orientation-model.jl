@@ -21,7 +21,7 @@ where ``t = 36,525 T`` is the TDB time in Julian days from J2000.0.
 
 See equation (5-64) in page 5-27 of https://doi.org/10.1002/0471728470.
 """
-Ω(t) = deg2rad( evaluate(Taylor1(coeffs_Ω_A, get_order(t)), t/36525) )
+Ω(t) = deg2rad( evaluate(Taylor1(coeffs_Ω_A, TS.order(t)), t/36525) )
 
 const coeffs_Ω_A = [125+2/60+40.280/3600, -(1934+8/60+10.539/3600), 7.455/3600, 0.008/3600]
 
@@ -150,7 +150,7 @@ where ``t = 36,525 T`` is the TDB time in Julian days from J2000.0.
 
 See equation (5-153) in page 5-61 of https://doi.org/10.1002/0471728470.
 """
-ϵ̄(t) = deg2rad( evaluate(Taylor1(coeffs_ϵ̄, get_order(t)), t/36525) )
+ϵ̄(t) = deg2rad( evaluate(Taylor1(coeffs_ϵ̄, TS.order(t)), t/36525) )
 
 const coeffs_ϵ̄ = [84381.448/3600, -46.815/3600, -0.00059/3600, 0.001813/3600]
 
@@ -316,7 +316,7 @@ function Zeta(t)
     # Zeta_arcsec = 0.017998*t_cy
     # Zeta_arcsec = (0.30188 + Zeta_arcsec)*t_cy
     # Zeta_arcsec = (2306.2181 + Zeta_arcsec)*t_cy
-    ZetaA = Taylor1(coeffs_Zeta, get_order(t))
+    ZetaA = Taylor1(coeffs_Zeta, TS.order(t))
     Zeta_arcsec = ZetaA(t_cy)
     return deg2rad(Zeta_arcsec/3600)
 end
@@ -366,7 +366,7 @@ function Theta(t)
     # Theta_arcsec = -0.041833*t_cy
     # Theta_arcsec = (-0.42665 + Theta_arcsec)*t_cy
     # Theta_arcsec = (2004.3109 + Theta_arcsec)*t_cy
-    theta_A = Taylor1(coeffs_Theta, get_order(t))
+    theta_A = Taylor1(coeffs_Theta, TS.order(t))
     Theta_arcsec = theta_A(t_cy)
     return deg2rad(Theta_arcsec/3600)
 end
@@ -417,7 +417,7 @@ function zeta(t)
     # zeta_arcsec = 0.018203*t_cy
     # zeta_arcsec = (1.09468 + zeta_arcsec)*t_cy
     # zeta_arcsec = (2306.2181 + zeta_arcsec)*t_cy
-    zeta_A = Taylor1(coeffs_zeta, get_order(t))
+    zeta_A = Taylor1(coeffs_zeta, TS.order(t))
     zeta_arcsec = zeta_A(t_cy)
     return deg2rad(zeta_arcsec/3600)
 end

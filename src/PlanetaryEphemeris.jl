@@ -26,7 +26,9 @@ using TaylorSeries: numtype, matmul!
 import Base: convert, reverse, show, join, zero, iszero, flipsign
 import Dates: julian2datetime
 import JLD2: writeas
-import TaylorSeries: get_order
+import TaylorSeries
+
+const TS = TaylorSeries
 
 include("abstractproblem.jl")
 include("constants.jl")

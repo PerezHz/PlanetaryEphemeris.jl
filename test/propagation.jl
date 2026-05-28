@@ -19,7 +19,7 @@ const N = 11 + 343
 # Number of years
 const nyears = 30.0
 # Order of Taylor expansions wrt time
-const order = 15
+const _order = 15
 # Absolute tolerance
 const abstol = 1E-12
 
@@ -102,10 +102,10 @@ end
     @testset "Earth orientation model" begin
         using PlanetaryEphemeris: allocate_c2t_jpl_de430, t2c_jpl_de430!
 
-        t = Taylor1(order)
-        xT = Taylor1(rand(order+1))
-        xTN = Taylor1([rand() * TaylorN(1) + rand() * TaylorN(2) for _ in 0:order])
-        xT1 = Taylor1([Taylor1(rand(7)) for _ in 0:order])
+        t = Taylor1(_order)
+        xT = Taylor1(rand(_order+1))
+        xTN = Taylor1([rand() * TaylorN(1) + rand() * TaylorN(2) for _ in 0:_order])
+        xT1 = Taylor1([Taylor1(rand(7)) for _ in 0:_order])
 
         M0 = t2c_jpl_de430(t)
         MT = t2c_jpl_de430(t, zero(xT))
@@ -150,7 +150,7 @@ end
         q0 = read_initial_conditions(filename)
         params = (N, J2000)
         PP = PlanetaryEphemerisProblem(freeparticle!, tspan, q0, params)
-        sol = propagate(PP; order, abstol)
+        sol = propagate(PP; order = _order, abstol)
 
         @test isa(string(PP), String)
         @test isa(string(sol), String)
@@ -164,7 +164,7 @@ end
               numberofbodies(sol.x) == numberofbodies(sol) == N
 
         # Evaluation
-        t = Taylor1(order)
+        t = Taylor1(_order)
         @test sol(sol.t0) == q0
         @test constant_term(sol(t)) == q0
         @test all(iszero, sol(1, 1, sol.t0))
@@ -182,14 +182,14 @@ end
         @test solrev.t == -sol.t
         @test solrev(solrev.t0 + solrev.t[end]) ≈ sol(sol.t0)
 
-        dq = TaylorSeries.set_variables("dq", order = 2, numvars = 2)
+        dq = TaylorSeries.variables!("dq", order = 2, numvars = 2)
         tmid = sol.t0 + sol.t[2] / 2
-        sol1N = TaylorInterpolant(sol.t0, sol.t, sol.x .+ Taylor1(dq[1], order))
+        sol1N = TaylorInterpolant(sol.t0, sol.t, sol.x .+ Taylor1(dq[1], _order))
 
         @test sol(tmid) isa Vector{T}
-        @test sol(tmid + Taylor1(order)) isa Vector{Taylor1{T}}
+        @test sol(tmid + Taylor1(_order)) isa Vector{Taylor1{T}}
         @test sol(tmid + dq[1] + dq[1] * dq[2]) isa Vector{TaylorN{T}}
-        @test sol(tmid + Taylor1([dq[1],dq[1]*dq[2]], order)) isa Vector{Taylor1{TaylorN{T}}}
+        @test sol(tmid + Taylor1([dq[1],dq[1]*dq[2]], _order)) isa Vector{Taylor1{TaylorN{T}}}
         @test sol1N(sol.t0)() == sol(sol.t0)
         @test sol1N(tmid)() == sol(tmid)
 
@@ -197,7 +197,7 @@ end
         fsol = flipsign(sol)
         @test fsol.t0 == sol.t0
         @test fsol.t == -sol.t
-        @test fsol.x == sol.x(-Taylor1(order))
+        @test fsol.x == sol.x(-Taylor1(_order))
         @test norm(fsol(-nyears*yr) - sol(nyears*yr)) < eps()
 
         # Test TaylorInterpolantSerialization
@@ -225,11 +225,11 @@ end
         tspan = (J2000, J2000 + nyears * yr)
         filename = joinpath(PKG_DATA, "de430ic_2000Jan1.txt")
         q0 = read_initial_conditions(filename)
-        params = DE430Params(J2000, q0, order)
+        params = DE430Params(J2000, q0, _order)
         PP = PlanetaryEphemerisProblem(DE430!, tspan, q0, params)
         # Test propagation
-        @time propagate(PP; maxsteps = 1, order, abstol)
-        @time sol = propagate(PP; maxsteps = 100, order, abstol)
+        @time propagate(PP; maxsteps = 1, order = _order, abstol)
+        @time sol = propagate(PP; maxsteps = 100, order = _order, abstol)
 
         # Solar system barycenter
         rvec_ssb, vvec_ssb, μ_star_SSB = ssb_posvel_pN(PE.μ, q0)

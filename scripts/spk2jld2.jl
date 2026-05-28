@@ -2,6 +2,7 @@ using ArgParse, PlanetaryEphemeris, Dates, TaylorSeries, LinearAlgebra
 using SPICE, Printf, JLD2
 using PlanetaryEphemeris: loadeph
 
+const TS = TaylorSeries
 const DensePropagation2{T, U} = TaylorInterpolant{T, U, 2, Vector{T}, Matrix{Taylor1{U}}}
 
 function parse_commandline()
@@ -49,7 +50,7 @@ printitle(s::AbstractString, d::AbstractString) = println(d ^ length(s),
 function increase_order(x::Taylor1, order::Int)
     y = Taylor1(TS.numtype(x), order)
     TS.zero!(y)
-    y.coeffs[1:min(get_order(x), order)+1] .= x.coeffs
+    y.coeffs[1:min(TS.order(x), order)+1] .= x.coeffs
     return y
 end
 
@@ -166,7 +167,7 @@ function main()
     dafcls(handle)
 
     # Make all the interpolants of the same order
-    order = maximum(get_order, values(dict))
+    order = maximum(TS.order, values(dict))
     for TI in values(dict)
         @. TI.x = increase_order(TI.x, order)
     end
