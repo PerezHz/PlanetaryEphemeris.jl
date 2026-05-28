@@ -2,7 +2,7 @@ module PlanetaryEphemeris
 
 # __precompile__(false)
 
-export PlanetaryEphemerisProblem, TaylorInterpolant, DE430Params
+export PlanetaryEphemerisProblem, TaylorSolution, DE430Params
 export NBP_pN_A_J23E_J23M_J2S_threads!, DE430!
 export semimajoraxis, eccentricity, inclination, longascnode, argperi, longperi, ecanomaly,
        trueanomaly,  meananomaly, timeperipass, lrlvec, eccentricanomaly, meanan2truean,
@@ -15,17 +15,15 @@ export PE, au, yr, sundofs, earthdofs, c_au_per_day, μ, su, ea, mo, au, yr, day
        τ_M, k_2M, JSEM, CM, SM, n1SEM, n2M, J2E, J2EDOT, RE, k_20E, k_21E, k_22E,
        τ_0p, τ_1p, τ_2p, τ_0, τ_1, τ_2, ω_E, EMRAT
 
-using AutoHashEquals, TaylorIntegration, LinearAlgebra, Printf, DelimitedFiles, JLD2,
-      Quadmath
+using TaylorIntegration, LinearAlgebra, Printf, DelimitedFiles, JLD2, Quadmath
 
 using Dates: DateTime, datetime2julian, year
 using Parameters: @unpack
 using TaylorIntegration: RetAlloc, _determine_parsing!, init_expansions
 using TaylorSeries: numtype, matmul!
 
-import Base: convert, reverse, show, join, zero, iszero, flipsign
+import Base: show
 import Dates: julian2datetime
-import JLD2: writeas
 import TaylorSeries
 
 const TS = TaylorSeries
@@ -34,9 +32,7 @@ include("abstractproblem.jl")
 include("constants.jl")
 include("jpl-de-430-431-earth-orientation-model.jl")
 include("initcond.jl")
-include("interpolation/TaylorInterpolant.jl")
-include("interpolation/TaylorInterpolantSerialization.jl")
-include("interpolation/TaylorInterpolantNSerialization.jl")
+include("interpolation/TaylorSolution.jl")
 include("propagation.jl")
 include("osculating.jl")
 include("barycenter.jl")
