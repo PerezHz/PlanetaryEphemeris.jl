@@ -23,8 +23,8 @@ end
 # backwards-compatibility alias
 const PlanetaryEphemerisSerialization{T} = TaylorInterpolantSerialization{T} where {T}
 
-# Override get_order
-get_order(x::TaylorInterpolantSerialization) = x.order
+# Override TS.order
+TS.order(x::TaylorInterpolantSerialization) = x.order
 
 # Tell JLD2 to save TaylorInterpolant{T, T, 2} as TaylorInterpolantSerialization{T}
 function writeas(::Type{<:TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}}) where {T<:Real}
@@ -34,7 +34,7 @@ end
 # Convert method to write .jld2 files
 function convert(::Type{TaylorInterpolantSerialization{T}}, eph::TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}) where {T <: Real}
     # Taylor polynomials order
-    order = get_order(eph)
+    order = TS.order(eph)
     # Number of coefficients in each polynomial
     k = order + 1
     # Matrix dimensions
@@ -54,7 +54,7 @@ end
 # Convert method to read .jld2 files
 function convert(::Type{TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}}, eph::TaylorInterpolantSerialization{T}) where {T<:Real}
     # Taylor polynomials order
-    order = get_order(eph)
+    order = TS.order(eph)
     # Number of coefficients in each polynomial
     k = order + 1
     # Matrix dimensions

@@ -175,7 +175,7 @@ implemented in `TaylorIntegration`.
     (default: `true`).
 """
 function propagate(PE::PlanetaryEphemerisProblem{D, T, P};
-                   maxsteps::Int = 500, order::Int = order,
+                   maxsteps::Int = 500, order::Int = _order,
                    abstol::T = abstol, parse_eqs::Bool = true) where {D, T, P}
     # Unpack
     @unpack dynamics, tspan, initcond, params = PE

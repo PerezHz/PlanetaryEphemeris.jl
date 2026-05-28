@@ -57,8 +57,8 @@ function show(io::IO, x::TaylorInterpolant)
     print(io, "t: ", tspan, ", x: ", L, " ", S, " variable(s)")
 end
 
-# Override get_order
-get_order(x::TaylorInterpolant) = get_order(first(x.x))
+# Override TS.order
+TS.order(x::TaylorInterpolant) = TS.order(first(x.x))
 
 timespan(x::TaylorInterpolant) = minmax(x.t0 + x.t[1], x.t0 + x.t[end])
 
@@ -182,7 +182,7 @@ function reverse(tinterp::TaylorInterpolant{T,U,N}) where {T<:Real, U<:Number, N
     # reverse independent variable vector tinterp.t
     tinterp_rev_t = tinterp.t[end:-1:1] .- tinterp_rev_t0
     # reverse dependent variable vector tinterp.x
-    tinterp_rev_x = vcat(tinterp(tinterp.t[end]+Taylor1(get_order(tinterp)))', tinterp.x[end:-1:2,:])
+    tinterp_rev_x = vcat(tinterp(tinterp.t[end]+Taylor1(TS.order(tinterp)))', tinterp.x[end:-1:2,:])
     # Return reversed TaylorInterpolant
     return TaylorInterpolant(tinterp_rev_t0, tinterp_rev_t, tinterp_rev_x)
 end
@@ -198,7 +198,7 @@ function flipsign(eph::TaylorInterpolant)
     t = flipsign.(eph.t, -1)
     t[1] = eph.t0
     # Flip taylor expansions
-    order = get_order(eph)
+    order = TS.order(eph)
     dt = Taylor1(order)
     x = eph.x(-dt)
     return TaylorInterpolant(eph.t0, t, x)
@@ -245,8 +245,8 @@ end
 
 function join(bwd::TaylorInterpolant{T, U, 2}, fwd::TaylorInterpolant{T, U, 2}) where {T, U}
     @assert bwd.t0 == fwd.t0 "Initial time must be the same for both TaylorInterpolant"
-    order_bwd = get_order(bwd)
-    order_fwd = get_order(fwd)
+    order_bwd = TS.order(bwd)
+    order_fwd = TS.order(fwd)
     @assert order_bwd == order_fwd "Expansion order must be the same for both TaylorInterpolant"
 
     t0 = bwd.t0 + bwd.t[end]

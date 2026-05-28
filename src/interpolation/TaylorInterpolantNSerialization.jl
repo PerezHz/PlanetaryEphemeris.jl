@@ -22,8 +22,8 @@ struct TaylorInterpolantNSerialization{T}
     x::Vector{T}
 end
 
-# Override get_order
-get_order(x::TaylorInterpolantNSerialization) = x.order
+# Override TS.order
+TS.order(x::TaylorInterpolantNSerialization) = x.order
 
 # Tell JLD2 to save <:TaylorInterpolant{T, TaylorN{T}, 2} as TaylorInterpolantNSerialization{T}
 function writeas(::Type{<:TaylorInterpolant{T, TaylorN{T}, 2, Vector{T}, Matrix{Taylor1{TaylorN{T}}}}}) where {T<:Real}
@@ -32,8 +32,10 @@ end
 
 # Convert method to write .jld2 files
 function convert(::Type{TaylorInterpolantNSerialization{T}}, eph::TaylorInterpolant{T, TaylorN{T}, 2, Vector{T}, Matrix{Taylor1{TaylorN{T}}}}) where {T}
+    # TaylorN coefficient
+    coeff = eph.x[1].coeffs[1]
     # Variables
-    vars = TS.get_variable_names()
+    vars = TS.get_variable_names(TS.space(coeff))
     # Number of variables
     n = length(vars)
     # Matrix dimensions
@@ -41,11 +43,11 @@ function convert(::Type{TaylorInterpolantNSerialization{T}}, eph::TaylorInterpol
     # Number of elements in matrix
     N = length(eph.x)
     # Taylor1 order
-    order = get_order(eph)
+    order = TS.order(eph)
     # Number of coefficients in each Taylor1
     k = order + 1
     # TaylorN order
-    varorder = get_order(eph.x[1].coeffs[1])
+    varorder = TS.order(coeff)
     # Number of coefficients in each TaylorN
     L = varorder + 1
     # Number of coefficients in each HomogeneousPolynomial
@@ -85,7 +87,7 @@ function convert(::Type{TaylorInterpolant{T, TaylorN{T}, 2, Vector{T}, Matrix{Ta
     # Number of elements in matrix
     N = dims[1] * dims[2]
     # Taylor1 order
-    order = get_order(eph)
+    order = TS.order(eph)
     # Number of coefficients in each Taylor1
     k = order + 1
     # TaylorN order
@@ -97,8 +99,8 @@ function convert(::Type{TaylorInterpolant{T, TaylorN{T}, 2, Vector{T}, Matrix{Ta
     # M = sum(binomial(n + i_3 - 1, i_3) for i_3 in 0:varorder)
 
     # Set variables
-    if TS.get_variable_names() != vars
-        TS.set_variables(T, vars, order = varorder)
+    if TS.get_variable_names() != vars || TS.order() != varorder
+        TS.variables!(T, vars, order = varorder)
     end
 
     # Matrix of Taylor polynomials

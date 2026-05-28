@@ -1067,7 +1067,7 @@ function DE430!(dq, q, params, t)
     # Refernce epoch [JDTDB]
     local jd0 = params.jd0
     # Time Taylor variable
-    local __t = Taylor1(numtype(t), get_order(t))
+    local __t = Taylor1(numtype(t), TS.order(t))
     # Type of positions/velocities components
     local S = eltype(q)
     # Zero of type S
@@ -1081,8 +1081,8 @@ function DE430!(dq, q, params, t)
 
     # Positions and velocities
     local idxs_bwd = union(nbodyind(N, 1:N_bwd), 6N+1:6N+13)
-    local qq_bwd = [Taylor1(constant_term(q[i]), get_order(t)) for i in idxs_bwd]
-    local dqq_bwd = [Taylor1(constant_term(dq[i]), get_order(t)) for i in idxs_bwd]
+    local qq_bwd = [Taylor1(constant_term(q[i]), TS.order(t)) for i in idxs_bwd]
+    local dqq_bwd = [Taylor1(constant_term(dq[i]), TS.order(t)) for i in idxs_bwd]
     # Parameters
     local rv = params.rv
     local params_bwd = (params.N_bwd, jd0)
