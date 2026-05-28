@@ -38,6 +38,7 @@ jobs:
           - os: ubuntu-latest
             arch: x64
             julia-threads: '2'
+            version: '1.10'
           - os: windows-latest
             arch: x64
           - os: macos-latest
