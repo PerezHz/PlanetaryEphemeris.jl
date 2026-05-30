@@ -61,8 +61,8 @@ jobs:
             ${{ runner.os }}-test-${{ env.cache-name }}-
             ${{ runner.os }}-test-
             ${{ runner.os }}-
-      - name: Use TaylorIntegration TaylorSolution branch
-        run: julia --project=. -e 'import Pkg; Pkg.add(url="https://github.com/PerezHz/TaylorIntegration.jl", rev="jp/taylor-solution"); Pkg.instantiate()'
+      # - name: Use TaylorIntegration TaylorSolution branch
+      #   run: julia --project=. -e 'import Pkg; Pkg.add(url="https://github.com/PerezHz/TaylorIntegration.jl", rev="jp/taylor-solution"); Pkg.instantiate()'
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
