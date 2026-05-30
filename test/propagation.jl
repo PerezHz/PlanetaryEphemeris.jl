@@ -1,6 +1,7 @@
 # This file is part of the PlanetaryEphemeris.jl package; MIT licensed
 
 using PlanetaryEphemeris
+using TaylorIntegration
 using Dates
 using Quadmath
 using JLD2
@@ -134,15 +135,13 @@ end
         @test all(@. isapprox(constant_term(MMT1[:, :, ea]), constant_term(M0)))
     end
 
-    @testset "TaylorInterpolant" begin
+    @testset "TaylorSolution" begin
 
-        # Test zero TaylorInterpolant
+        # Test zero TaylorSolution
         T = Float64
         U = TaylorN{T}
-        @test iszero(zero(TaylorInterpolant{T, T, 2, Vector{T}, Matrix{Taylor1{T}}}))
-        @test iszero(zero(TaylorInterpolant{T, U, 2, Vector{T}, Matrix{Taylor1{U}}}))
-        @test iszero(zero(TaylorInterpolant{T, T, 2, SubArray{T, 1}, SubArray{Taylor1{T}, 2}}))
-        @test iszero(zero(TaylorInterpolant{T, U, 2, SubArray{T, 1}, SubArray{Taylor1{U}, 2}}))
+        @test iszero(zero(TaylorSolution{T, T, 2, Vector{T}, Matrix{T}, Matrix{Taylor1{T}}, Nothing, Nothing, Nothing}))
+        @test iszero(zero(TaylorSolution{T, U, 2, Vector{T}, Matrix{U}, Matrix{Taylor1{U}}, Nothing, Nothing, Nothing}))
 
         # Test propagation
         tspan = (J2000, J2000 + nyears * yr)
@@ -154,62 +153,61 @@ end
 
         @test isa(string(PP), String)
         @test isa(string(sol), String)
-        @test isa(sol, TaylorInterpolant{T, T, 2})
+        @test isa(sol, TaylorSolution{T, T, 2})
         @test isa(PP, PlanetaryEphemerisProblem{typeof(freeparticle!), T, Tuple{Int64, T}})
-        @test sol.t0 == 0.0
+        @test sol.t[1] == 0.0
         @test sol.t[end] == nyears * yr
-        @test length(sol.t) == size(sol.x, 1) + 1
-        @test length(q0) == size(sol.x, 2)
-        @test numberofbodies(size(sol.x, 2)) == numberofbodies(sol.x[1, :]) ==
-              numberofbodies(sol.x) == numberofbodies(sol) == N
+        @test length(sol.t) == size(sol.p, 1) + 1
+        @test length(q0) == size(sol.p, 2)
+        @test numberofbodies(size(sol.p, 2)) == numberofbodies(sol.p[1, :]) ==
+              numberofbodies(sol.p) == numberofbodies(sol) == N
 
         # Evaluation
         t = Taylor1(_order)
-        @test sol(sol.t0) == q0
+        @test sol(sol.t[1]) == q0
         @test constant_term(sol(t)) == q0
-        @test all(iszero, sol(1, 1, sol.t0))
-        @test sol(1, sol.t0) == q0[nbodyind(N, 1)]
+        @test all(iszero, sol(1, 1, sol.t[1]))
+        @test sol(1, sol.t[1]) == q0[nbodyind(N, 1)]
 
         # Convert
         sol128 = convert(Float128, sol)
-        @test sol128.t0 == Float128(sol.t0)
         @test sol128.t == Float128.(sol.t)
-        @test all(@. constant_term(sol128.x) == Float128(constant_term(sol.x)))
+        @test all(@. constant_term(sol128.p) == Float128(constant_term(sol.p)))
 
         # Reverse
         solrev = reverse(sol)
-        @test solrev.t0 == sol.t0 + sol.t[end]
-        @test solrev.t == -sol.t
-        @test solrev(solrev.t0 + solrev.t[end]) ≈ sol(sol.t0)
+        @test solrev.t[1] == sol.t[end]
+        @test solrev.t == reverse(sol.t)
+        @test solrev(solrev.t[end]) ≈ sol(sol.t[1])
 
         dq = TaylorSeries.variables!("dq", order = 2, numvars = 2)
-        tmid = sol.t0 + sol.t[2] / 2
-        sol1N = TaylorInterpolant(sol.t0, sol.t, sol.x .+ Taylor1(dq[1], _order))
+        tmid = sol.t[2] / 2
+        sol1N = TaylorSolution(sol.t, sol.p .+ Taylor1(dq[1], _order))
 
         @test sol(tmid) isa Vector{T}
         @test sol(tmid + Taylor1(_order)) isa Vector{Taylor1{T}}
         @test sol(tmid + dq[1] + dq[1] * dq[2]) isa Vector{TaylorN{T}}
         @test sol(tmid + Taylor1([dq[1],dq[1]*dq[2]], _order)) isa Vector{Taylor1{TaylorN{T}}}
-        @test sol1N(sol.t0)() == sol(sol.t0)
+        @test sol1N(sol.t[1])() == sol(sol.t[1])
         @test sol1N(tmid)() == sol(tmid)
 
         # flipsign
         fsol = flipsign(sol)
-        @test fsol.t0 == sol.t0
+        @test fsol.t[1] == sol.t[1]
         @test fsol.t == -sol.t
-        @test fsol.x == sol.x(-Taylor1(_order))
+        @test fsol.p == sol.p(-Taylor1(_order))
         @test norm(fsol(-nyears*yr) - sol(nyears*yr)) < eps()
 
-        # Test TaylorInterpolantSerialization
-        @test JLD2.writeas(typeof(sol)) == PlanetaryEphemeris.TaylorInterpolantSerialization{Float64}
+        # Test TaylorSolutionSerialization
+        @test JLD2.writeas(typeof(sol)) == TaylorIntegration.TaylorSolutionSerialization{Float64, 2}
         jldsave("test.jld2"; sol)
         sol_file = JLD2.load("test.jld2", "sol")
         rm("test.jld2")
         @test sol_file == sol
 
-        # Test TaylorInterpolantNSerialization
-        sol1N = TaylorInterpolant(sol.t0, sol.t, sol.x .* Taylor1(one(dq[1]), 25))
-        @test JLD2.writeas(typeof(sol1N)) == PlanetaryEphemeris.TaylorInterpolantNSerialization{Float64}
+        # Test TaylorSolutionNSerialization
+        sol1N = TaylorSolution(sol.t, sol.p .* Taylor1(one(dq[1]), 25))
+        @test JLD2.writeas(typeof(sol1N)) == TaylorIntegration.TaylorSolutionNSerialization{Float64, 2}
         jldsave("test.jld2"; sol1N)
         sol1N_file = JLD2.load("test.jld2", "sol1N")
         @test sol1N_file == sol1N
@@ -260,9 +258,9 @@ end
 
         acceph, poteph = loadeph(recovered_sol, PE.μ)
 
-        @test size(acceph.x, 1) == size(poteph.x, 1) == size(recovered_sol.x, 1)
-        @test size(acceph.x, 2) == (size(recovered_sol.x, 2) - 13) ÷ 2
-        @test size(poteph.x, 2) == (size(recovered_sol.x, 2) - 13) ÷ 6
+        @test size(acceph.p, 1) == size(poteph.p, 1) == size(recovered_sol.p, 1)
+        @test size(acceph.p, 2) == (size(recovered_sol.p, 2) - 13) ÷ 2
+        @test size(poteph.p, 2) == (size(recovered_sol.p, 2) - 13) ÷ 6
 
         @test isnothing(save2jld2andcheck(filename, Dict(
            "sseph" => recovered_sol,
@@ -272,19 +270,18 @@ end
         rm(filename)
 
         # Test selecteph
-        t0 = sol.t0 + sol.t[end]/3
-        tf = sol.t0 + 2*sol.t[end]/3
+        t0 = sol.t[end]/3
+        tf = 2*sol.t[end]/3
         idxs = vcat(nbodyind(N, [su, ea, mo]), 6N+1:6N+13)
         i_0 = searchsortedlast(sol.t, t0)
         i_f = searchsortedfirst(sol.t, tf)
 
         subsol = selecteph(sol, [su, ea, mo], t0, tf; euler = true, ttmtdb = true)
 
-        @test subsol.t0 == sol.t0
-        @test subsol.t0 + subsol.t[1] ≤ t0
-        @test subsol.t0 + subsol.t[end] ≥ tf
-        @test size(subsol.x) == (i_f - i_0, length(idxs))
-        @test subsol.x == sol.x[i_0:i_f-1, idxs]
+        @test subsol.t[1] ≤ t0
+        @test subsol.t[end] ≥ tf
+        @test size(subsol.p) == (i_f - i_0, length(idxs))
+        @test subsol.p == sol.p[i_0:i_f-1, idxs]
         @test subsol(t0) == sol(t0)[idxs]
         @test subsol(tf) == sol(tf)[idxs]
 
@@ -294,7 +291,7 @@ end
             joinpath(TEST_DATA, "de430_2000-2002.bsp")
         )
 
-        ttmtdb_pe = TaylorInterpolant(sol.t0, sol.t, sol.x[:, 6N+13]) # TT-TDB
+        ttmtdb_pe = TaylorSolution(sol.t, sol.p[:, 6N+13]) # TT-TDB
         posvel_pe_su = selecteph(sol, su) # Sun
         posvel_pe_ea = selecteph(sol, ea) # Earth
         posvel_pe_mo = selecteph(sol, mo) # Moon
@@ -308,7 +305,7 @@ end
         posvel_jpl_ma(et) = kmsec2auday(spkgeo(4, et, "J2000", 0)[1]) # Mars
         posvel_jpl_ju(et) = kmsec2auday(spkgeo(5, et, "J2000", 0)[1]) # Jupiter
 
-        tv = range(sol.t0, sol.t[end], 10)
+        tv = range(sol.t[1], sol.t[end], 10)
         for t in tv
             et = t * daysec
             @show t, et

@@ -18,7 +18,7 @@ function ordpres_differentiate(a::Taylor1{T}) where {T}
 end
 
 @doc raw"""
-    loadeph(ss16asteph::TaylorInterpolant, μ::Vector{<:Real})
+    loadeph(ss16asteph::TaylorSolution, μ::Vector{<:Real})
 
 Taking Solar System ephemeris `ss16asteph` and their gravitational parameters `μ` as input, returns for all bodies the point-mass Newtonian acceleration and the Newtonian N body potential.
 
@@ -27,19 +27,18 @@ Taking Solar System ephemeris `ss16asteph` and their gravitational parameters `�
 - `ss16asteph`: Solar System ephemeris.
 - `μ::Vector{<:Real}`: vector of mass parameters.
 """
-function loadeph(ss16asteph::TaylorInterpolant, μ::Vector{<:Real})
+function loadeph(ss16asteph::TaylorSolution, μ::Vector{<:Real})
 
     # Compute point-mass Newtonian accelerations from ephemeris
     # accelerations of all bodies are needed to compute the post-Newtonian acceleration of e.g. Solar System minor bodies
     # Number of bodies that contibute to the asteroid's acceleration
     Nm1 = numberofbodies(ss16asteph)
-    # Initialize a TaylorInterpolant for the point-mass Newtonian accelerations
-    acc_eph = TaylorInterpolant(ss16asteph.t0, ss16asteph.t, Matrix{eltype(ss16asteph.x)}(undef, length(ss16asteph.t)-1, 3Nm1))
-    # Initialize a TaylorInterpolant for the newtonian N body potential
-    pot_eph = TaylorInterpolant(ss16asteph.t0, ss16asteph.t, Matrix{eltype(ss16asteph.x)}(undef, length(ss16asteph.t)-1, Nm1))
-    # Fill TaylorInterpolant.x with zero polynomials
-    fill!(acc_eph.x, zero(ss16asteph.x[1]))
-    fill!(pot_eph.x, zero(ss16asteph.x[1]))
+    # Initialize dense polynomial arrays for the point-mass Newtonian accelerations
+    acc_p = Matrix{eltype(ss16asteph.p)}(undef, length(ss16asteph.t)-1, 3Nm1)
+    # Initialize dense polynomial arrays for the newtonian N body potential
+    pot_p = Matrix{eltype(ss16asteph.p)}(undef, length(ss16asteph.t)-1, Nm1)
+    fill!(acc_p, zero(ss16asteph.p[1]))
+    fill!(pot_p, zero(ss16asteph.p[1]))
 
     # Iterator over all bodies except asteroid
     for j in 1:Nm1
@@ -48,29 +47,29 @@ function loadeph(ss16asteph::TaylorInterpolant, μ::Vector{<:Real})
                 #
             else
                 # Difference between two positions (\mathbf{r}_i - \mathbf{r}_j)
-                X_ij = ss16asteph.x[:, 3i-2] .- ss16asteph.x[:, 3j-2]  # X-axis component
-                Y_ij = ss16asteph.x[:, 3i-1] .- ss16asteph.x[:, 3j-1]  # Y-axis component
-                Z_ij = ss16asteph.x[:, 3i  ] .- ss16asteph.x[:, 3j  ]  # Z-axis component
+                X_ij = ss16asteph.p[:, 3i-2] .- ss16asteph.p[:, 3j-2]  # X-axis component
+                Y_ij = ss16asteph.p[:, 3i-1] .- ss16asteph.p[:, 3j-1]  # Y-axis component
+                Z_ij = ss16asteph.p[:, 3i  ] .- ss16asteph.p[:, 3j  ]  # Z-axis component
                 # Distance between two bodies squared ||\mathbf{r}_i - \mathbf{r}_j||^2
                 r_p2_ij = ( (X_ij.^2) .+ (Y_ij.^2) ) .+ (Z_ij.^2)
                 # Distance between two bodies ||\mathbf{r}_i - \mathbf{r}_j||
                 r_ij = sqrt.(r_p2_ij)
                 # Newtonian potential
-                pot_eph.x[:, j] .+= (μ[i]./r_ij)
+                pot_p[:, j] .+= (μ[i]./r_ij)
             end
         end
 
         # Fill acelerations by differentiating velocities
-        acc_eph.x[:, 3j-2] .= ordpres_differentiate.(ss16asteph.x[:, 3(Nm1+j)-2])  # X-axis component
-        acc_eph.x[:, 3j-1] .= ordpres_differentiate.(ss16asteph.x[:, 3(Nm1+j)-1])  # Y-axis component
-        acc_eph.x[:, 3j  ] .= ordpres_differentiate.(ss16asteph.x[:, 3(Nm1+j)  ])  # Z-axis component
+        acc_p[:, 3j-2] .= ordpres_differentiate.(ss16asteph.p[:, 3(Nm1+j)-2])  # X-axis component
+        acc_p[:, 3j-1] .= ordpres_differentiate.(ss16asteph.p[:, 3(Nm1+j)-1])  # Y-axis component
+        acc_p[:, 3j  ] .= ordpres_differentiate.(ss16asteph.p[:, 3(Nm1+j)  ])  # Z-axis component
     end
 
-    return acc_eph, pot_eph
+    return TaylorSolution(ss16asteph.t, acc_p), TaylorSolution(ss16asteph.t, pot_p)
 end
 
 """
-    selecteph2jld2(sseph::TaylorInterpolant, bodyind, nyears)
+    selecteph2jld2(sseph::TaylorSolution, bodyind, nyears)
 
 Save a subset of `sseph` containing only the ephemeris of the
 `bodyind`-th bodies in a `.jld2` file named as follows
@@ -81,7 +80,7 @@ where `N` is the number of asteroids in sseph, `n` is the number
 of asteroids to be saved in the file, `p/m` indicates a forward
 or backward integration and `nyears` is the number of years.
 """
-function selecteph2jld2(sseph::TaylorInterpolant, bodyind::AbstractVector{Int},
+function selecteph2jld2(sseph::TaylorSolution, bodyind::AbstractVector{Int},
                         nyears::Number)
     # Total number of bodies
     N = numberofbodies(sseph)
@@ -182,6 +181,5 @@ function propagate(PE::PlanetaryEphemerisProblem{D, T, P};
     # Integration
     sol = taylorinteg(dynamics, initcond, zero(T), tspan[2] - tspan[1], order,
                       abstol, params; maxsteps, parse_eqs)
-    # Convert from TaylorSolution to TaylorInterpolant
-    return TaylorInterpolant{T, T, 2}(tspan[1] - J2000, sol.t, sol.p)
+    return TaylorSolution(collect((tspan[1] - J2000) .+ sol.t), collect(sol.p))
 end

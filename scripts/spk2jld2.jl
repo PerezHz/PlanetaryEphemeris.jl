@@ -3,7 +3,9 @@ using SPICE, Printf, JLD2
 using PlanetaryEphemeris: loadeph
 
 const TS = TaylorSeries
-const DensePropagation2{T, U} = TaylorInterpolant{T, U, 2, Vector{T}, Matrix{Taylor1{U}}}
+const DensePropagation2{T, U} = TaylorSolution{
+    T, U, 2, Vector{T}, Matrix{U}, Matrix{Taylor1{U}}, Nothing, Nothing, Nothing
+}
 
 function parse_commandline()
 
@@ -160,7 +162,7 @@ function main()
                 @. M[4:6, j] = PE.ordpres_differentiate(M[1:3, j])
             end
         end
-        dict[(target, center)] = TaylorInterpolant(t0, times, collect(transpose(M)))
+        dict[(target, center)] = TaylorSolution(t0 .+ times, collect(transpose(M)))
     end
 
     # Close the DAF file
@@ -169,14 +171,14 @@ function main()
     # Make all the interpolants of the same order
     order = maximum(TS.order, values(dict))
     for TI in values(dict)
-        @. TI.x = increase_order(TI.x, order)
+        @. TI.p = increase_order(TI.p, order)
     end
 
     # Initial and final times [TDB seconds since J2000]
     t0 = datetime2julian(d0) - J2000
     tf = datetime2julian(df) - J2000
     # Vector of times
-    times = mapreduce(x -> x.t0 .+ x.t, vcat, values(dict))
+    times = mapreduce(x -> x.t, vcat, values(dict))
     unique!(times)
     sort!(times)
     clamp!(times, t0, tf)
@@ -185,11 +187,11 @@ function main()
     @. times = times - t0
     # Expand every interpolant at every t in times
     for (i, TI) in dict
-        M = Matrix{Taylor1{Float64}}(undef, size(TI.x, 2), length(times)-1)
+        M = Matrix{Taylor1{Float64}}(undef, size(TI.p, 2), length(times)-1)
         for j in axes(M, 2)
             M[:, j] .= TI(t0 + times[j] + Taylor1(order))
         end
-        dict[i] = TaylorInterpolant(t0, times, collect(transpose(M)))
+        dict[i] = TaylorSolution(t0 .+ times, collect(transpose(M)))
     end
 
     # Bodies to be included in the output
@@ -203,12 +205,12 @@ function main()
     M = Matrix{Taylor1{Float64}}(undef, length(times) - 1, 6N+13)
     for (i, id) in enumerate(spkids)
         if haskey(dict, (id, 0))
-            @. M[:, nbodyind(N, i)] = dict[(id, 0)].x
+            @. M[:, nbodyind(N, i)] = dict[(id, 0)].p
         elseif haskey(dict, (id, 10))
-            @. M[:, nbodyind(N, i)] = dict[(id, 10)].x + dict[(10, 0)].x
+            @. M[:, nbodyind(N, i)] = dict[(id, 10)].p + dict[(10, 0)].p
         else
             jd = digits(id)[end]
-            @. M[:, nbodyind(N, i)] = dict[(id, jd)].x + dict[(jd, 0)].x
+            @. M[:, nbodyind(N, i)] = dict[(id, jd)].p + dict[(jd, 0)].p
         end
     end
     # Lunar Euler angles
@@ -219,9 +221,9 @@ function main()
         end
     end
     # TT-TDB
-    @. M[:, end] = dict[((1000000001, 1000000000))].x
-    # Assemble the global TaylorInterpolant
-    sseph = TaylorInterpolant(t0, times, M)
+    @. M[:, end] = dict[((1000000001, 1000000000))].p
+    # Assemble the global TaylorSolution
+    sseph = TaylorSolution(t0 .+ times, M)
 
     # Save output
     jldsave(output; ss16ast_eph = sseph)
