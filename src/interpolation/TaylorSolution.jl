@@ -76,7 +76,7 @@ function selecteph(eph::TaylorSolution, bodyind::Union{Int, AbstractVector{Int}}
     t = view(eph.t, j0:jf)
     p = view(eph.p, j0:jf-1, cols)
 
-    return TaylorSolution(collect(t), collect(p))
+    return TaylorSolution(collect(t), collect(p), nothing)
 end
 
 """
