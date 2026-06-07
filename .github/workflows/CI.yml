@@ -62,7 +62,7 @@ jobs:
             ${{ runner.os }}-test-
             ${{ runner.os }}-
       - name: Use TaylorSeries performance fixes branch
-        run: julia --project=. -e 'import Pkg; Pkg.add(url="https://github.com/PerezHz/TaylorSeries.jl", rev="jp/some-perf-fixes"); Pkg.instantiate()'
+        run: julia --project=. -e 'using Pkg; Pkg.add(Pkg.PackageSpec(name="TaylorSeries", url="https://github.com/PerezHz/TaylorSeries.jl", rev="jp/some-perf-fixes")); ; Pkg.add(Pkg.PackageSpec(name="TaylorIntegration", url="https://github.com/PerezHz/TaylorIntegration.jl", rev="jp/TS-PR-415")); Pkg.instantiate()'
       - uses: julia-actions/julia-buildpkg@v1
       - uses: julia-actions/julia-runtest@v1
       - uses: julia-actions/julia-processcoverage@v1
