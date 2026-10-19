@@ -38,6 +38,61 @@ computationtime(x::DateTime, y::DateTime) = @sprintf("%.2f", (y - x).value / 60_
 printitle(s::AbstractString, d::AbstractString) = println(d ^ length(s),
     '\n', s, '\n', d ^ length(s))
 
+# Coordinates and units of the positions and velocities of each body
+const POSVEL_COORDS = ("x", "y", "z", "vx", "vy", "vz")
+const POSVEL_UNITS = ("au", "au", "au", "au/day", "au/day", "au/day")
+
+# Coordinates and units of the lunar mantle and core Euler angles and angular velocities
+const LUNAR_COORDS = ("phi", "theta", "psi", "omega_x", "omega_y", "omega_z")
+const LUNAR_UNITS = ("rad", "rad", "rad", "rad/day", "rad/day", "rad/day")
+
+# Line of an initial conditions file
+icline(index, id, coord, value, unit) = string(lpad(index, 7), "  ", rpad(id, 13),
+    rpad(coord, 12), rpad(@sprintf("%+.16E", value), 26), unit)
+
+"""
+    write_initial_conditions(filename, model, jd0, sources, ids, rvs, extras)
+
+Write the initial conditions of a planetary ephemeris `model` at epoch `jd0` [JD TDB],
+with one coordinate per line in the order used by PlanetaryEphemeris: the positions
+of all bodies, the velocities of all bodies and the additional coordinates. `ids`
+are the bodies' ids, `rvs` their positions [au] and velocities [au/day] (one row per
+body) and `extras` a vector of `(id, coordinate, value, unit)` tuples.
+"""
+function write_initial_conditions(filename::AbstractString, model::AbstractString,
+        jd0::Real, sources::AbstractVector{<:AbstractString},
+        ids::AbstractVector{<:AbstractString}, rvs::AbstractMatrix{<:Real},
+        extras::AbstractVector)
+    N = length(ids)
+    ncoords = 6N + length(extras)
+    open(filename, "w") do io
+        println(io, "# format   = PlanetaryEphemeris.jl initial conditions v1")
+        println(io, "# model    = ", model)
+        println(io, "# epoch    = ", jd0, "  # JD TDB (", julian2datetime(jd0), ")")
+        println(io, "# frame    = ICRF")
+        println(io, "# nbodies  = ", N)
+        println(io, "# ncoords  = ", ncoords)
+        println(io, "# sources  = ", join(sources, ", "))
+        println(io, "# created  = ", round(now(), Second), " by scripts/",
+            basename(@__FILE__))
+        println(io, "#")
+        println(io, "#", lpad("index", 6), "  ", rpad("id", 13), rpad("coordinate", 12),
+            rpad("value", 26), "unit")
+        index = 0
+        # Positions (k = 1:3) and velocities (k = 4:6) of all bodies
+        for ks in (1:3, 4:6), i in 1:N, k in ks
+            index += 1
+            println(io, icline(index, ids[i], POSVEL_COORDS[k], rvs[i, k], POSVEL_UNITS[k]))
+        end
+        # Additional coordinates
+        for (id, coord, value, unit) in extras
+            index += 1
+            println(io, icline(index, id, coord, value, unit))
+        end
+    end
+    return nothing
+end
+
 float_regex(c::Char = 'E') =  Regex("([\\s|\\+|\\-]\\d\\.\\d+$c[\\+|\\-]\\d{2})")
 
 function parse_constant(name::AbstractString, text::AbstractString; c::Char = 'E')
@@ -115,11 +170,12 @@ function main()
     rm("TTmTDB.de430.19feb2015.bsp")
     println("Done")
 
-    # Number of bodies
-    N = 11 + 343 + 2 + 1 # planets + asteroids + lunar core/mantle + TT-TDB
+    # Number of bodies (11 planets + 343 asteroids)
+    N = 11 + 343
     # Pre-allocate memory
     ids = Vector{String}(undef, N)
-    qs = Matrix{Float64}(undef, N, 7)
+    gms = Vector{Float64}(undef, N)
+    rvs = Matrix{Float64}(undef, N, 6)
     # Initial epoch
     jd0 = parse_constant("JDEPOC", tech_comments)
     et = (jd0 - J2000) * daysec
@@ -129,54 +185,41 @@ function main()
     @. ids[1:11] = string(planets_ids)
     for (i, id) in enumerate(planets_ids)
         name = planet_id2gm(id)
-        qs[i, 1] = parse_constant(name, tech_comments; c = 'D')
-        qs[i, 2:end] .= kmsec2auday(spkgeo(id, et, "J2000", 0)[1])
+        gms[i] = parse_constant(name, tech_comments; c = 'D')
+        rvs[i, :] .= kmsec2auday(spkgeo(id, et, "J2000", 0)[1])
     end
 
     # Asteroids
-    @. ids[12:354] = string(asteroids_ids)
+    @. ids[12:N] = string(asteroids_ids)
     for (i, id) in enumerate(asteroids_ids)
         name = "MA" * lpad(id - 2000000, 4, '0')
-        qs[11+i, 1] = parse_constant(name, tech_comments; c = 'E')
-        qs[11+i, 2:end] .= kmsec2auday(spkgeo(id, et, "J2000", 0)[1])
+        gms[11+i] = parse_constant(name, tech_comments; c = 'E')
+        rvs[11+i, :] .= kmsec2auday(spkgeo(id, et, "J2000", 0)[1])
     end
-    perm = sortperm(view(qs, 11+1:11+343, 1), rev = true)
-    permute!(view(ids, 11+1:11+343), perm)
-    for i in axes(qs, 2)
-        permute!(view(qs, 11+1:11+343, i), perm)
-    end
+    # Sort asteroids by decreasing mass parameter
+    perm = 11 .+ sortperm(view(gms, 12:N), rev = true)
+    ids[12:N] .= ids[perm]
+    rvs[12:N, :] .= rvs[perm, :]
 
-    # Lunar mantle euler angles
+    # Additional coordinates: lunar mantle and core Euler angles and angular velocities
+    extras = Tuple{String, String, Float64, String}[]
     mantle_names = ["PHI", "THT", "PSI", "OMEGAX", "OMEGAY", "OMEGAZ"]
-    ids[end-2, 1] = "LunarMantle"
-    qs[end-2, 1] = NaN
-    @. qs[end-2, 2:end] = parse_constant(mantle_names, tech_comments)
-
-    # Lunar core euler angles
-    core_names = ["PHIC", "THTC",  "PSIC", "OMGCX", "OMGCY", "OMGCZ"]
-    ids[end-1, 1] = "LunarCore"
-    qs[end-1, 1] = NaN
-    @. qs[end-1, 2:end] = parse_constant(core_names, tech_comments)
-
-    # TT-TDB
-    ids[end] = "1000000001"
-    qs[end, :] .= NaN, spkgeo(1000000001, et, "J2000", 1000000000)[1][1], NaN, NaN,
-        NaN, NaN, NaN
-
-    # Save initial conditions vector
-    print("• Saving initial conditions to $output... ")
-    colnames = ["Spice ID", "GM [au^3/day^2]", "x [au]", "y [au]", "z [au]",
-        "vx [au/day]", "vy [au/day]", "vz [au/day]"]
-    open(output, "w") do file
-        write(file, join(rpad(c, 28) for c in colnames), '\n')
-        lines = Vector{String}(undef, N)
-        for i in eachindex(ids)
-            x = [rpad(@sprintf("%+.16E", y), 28) for y in qs[i, :]]
-            n = i == N ? "" : "\n"
-            lines[i] = string(rpad(ids[i], 28), join(x), n)
-        end
-        write(file, join(lines))
+    for (name, coord, unit) in zip(mantle_names, LUNAR_COORDS, LUNAR_UNITS)
+        push!(extras, ("LunarMantle", coord, parse_constant(name, tech_comments), unit))
     end
+    core_names = ["PHIC", "THTC",  "PSIC", "OMGCX", "OMGCY", "OMGCZ"]
+    for (name, coord, unit) in zip(core_names, LUNAR_COORDS, LUNAR_UNITS)
+        push!(extras, ("LunarCore", coord, parse_constant(name, tech_comments), unit))
+    end
+    # and TT-TDB
+    ttmtdb = spkgeo(1000000001, et, "J2000", 1000000000)[1][1]
+    push!(extras, ("1000000001", "TT-TDB", ttmtdb, "s"))
+
+    # Save initial conditions
+    print("• Saving initial conditions to $output... ")
+    sources = basename.([PLANETS_KERNEL_URL, ASTEROIDS_KERNEL_URL, TTMTDB_KERNEL_URL,
+        TECH_COMMENTS_URL])
+    write_initial_conditions(output, "DE430", jd0, sources, ids, rvs, extras)
     println("Done")
 
     # Final time
