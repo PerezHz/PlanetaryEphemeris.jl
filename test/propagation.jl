@@ -14,6 +14,9 @@ using LinearAlgebra: norm
 
 const PKG_DATA = joinpath(pkgdir(PlanetaryEphemeris), "data")
 const TEST_DATA = joinpath(pkgdir(PlanetaryEphemeris), "test", "data")
+# DE430 initial conditions file and its epoch [JD TDB]
+const DE430_IC_FILE = joinpath(PKG_DATA, "de430ic.txt")
+const DE430_JD0 = datetime2julian(DateTime(1969, 6, 28))
 
 # Total number of bodies
 const N = 11 + 343
@@ -88,16 +91,13 @@ end
 
     @testset "Initial conditions" begin
         # read_initial_conditions
-        for date in (DateTime(1969, 6, 28), DateTime(2000, 1, 1, 12))
-            filename = joinpath(PKG_DATA, string("de430ic_", Dates.format(date, "yyyyud"), ".txt"))
-            q0_64 = read_initial_conditions(filename)
-            q0_128 = Float128.(q0_64)
+        q0_64 = read_initial_conditions(DE430_IC_FILE)
+        q0_128 = Float128.(q0_64)
 
-            @test isa(q0_64, Vector{Float64})
-            @test isa(q0_128, Vector{Float128})
-            @test length(q0_64) == length(q0_128) == 6*N+13
-            @test q0_64 == q0_128
-        end
+        @test isa(q0_64, Vector{Float64})
+        @test isa(q0_128, Vector{Float128})
+        @test length(q0_64) == length(q0_128) == 6*N+13
+        @test q0_64 == q0_128
     end
 
     @testset "Earth orientation model" begin
@@ -144,10 +144,9 @@ end
         @test iszero(zero(TaylorSolution{T, U, 2, Vector{T}, Matrix{U}, Matrix{Taylor1{U}}, Nothing, Nothing, Nothing}))
 
         # Test propagation
-        tspan = (J2000, J2000 + nyears * yr)
-        filename = joinpath(PKG_DATA, "de430ic_2000Jan1.txt")
-        q0 = read_initial_conditions(filename)
-        params = (N, J2000)
+        tspan = (DE430_JD0, DE430_JD0 + nyears * yr)
+        q0 = read_initial_conditions(DE430_IC_FILE)
+        params = (N, DE430_JD0)
         PP = PlanetaryEphemerisProblem(freeparticle!, tspan, q0, params)
         sol = propagate(PP; order = _order, abstol)
 
@@ -155,8 +154,8 @@ end
         @test isa(string(sol), String)
         @test isa(sol, TaylorSolution{T, T, 2})
         @test isa(PP, PlanetaryEphemerisProblem{typeof(freeparticle!), T, Tuple{Int64, T}})
-        @test sol.t[1] == 0.0
-        @test sol.t[end] == nyears * yr
+        @test sol.t[1] == DE430_JD0 - J2000
+        @test sol.t[end] == DE430_JD0 - J2000 + nyears * yr
         @test length(sol.t) == size(sol.p, 1) + 1
         @test length(q0) == size(sol.p, 2)
         @test numberofbodies(size(sol.p, 2)) == numberofbodies(sol.p[1, :]) ==
@@ -181,7 +180,7 @@ end
         @test solrev(solrev.t[end]) ≈ sol(sol.t[1])
 
         dq = TaylorSeries.variables!("dq", order = 2, numvars = 2)
-        tmid = sol.t[2] / 2
+        tmid = (sol.t[1] + sol.t[2]) / 2
         sol1N = TaylorSolution(sol.t, sol.p .+ Taylor1(dq[1], _order))
 
         @test sol(tmid) isa Vector{T}
@@ -194,9 +193,9 @@ end
         # flipsign
         fsol = flipsign(sol)
         @test fsol.t[1] == sol.t[1]
-        @test fsol.t == -sol.t
+        @test fsol.t == 2sol.t[1] .- sol.t
         @test fsol.p == sol.p(-Taylor1(_order))
-        @test norm(fsol(-nyears*yr) - sol(nyears*yr)) < eps()
+        @test norm(fsol(2sol.t[1] - sol.t[end]) - sol(sol.t[end])) < eps()
 
         # Test TaylorSolutionSerialization
         @test JLD2.writeas(typeof(sol)) == TaylorIntegration.TaylorSolutionSerialization{Float64, 2}
@@ -220,10 +219,9 @@ end
         @show Threads.nthreads()
 
         # Planetary ephemeris problem
-        tspan = (J2000, J2000 + nyears * yr)
-        filename = joinpath(PKG_DATA, "de430ic_2000Jan1.txt")
-        q0 = read_initial_conditions(filename)
-        params = DE430Params(J2000, q0, _order)
+        tspan = (DE430_JD0, DE430_JD0 + nyears * yr)
+        q0 = read_initial_conditions(DE430_IC_FILE)
+        params = DE430Params(DE430_JD0, q0, _order)
         PP = PlanetaryEphemerisProblem(DE430!, tspan, q0, params)
         # Test propagation
         @time propagate(PP; maxsteps = 1, order = _order, abstol)
@@ -270,8 +268,8 @@ end
         rm(filename)
 
         # Test selecteph
-        t0 = sol.t[end]/3
-        tf = 2*sol.t[end]/3
+        t0 = sol.t[1] + (sol.t[end] - sol.t[1]) / 3
+        tf = sol.t[1] + 2 * (sol.t[end] - sol.t[1]) / 3
         idxs = vcat(nbodyind(N, [su, ea, mo]), 6N+1:6N+13)
         i_0 = searchsortedlast(sol.t, t0)
         i_f = searchsortedfirst(sol.t, tf)
@@ -288,7 +286,7 @@ end
         # Load kernels
         furnsh(
             joinpath(TEST_DATA, "naif0012.tls"),
-            joinpath(TEST_DATA, "de430_2000-2002.bsp")
+            joinpath(TEST_DATA, "de430_1969-1971.bsp")
         )
 
         ttmtdb_pe = TaylorSolution(sol.t, sol.p[:, 6N+13]) # TT-TDB
