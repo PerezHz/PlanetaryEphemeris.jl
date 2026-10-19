@@ -243,9 +243,9 @@ function main()
         ids[11+i] = id < 0 ? string("Kuiper", abs(id)) : string(id)
         name = spkid2ma(id)
         gms[11+i] = parse_constant(name, tech_comments; c = 'e')
-        # Kuiper belt
+        # Kuiper belt (circular orbit around the Sun plus the planets)
         if id < 0
-            a, μ = 44.0, sum(view(gms, 11+1:11+373))
+            a, μ = 44.0, sum(view(gms, 1:11))
             ν = deg2rad(10 * (abs(id)-1))
             q = [a * cos(ν), a * sin(ν), 0.0, -sqrt(μ/a) * sin(ν), sqrt(μ/a) * cos(ν), 0.0]
             rvs[11+i, :] .= M_ecl2eq * q
