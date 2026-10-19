@@ -13,11 +13,11 @@ function parse_commandline()
         "--d0"
             help = "Initial date"
             arg_type = DateTime
-            default = DateTime(2000, 1, 1, 12)
+            default = DateTime(1969, 6, 28)
         "--q0"
             help = "Initial conditions file"
             arg_type = String
-            default = joinpath(pkgdir(PlanetaryEphemeris), "data", "de430ic_2000Jan1.txt")
+            default = joinpath(pkgdir(PlanetaryEphemeris), "data", "de430ic.txt")
         "--nyears"
             help = "Number of years"
             arg_type = Float64
@@ -48,10 +48,10 @@ function parse_commandline()
         examples:\n
         \n
         # Multi-threaded\n
-        julia -t 10 --project de430.jl --d0 "2000-01-01T12:00:00" --nyears 100.0\n
+        julia -t 10 --project de430.jl --d0 "1969-06-28T00:00:00" --nyears 100.0\n
         \n
         # Single-threaded\n
-        julia --project de430.jl --d0 "2000-01-01T12:00:00" --nyears 100.0\n
+        julia --project de430.jl --d0 "1969-06-28T00:00:00" --nyears 100.0\n
         \n
     """
 

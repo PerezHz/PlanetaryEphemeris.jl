@@ -162,7 +162,7 @@ end
               numberofbodies(sol.p) == numberofbodies(sol) == N
 
         # Evaluation
-        t = Taylor1(_order)
+        t = sol.t[1] + Taylor1(_order)
         @test sol(sol.t[1]) == q0
         @test constant_term(sol(t)) == q0
         @test all(iszero, sol(1, 1, sol.t[1]))
