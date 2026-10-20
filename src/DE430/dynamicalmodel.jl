@@ -127,7 +127,27 @@ to interaction between the mantle and core.
 function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     # N: number of bodies
     # jd0: reference epoch [JDTDB]
-    local N, jd0 = params
+    # consts: physical parameters of the model (see DE430Constants)
+    local N, jd0, consts = params
+    # Physical parameters of the model
+    local N_ext = consts.N_ext
+    local μ = consts.μ
+    local UJ_interaction = consts.UJ_interaction
+    local α_p_sun = consts.α_p_sun
+    local δ_p_sun = consts.δ_p_sun
+    local RE_au = consts.RE_au
+    local J2E = consts.J2E
+    local J2EDOT = consts.J2EDOT
+    local JSEM = consts.JSEM
+    local n1SEM = consts.n1SEM
+    local n2M = consts.n2M
+    local CM = consts.CM
+    local SM = consts.SM
+    local ITM_und = consts.ITM_und
+    local I_c = consts.I_c
+    local k_ν = consts.k_ν
+    local C_c_m_A_c = consts.C_c_m_A_c
+
     local S = eltype(q)   # Type of positions/velocities components
 
     local zero_q_1 = zero(q[1])                  # Zero of type S
@@ -1066,6 +1086,36 @@ function DE430!(dq, q, params, t)
     local N = params.N
     # Refernce epoch [JDTDB]
     local jd0 = params.jd0
+    # Number of bodies used to compute time-delayed tidal interactions
+    local N_bwd = params.N_bwd
+    # Physical parameters of the model (see DE430Constants)
+    local consts = params.consts
+    local N_ext = consts.N_ext
+    local μ = consts.μ
+    local UJ_interaction = consts.UJ_interaction
+    local α_p_sun = consts.α_p_sun
+    local δ_p_sun = consts.δ_p_sun
+    local RE_au = consts.RE_au
+    local J2E = consts.J2E
+    local J2EDOT = consts.J2EDOT
+    local JSEM = consts.JSEM
+    local n1SEM = consts.n1SEM
+    local n2M = consts.n2M
+    local CM = consts.CM
+    local SM = consts.SM
+    local τ_M = consts.τ_M
+    local I_c = consts.I_c
+    local k_ν = consts.k_ν
+    local C_c_m_A_c = consts.C_c_m_A_c
+    local k_20E = consts.k_20E
+    local k_21E = consts.k_21E
+    local k_22E = consts.k_22E
+    local τ_0p = consts.τ_0p
+    local τ_1p = consts.τ_1p
+    local τ_2p = consts.τ_2p
+    local τ_1 = consts.τ_1
+    local τ_2 = consts.τ_2
+    local tid_num_coeff = consts.tid_num_coeff
     # Time Taylor variable
     local __t = Taylor1(numtype(t), TS.order(t))
     # Type of positions/velocities components
@@ -1085,7 +1135,7 @@ function DE430!(dq, q, params, t)
     local dqq_bwd = [Taylor1(constant_term(dq[i]), TS.order(t)) for i in idxs_bwd]
     # Parameters
     local rv = params.rv
-    local params_bwd = (params.N_bwd, jd0)
+    local params_bwd = (N_bwd, jd0, consts)
     # Backward integration
     local _ = TaylorIntegration.jetcoeffs!(Val(NBP_pN_A_J23E_J23M_J2S_threads!), t, qq_bwd, dqq_bwd, params_bwd, rv)
 
@@ -1101,7 +1151,7 @@ function DE430!(dq, q, params, t)
 
     # Matrix elements of lunar mantle moment of inertia at time t-τ_M (including tidal distortion)
     # See equations (36) to (41) in pages 16-17 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    local I_m_t = ITM(q_del_τ_M, eulang_del_τ_M, ω_m_del_τ_M)::Matrix{S}
+    local I_m_t = ITM(q_del_τ_M, eulang_del_τ_M, ω_m_del_τ_M, consts)::Matrix{S}
     local dI_m_t = ordpres_differentiate.(I_m_t) # Time-derivative of lunar mantle I at time t-τ_M
     local inv_I_m_t = inv(I_m_t) .* one_t        # Inverse of lunar mantle I matrix at time t-τ_M
     local I_c_t = I_c.*one_t                     # Lunar core I matrix, see equation (39)

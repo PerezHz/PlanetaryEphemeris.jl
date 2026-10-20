@@ -2,7 +2,7 @@ module PlanetaryEphemeris
 
 # __precompile__(false)
 
-export PlanetaryEphemerisProblem, TaylorSolution, DE430Params
+export PlanetaryEphemerisProblem, TaylorSolution, DE430Params, DE430Constants
 export NBP_pN_A_J23E_J23M_J2S_threads!, DE430!
 export semimajoraxis, eccentricity, inclination, longascnode, argperi, longperi, ecanomaly,
        trueanomaly,  meananomaly, timeperipass, lrlvec, eccentricanomaly, meanan2truean,
