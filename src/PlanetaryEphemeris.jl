@@ -2,7 +2,8 @@ module PlanetaryEphemeris
 
 # __precompile__(false)
 
-export PlanetaryEphemerisProblem, TaylorSolution, DE430Params, DE430Constants
+export PlanetaryEphemerisProblem, TaylorSolution, DE430Params, DE430Constants,
+       DE440Params, DE440Constants
 export NBP_pN_A_J23E_J23M_J2S_threads!, DE430!
 export semimajoraxis, eccentricity, inclination, longascnode, argperi, longperi, ecanomaly,
        trueanomaly,  meananomaly, timeperipass, lrlvec, eccentricanomaly, meanan2truean,
@@ -41,5 +42,6 @@ include("trivial.jl")
 include("DE430/params.jl")
 include("DE430/dynamicalmodel.jl")
 include("DE430/jetcoeffs.jl")
+include("DE440/params.jl")
 
 end # module

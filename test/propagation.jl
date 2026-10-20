@@ -18,6 +18,10 @@ const TEST_DATA = joinpath(pkgdir(PlanetaryEphemeris), "test", "data")
 const DE430_IC_FILE = joinpath(PKG_DATA, "de430ic.txt")
 const DE430_PARAMS_FILE = joinpath(PKG_DATA, "de430params.txt")
 const DE430_JD0 = datetime2julian(DateTime(1969, 6, 28))
+# DE440 initial conditions and parameters files, and the epoch of the former [JD TDB]
+const DE440_IC_FILE = joinpath(PKG_DATA, "de440ic.txt")
+const DE440_PARAMS_FILE = joinpath(PKG_DATA, "de440params.txt")
+const DE440_JD0 = datetime2julian(DateTime(1969, 6, 28))
 
 # Total number of bodies
 const N = 11 + 343
@@ -110,6 +114,16 @@ end
         @test consts_64.TAUE1 == params["TAUE1"]
         @test isa(consts_128.JSEM, Matrix{Float128})
         @test consts_128.GM == Float128.(consts_64.GM)
+
+        # DE440Constants and DE440Params
+        q0_440 = read_initial_conditions(DE440_IC_FILE)
+        params_440 = DE440Params(DE440_JD0)
+        consts_440 = params_440.consts
+
+        @test params_440.N == length(consts_440.GM) == 11 + 343 + 30 + 36
+        @test length(q0_440) == 6 * params_440.N + 12
+        @test all(consts_440.UJ_interaction[2:end, su])
+        @test isa(DE440Constants{Float128}(DE440_PARAMS_FILE).CM, Matrix{Float128})
     end
 
     @testset "Earth orientation model" begin
