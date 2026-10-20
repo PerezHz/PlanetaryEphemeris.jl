@@ -8,12 +8,10 @@ export semimajoraxis, eccentricity, inclination, longascnode, argperi, longperi,
        trueanomaly,  meananomaly, timeperipass, lrlvec, eccentricanomaly, meanan2truean,
        meanmotion, time2truean, Rx, Ry, Rz, selecteph2jld2, save2jld2andcheck, selecteph,
        numberofbodies,  kmsec2auday, auday2kmsec, ssb_posvel_pN, nbodyind, t2c_jpl_de430,
-       propagate,  c2t_jpl_de430, pole_rotation, read_initial_conditions
-export PE, au, yr, sundofs, earthdofs, c_au_per_day, μ, su, ea, mo, au, yr, daysec,
-       clightkms, c_au_per_day, c_au_per_sec, c_cm_per_sec, J2000, R_sun, α_p_sun,
-       δ_p_sun, au, UJ_interaction, de430_343ast_ids, ITM_und, ITM1, ITM2, R_moon,
-       τ_M, k_2M, JSEM, CM, SM, n1SEM, n2M, J2E, J2EDOT, RE, k_20E, k_21E, k_22E,
-       τ_0p, τ_1p, τ_2p, τ_0, τ_1, τ_2, ω_E, EMRAT
+       propagate,  c2t_jpl_de430, pole_rotation, read_initial_conditions,
+       read_parameters
+export PE, au, yr, su, ea, mo, daysec, clightkms, c_au_per_day, c_au_per_sec,
+       c_cm_per_sec, J2000, ITM1, ITM2, ω_E
 
 using TaylorIntegration, LinearAlgebra, Printf, DelimitedFiles, JLD2, Quadmath
 
@@ -32,6 +30,7 @@ include("abstractproblem.jl")
 include("constants.jl")
 include("jpl-de-430-431-earth-orientation-model.jl")
 include("initcond.jl")
+include("parameters.jl")
 include("interpolation/TaylorSolution.jl")
 include("propagation.jl")
 include("osculating.jl")

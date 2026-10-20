@@ -18,10 +18,10 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_thr
     order = TS.order(t)
     local (N, jd0, consts) = params
     local N_ext = consts.N_ext
-    local μ = consts.μ
+    local GM = consts.GM
     local UJ_interaction = consts.UJ_interaction
-    local α_p_sun = consts.α_p_sun
-    local δ_p_sun = consts.δ_p_sun
+    local SUNPOLERA = consts.SUNPOLERA
+    local SUNPOLEDEC = consts.SUNPOLEDEC
     local RE_au = consts.RE_au
     local J2E = consts.J2E
     local J2EDOT = consts.J2EDOT
@@ -172,8 +172,8 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_thr
     N_MfigM[1] = Taylor1(identity(constant_term(zero_q_1)), order)
     N_MfigM[2] = Taylor1(identity(constant_term(zero_q_1)), order)
     N_MfigM[3] = Taylor1(identity(constant_term(zero_q_1)), order)
-    local αs = deg2rad(α_p_sun * one_t)
-    local δs = deg2rad(δ_p_sun * one_t)
+    local αs = deg2rad(SUNPOLERA * one_t)
+    local δs = deg2rad(SUNPOLEDEC * one_t)
     RotM = Array{S}(undef, 3, 3, 5)
     local RotM[:, :, ea] = c2t_jpl_de430(dsj2k)
     local RotM[:, :, su] = pole_rotation(αs, δs)
@@ -330,7 +330,7 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_thr
     J2_t = Array{S}(undef, 5)
     J2_t[su] = Taylor1(identity(constant_term(J2S_t)), order)
     J2_t[ea] = Taylor1(identity(constant_term(J2E_t)), order)
-    local N_MfigM_figE_factor = 7.5 * μ[ea] * J2E_t
+    local N_MfigM_figE_factor = 7.5 * GM[ea] * J2E_t
     #= /Users/lerm/.julia/dev/PlanetaryEphemeris.jl/ex.jl:327 =# Threads.@threads for j = 1:N
             newtonX[j] = Taylor1(identity(constant_term(zero_q_1)), order)
             newtonY[j] = Taylor1(identity(constant_term(zero_q_1)), order)
@@ -531,14 +531,14 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_thr
                     tmp1829[i, j] = Taylor1(zero(constant_term(r_p2[i, j])), order)
                     r_p7d2[i, j] = Taylor1(constant_term(r_p2[i, j]) ^ float(constant_term(3.5)), order)
                     tmp1830[i, j] = Taylor1(zero(constant_term(r_p2[i, j])), order)
-                    newtonianCoeff[i, j] = Taylor1(constant_term(μ[i]) / constant_term(r_p3d2[i, j]), order)
+                    newtonianCoeff[i, j] = Taylor1(constant_term(GM[i]) / constant_term(r_p3d2[i, j]), order)
                     tmp1192[i, j] = Taylor1(constant_term(pn2x[i, j]) + constant_term(pn2y[i, j]), order)
                     tmp1193[i, j] = Taylor1(constant_term(tmp1192[i, j]) + constant_term(pn2z[i, j]), order)
                     pn2[i, j] = Taylor1(constant_term(newtonianCoeff[i, j]) * constant_term(tmp1193[i, j]), order)
                     newton_acc_X[i, j] = Taylor1(constant_term(X[i, j]) * constant_term(newtonianCoeff[i, j]), order)
                     newton_acc_Y[i, j] = Taylor1(constant_term(Y[i, j]) * constant_term(newtonianCoeff[i, j]), order)
                     newton_acc_Z[i, j] = Taylor1(constant_term(Z[i, j]) * constant_term(newtonianCoeff[i, j]), order)
-                    newtonian1b_Potential[i, j] = Taylor1(constant_term(μ[i]) / constant_term(r_p1d2[i, j]), order)
+                    newtonian1b_Potential[i, j] = Taylor1(constant_term(GM[i]) / constant_term(r_p1d2[i, j]), order)
                     pn3[i, j] = Taylor1(constant_term(3.5) * constant_term(newtonian1b_Potential[i, j]), order)
                     U_t_pn2[i, j] = Taylor1(constant_term(pn2[i, j]) * constant_term(U[i, j]), order)
                     V_t_pn2[i, j] = Taylor1(constant_term(pn2[i, j]) * constant_term(V[i, j]), order)
@@ -568,16 +568,16 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_thr
     tmp1219 = Taylor1(constant_term(I_M_t[1, 1]) + constant_term(I_M_t[2, 2]), order)
     tmp1221 = Taylor1(constant_term(tmp1219) / constant_term(2), order)
     tmp1222 = Taylor1(constant_term(I_M_t[3, 3]) - constant_term(tmp1221), order)
-    J2M_t = Taylor1(constant_term(tmp1222) / constant_term(μ[mo]), order)
+    J2M_t = Taylor1(constant_term(tmp1222) / constant_term(GM[mo]), order)
     tmp1224 = Taylor1(constant_term(I_M_t[2, 2]) - constant_term(I_M_t[1, 1]), order)
-    tmp1225 = Taylor1(constant_term(tmp1224) / constant_term(μ[mo]), order)
+    tmp1225 = Taylor1(constant_term(tmp1224) / constant_term(GM[mo]), order)
     C22M_t = Taylor1(constant_term(tmp1225) / constant_term(4), order)
     tmp1228 = Taylor1(-(constant_term(I_M_t[1, 3])), order)
-    C21M_t = Taylor1(constant_term(tmp1228) / constant_term(μ[mo]), order)
+    C21M_t = Taylor1(constant_term(tmp1228) / constant_term(GM[mo]), order)
     tmp1230 = Taylor1(-(constant_term(I_M_t[3, 2])), order)
-    S21M_t = Taylor1(constant_term(tmp1230) / constant_term(μ[mo]), order)
+    S21M_t = Taylor1(constant_term(tmp1230) / constant_term(GM[mo]), order)
     tmp1232 = Taylor1(-(constant_term(I_M_t[2, 1])), order)
-    tmp1233 = Taylor1(constant_term(tmp1232) / constant_term(μ[mo]), order)
+    tmp1233 = Taylor1(constant_term(tmp1232) / constant_term(GM[mo]), order)
     S22M_t = Taylor1(constant_term(tmp1233) / constant_term(2), order)
     J2_t[mo] = Taylor1(identity(constant_term(J2M_t)), order)
     tmp1245 = Array{Taylor1{_S}}(undef, size(X_bf_1))
@@ -1452,37 +1452,37 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_thr
                 continue
             else
                 if UJ_interaction[i, j]
-                    tmp1438[i, j] = Taylor1(constant_term(μ[i]) * constant_term(F_JCS_x[i, j]), order)
+                    tmp1438[i, j] = Taylor1(constant_term(GM[i]) * constant_term(F_JCS_x[i, j]), order)
                     temp_accX_j[i, j] = Taylor1(constant_term(accX[j]) - constant_term(tmp1438[i, j]), order)
                     accX[j] = Taylor1(identity(constant_term(temp_accX_j[i, j])), order)
-                    tmp1440[i, j] = Taylor1(constant_term(μ[i]) * constant_term(F_JCS_y[i, j]), order)
+                    tmp1440[i, j] = Taylor1(constant_term(GM[i]) * constant_term(F_JCS_y[i, j]), order)
                     temp_accY_j[i, j] = Taylor1(constant_term(accY[j]) - constant_term(tmp1440[i, j]), order)
                     accY[j] = Taylor1(identity(constant_term(temp_accY_j[i, j])), order)
-                    tmp1442[i, j] = Taylor1(constant_term(μ[i]) * constant_term(F_JCS_z[i, j]), order)
+                    tmp1442[i, j] = Taylor1(constant_term(GM[i]) * constant_term(F_JCS_z[i, j]), order)
                     temp_accZ_j[i, j] = Taylor1(constant_term(accZ[j]) - constant_term(tmp1442[i, j]), order)
                     accZ[j] = Taylor1(identity(constant_term(temp_accZ_j[i, j])), order)
-                    tmp1444[i, j] = Taylor1(constant_term(μ[j]) * constant_term(F_JCS_x[i, j]), order)
+                    tmp1444[i, j] = Taylor1(constant_term(GM[j]) * constant_term(F_JCS_x[i, j]), order)
                     temp_accX_i[i, j] = Taylor1(constant_term(accX[i]) + constant_term(tmp1444[i, j]), order)
                     accX[i] = Taylor1(identity(constant_term(temp_accX_i[i, j])), order)
-                    tmp1446[i, j] = Taylor1(constant_term(μ[j]) * constant_term(F_JCS_y[i, j]), order)
+                    tmp1446[i, j] = Taylor1(constant_term(GM[j]) * constant_term(F_JCS_y[i, j]), order)
                     temp_accY_i[i, j] = Taylor1(constant_term(accY[i]) + constant_term(tmp1446[i, j]), order)
                     accY[i] = Taylor1(identity(constant_term(temp_accY_i[i, j])), order)
-                    tmp1448[i, j] = Taylor1(constant_term(μ[j]) * constant_term(F_JCS_z[i, j]), order)
+                    tmp1448[i, j] = Taylor1(constant_term(GM[j]) * constant_term(F_JCS_z[i, j]), order)
                     temp_accZ_i[i, j] = Taylor1(constant_term(accZ[i]) + constant_term(tmp1448[i, j]), order)
                     accZ[i] = Taylor1(identity(constant_term(temp_accZ_i[i, j])), order)
                     if j == mo
                         tmp1450[i, j] = Taylor1(constant_term(Y[i, j]) * constant_term(F_JCS_z[i, j]), order)
                         tmp1451[i, j] = Taylor1(constant_term(Z[i, j]) * constant_term(F_JCS_y[i, j]), order)
                         tmp1452[i, j] = Taylor1(constant_term(tmp1450[i, j]) - constant_term(tmp1451[i, j]), order)
-                        N_MfigM_pmA_x[i] = Taylor1(constant_term(μ[i]) * constant_term(tmp1452[i, j]), order)
+                        N_MfigM_pmA_x[i] = Taylor1(constant_term(GM[i]) * constant_term(tmp1452[i, j]), order)
                         tmp1454[i, j] = Taylor1(constant_term(Z[i, j]) * constant_term(F_JCS_x[i, j]), order)
                         tmp1455[i, j] = Taylor1(constant_term(X[i, j]) * constant_term(F_JCS_z[i, j]), order)
                         tmp1456[i, j] = Taylor1(constant_term(tmp1454[i, j]) - constant_term(tmp1455[i, j]), order)
-                        N_MfigM_pmA_y[i] = Taylor1(constant_term(μ[i]) * constant_term(tmp1456[i, j]), order)
+                        N_MfigM_pmA_y[i] = Taylor1(constant_term(GM[i]) * constant_term(tmp1456[i, j]), order)
                         tmp1458[i, j] = Taylor1(constant_term(X[i, j]) * constant_term(F_JCS_y[i, j]), order)
                         tmp1459[i, j] = Taylor1(constant_term(Y[i, j]) * constant_term(F_JCS_x[i, j]), order)
                         tmp1460[i, j] = Taylor1(constant_term(tmp1458[i, j]) - constant_term(tmp1459[i, j]), order)
-                        N_MfigM_pmA_z[i] = Taylor1(constant_term(μ[i]) * constant_term(tmp1460[i, j]), order)
+                        N_MfigM_pmA_z[i] = Taylor1(constant_term(GM[i]) * constant_term(tmp1460[i, j]), order)
                         temp_N_M_x[i] = Taylor1(constant_term(N_MfigM[1]) - constant_term(N_MfigM_pmA_x[i]), order)
                         N_MfigM[1] = Taylor1(identity(constant_term(temp_N_M_x[i])), order)
                         temp_N_M_y[i] = Taylor1(constant_term(N_MfigM[2]) - constant_term(N_MfigM_pmA_y[i]), order)
@@ -1858,17 +1858,17 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_thr
     N_cmb_2 = Taylor1(constant_term(tmp1709) + constant_term(tmp1711), order)
     tmp1713 = Taylor1(constant_term(q[6N + 12]) - constant_term(q[6N + 6]), order)
     N_cmb_3 = Taylor1(constant_term(k_ν) * constant_term(tmp1713), order)
-    tmp1715 = Taylor1(constant_term(μ[mo]) * constant_term(N_1_LMF), order)
+    tmp1715 = Taylor1(constant_term(GM[mo]) * constant_term(N_1_LMF), order)
     tmp1716 = Taylor1(constant_term(N_MfigM_figE_1) + constant_term(tmp1715), order)
     tmp1717 = Taylor1(constant_term(tmp1716) + constant_term(N_cmb_1), order)
     tmp1718 = Taylor1(constant_term(dIω_x) + constant_term(ωxIω_x), order)
     I_dω_1 = Taylor1(constant_term(tmp1717) - constant_term(tmp1718), order)
-    tmp1720 = Taylor1(constant_term(μ[mo]) * constant_term(N_2_LMF), order)
+    tmp1720 = Taylor1(constant_term(GM[mo]) * constant_term(N_2_LMF), order)
     tmp1721 = Taylor1(constant_term(N_MfigM_figE_2) + constant_term(tmp1720), order)
     tmp1722 = Taylor1(constant_term(tmp1721) + constant_term(N_cmb_2), order)
     tmp1723 = Taylor1(constant_term(dIω_y) + constant_term(ωxIω_y), order)
     I_dω_2 = Taylor1(constant_term(tmp1722) - constant_term(tmp1723), order)
-    tmp1725 = Taylor1(constant_term(μ[mo]) * constant_term(N_3_LMF), order)
+    tmp1725 = Taylor1(constant_term(GM[mo]) * constant_term(N_3_LMF), order)
     tmp1726 = Taylor1(constant_term(N_MfigM_figE_3) + constant_term(tmp1725), order)
     tmp1727 = Taylor1(constant_term(tmp1726) + constant_term(N_cmb_3), order)
     tmp1728 = Taylor1(constant_term(dIω_z) + constant_term(ωxIω_z), order)
@@ -2688,10 +2688,10 @@ function TaylorIntegration.jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_threads!}, t:
     tmp1436 = __ralloc.v4[93]
     local (N, jd0, consts) = params
     local N_ext = consts.N_ext
-    local μ = consts.μ
+    local GM = consts.GM
     local UJ_interaction = consts.UJ_interaction
-    local α_p_sun = consts.α_p_sun
-    local δ_p_sun = consts.δ_p_sun
+    local SUNPOLERA = consts.SUNPOLERA
+    local SUNPOLEDEC = consts.SUNPOLEDEC
     local RE_au = consts.RE_au
     local J2E = consts.J2E
     local J2EDOT = consts.J2EDOT
@@ -2714,13 +2714,13 @@ function TaylorIntegration.jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_threads!}, t:
     local I_c_t = I_c .* one_t
     local inv_I_c_t = inv(I_c_t) .* one_t
     local I_M_t = I_m_t + I_c_t
-    local αs = deg2rad(α_p_sun * one_t)
-    local δs = deg2rad(δ_p_sun * one_t)
+    local αs = deg2rad(SUNPOLERA * one_t)
+    local δs = deg2rad(SUNPOLEDEC * one_t)
     local RotM[:, :, ea] = c2t_jpl_de430(dsj2k)
     local RotM[:, :, su] = pole_rotation(αs, δs)
     local J2E_t = (J2E + J2EDOT * (dsj2k / yr)) * RE_au ^ 2
     local J2S_t = JSEM[su, 2] * one_t
-    local N_MfigM_figE_factor = 7.5 * μ[ea] * J2E_t
+    local N_MfigM_figE_factor = 7.5 * GM[ea] * J2E_t
     for ord = 0:order - 1
         ordnext = ord + 1
         TaylorSeries.identity!(N_MfigM[1], zero_q_1, ord)
@@ -2884,14 +2884,14 @@ function TaylorIntegration.jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_threads!}, t:
                         TaylorSeries.sqrt!(r_p1d2[i, j], r_p2[i, j], tmp1828[i, j], ord)
                         TaylorSeries.pow!(r_p3d2[i, j], r_p2[i, j], tmp1829[i, j], 1.5, ord)
                         TaylorSeries.pow!(r_p7d2[i, j], r_p2[i, j], tmp1830[i, j], 3.5, ord)
-                        TaylorSeries.div!(newtonianCoeff[i, j], μ[i], r_p3d2[i, j], ord)
+                        TaylorSeries.div!(newtonianCoeff[i, j], GM[i], r_p3d2[i, j], ord)
                         TaylorSeries.add!(tmp1192[i, j], pn2x[i, j], pn2y[i, j], ord)
                         TaylorSeries.add!(tmp1193[i, j], tmp1192[i, j], pn2z[i, j], ord)
                         TaylorSeries.mul!(pn2[i, j], newtonianCoeff[i, j], tmp1193[i, j], ord)
                         TaylorSeries.mul!(newton_acc_X[i, j], X[i, j], newtonianCoeff[i, j], ord)
                         TaylorSeries.mul!(newton_acc_Y[i, j], Y[i, j], newtonianCoeff[i, j], ord)
                         TaylorSeries.mul!(newton_acc_Z[i, j], Z[i, j], newtonianCoeff[i, j], ord)
-                        TaylorSeries.div!(newtonian1b_Potential[i, j], μ[i], r_p1d2[i, j], ord)
+                        TaylorSeries.div!(newtonian1b_Potential[i, j], GM[i], r_p1d2[i, j], ord)
                         TaylorSeries.mul!(pn3[i, j], 3.5, newtonian1b_Potential[i, j], ord)
                         TaylorSeries.mul!(U_t_pn2[i, j], pn2[i, j], U[i, j], ord)
                         TaylorSeries.mul!(V_t_pn2[i, j], pn2[i, j], V[i, j], ord)
@@ -2918,16 +2918,16 @@ function TaylorIntegration.jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_threads!}, t:
         TaylorSeries.add!(tmp1219, I_M_t[1, 1], I_M_t[2, 2], ord)
         TaylorSeries.div!(tmp1221, tmp1219, 2, ord)
         TaylorSeries.subst!(tmp1222, I_M_t[3, 3], tmp1221, ord)
-        TaylorSeries.div!(J2M_t, tmp1222, μ[mo], ord)
+        TaylorSeries.div!(J2M_t, tmp1222, GM[mo], ord)
         TaylorSeries.subst!(tmp1224, I_M_t[2, 2], I_M_t[1, 1], ord)
-        TaylorSeries.div!(tmp1225, tmp1224, μ[mo], ord)
+        TaylorSeries.div!(tmp1225, tmp1224, GM[mo], ord)
         TaylorSeries.div!(C22M_t, tmp1225, 4, ord)
         TaylorSeries.subst!(tmp1228, I_M_t[1, 3], ord)
-        TaylorSeries.div!(C21M_t, tmp1228, μ[mo], ord)
+        TaylorSeries.div!(C21M_t, tmp1228, GM[mo], ord)
         TaylorSeries.subst!(tmp1230, I_M_t[3, 2], ord)
-        TaylorSeries.div!(S21M_t, tmp1230, μ[mo], ord)
+        TaylorSeries.div!(S21M_t, tmp1230, GM[mo], ord)
         TaylorSeries.subst!(tmp1232, I_M_t[2, 1], ord)
-        TaylorSeries.div!(tmp1233, tmp1232, μ[mo], ord)
+        TaylorSeries.div!(tmp1233, tmp1232, GM[mo], ord)
         TaylorSeries.div!(S22M_t, tmp1233, 2, ord)
         TaylorSeries.identity!(J2_t[mo], J2M_t, ord)
         #= /Users/lerm/.julia/dev/PlanetaryEphemeris.jl/ex.jl:436 =# Threads.@threads for j = 1:N_ext
@@ -3189,37 +3189,37 @@ function TaylorIntegration.jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_threads!}, t:
                     continue
                 else
                     if UJ_interaction[i, j]
-                        TaylorSeries.mul!(tmp1438[i, j], μ[i], F_JCS_x[i, j], ord)
+                        TaylorSeries.mul!(tmp1438[i, j], GM[i], F_JCS_x[i, j], ord)
                         TaylorSeries.subst!(temp_accX_j[i, j], accX[j], tmp1438[i, j], ord)
                         TaylorSeries.identity!(accX[j], temp_accX_j[i, j], ord)
-                        TaylorSeries.mul!(tmp1440[i, j], μ[i], F_JCS_y[i, j], ord)
+                        TaylorSeries.mul!(tmp1440[i, j], GM[i], F_JCS_y[i, j], ord)
                         TaylorSeries.subst!(temp_accY_j[i, j], accY[j], tmp1440[i, j], ord)
                         TaylorSeries.identity!(accY[j], temp_accY_j[i, j], ord)
-                        TaylorSeries.mul!(tmp1442[i, j], μ[i], F_JCS_z[i, j], ord)
+                        TaylorSeries.mul!(tmp1442[i, j], GM[i], F_JCS_z[i, j], ord)
                         TaylorSeries.subst!(temp_accZ_j[i, j], accZ[j], tmp1442[i, j], ord)
                         TaylorSeries.identity!(accZ[j], temp_accZ_j[i, j], ord)
-                        TaylorSeries.mul!(tmp1444[i, j], μ[j], F_JCS_x[i, j], ord)
+                        TaylorSeries.mul!(tmp1444[i, j], GM[j], F_JCS_x[i, j], ord)
                         TaylorSeries.add!(temp_accX_i[i, j], accX[i], tmp1444[i, j], ord)
                         TaylorSeries.identity!(accX[i], temp_accX_i[i, j], ord)
-                        TaylorSeries.mul!(tmp1446[i, j], μ[j], F_JCS_y[i, j], ord)
+                        TaylorSeries.mul!(tmp1446[i, j], GM[j], F_JCS_y[i, j], ord)
                         TaylorSeries.add!(temp_accY_i[i, j], accY[i], tmp1446[i, j], ord)
                         TaylorSeries.identity!(accY[i], temp_accY_i[i, j], ord)
-                        TaylorSeries.mul!(tmp1448[i, j], μ[j], F_JCS_z[i, j], ord)
+                        TaylorSeries.mul!(tmp1448[i, j], GM[j], F_JCS_z[i, j], ord)
                         TaylorSeries.add!(temp_accZ_i[i, j], accZ[i], tmp1448[i, j], ord)
                         TaylorSeries.identity!(accZ[i], temp_accZ_i[i, j], ord)
                         if j == mo
                             TaylorSeries.mul!(tmp1450[i, j], Y[i, j], F_JCS_z[i, j], ord)
                             TaylorSeries.mul!(tmp1451[i, j], Z[i, j], F_JCS_y[i, j], ord)
                             TaylorSeries.subst!(tmp1452[i, j], tmp1450[i, j], tmp1451[i, j], ord)
-                            TaylorSeries.mul!(N_MfigM_pmA_x[i], μ[i], tmp1452[i, j], ord)
+                            TaylorSeries.mul!(N_MfigM_pmA_x[i], GM[i], tmp1452[i, j], ord)
                             TaylorSeries.mul!(tmp1454[i, j], Z[i, j], F_JCS_x[i, j], ord)
                             TaylorSeries.mul!(tmp1455[i, j], X[i, j], F_JCS_z[i, j], ord)
                             TaylorSeries.subst!(tmp1456[i, j], tmp1454[i, j], tmp1455[i, j], ord)
-                            TaylorSeries.mul!(N_MfigM_pmA_y[i], μ[i], tmp1456[i, j], ord)
+                            TaylorSeries.mul!(N_MfigM_pmA_y[i], GM[i], tmp1456[i, j], ord)
                             TaylorSeries.mul!(tmp1458[i, j], X[i, j], F_JCS_y[i, j], ord)
                             TaylorSeries.mul!(tmp1459[i, j], Y[i, j], F_JCS_x[i, j], ord)
                             TaylorSeries.subst!(tmp1460[i, j], tmp1458[i, j], tmp1459[i, j], ord)
-                            TaylorSeries.mul!(N_MfigM_pmA_z[i], μ[i], tmp1460[i, j], ord)
+                            TaylorSeries.mul!(N_MfigM_pmA_z[i], GM[i], tmp1460[i, j], ord)
                             TaylorSeries.subst!(temp_N_M_x[i], N_MfigM[1], N_MfigM_pmA_x[i], ord)
                             TaylorSeries.identity!(N_MfigM[1], temp_N_M_x[i], ord)
                             TaylorSeries.subst!(temp_N_M_y[i], N_MfigM[2], N_MfigM_pmA_y[i], ord)
@@ -3500,17 +3500,17 @@ function TaylorIntegration.jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_threads!}, t:
         TaylorSeries.add!(N_cmb_2, tmp1709, tmp1711, ord)
         TaylorSeries.subst!(tmp1713, q[6N + 12], q[6N + 6], ord)
         TaylorSeries.mul!(N_cmb_3, k_ν, tmp1713, ord)
-        TaylorSeries.mul!(tmp1715, μ[mo], N_1_LMF, ord)
+        TaylorSeries.mul!(tmp1715, GM[mo], N_1_LMF, ord)
         TaylorSeries.add!(tmp1716, N_MfigM_figE_1, tmp1715, ord)
         TaylorSeries.add!(tmp1717, tmp1716, N_cmb_1, ord)
         TaylorSeries.add!(tmp1718, dIω_x, ωxIω_x, ord)
         TaylorSeries.subst!(I_dω_1, tmp1717, tmp1718, ord)
-        TaylorSeries.mul!(tmp1720, μ[mo], N_2_LMF, ord)
+        TaylorSeries.mul!(tmp1720, GM[mo], N_2_LMF, ord)
         TaylorSeries.add!(tmp1721, N_MfigM_figE_2, tmp1720, ord)
         TaylorSeries.add!(tmp1722, tmp1721, N_cmb_2, ord)
         TaylorSeries.add!(tmp1723, dIω_y, ωxIω_y, ord)
         TaylorSeries.subst!(I_dω_2, tmp1722, tmp1723, ord)
-        TaylorSeries.mul!(tmp1725, μ[mo], N_3_LMF, ord)
+        TaylorSeries.mul!(tmp1725, GM[mo], N_3_LMF, ord)
         TaylorSeries.add!(tmp1726, N_MfigM_figE_3, tmp1725, ord)
         TaylorSeries.add!(tmp1727, tmp1726, N_cmb_3, ord)
         TaylorSeries.add!(tmp1728, dIω_z, ωxIω_z, ord)
@@ -3586,10 +3586,10 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q
     local N_bwd = params.N_bwd
     local consts = params.consts
     local N_ext = consts.N_ext
-    local μ = consts.μ
+    local GM = consts.GM
     local UJ_interaction = consts.UJ_interaction
-    local α_p_sun = consts.α_p_sun
-    local δ_p_sun = consts.δ_p_sun
+    local SUNPOLERA = consts.SUNPOLERA
+    local SUNPOLEDEC = consts.SUNPOLEDEC
     local RE_au = consts.RE_au
     local J2E = consts.J2E
     local J2EDOT = consts.J2EDOT
@@ -3598,18 +3598,18 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q
     local n2M = consts.n2M
     local CM = consts.CM
     local SM = consts.SM
-    local τ_M = consts.τ_M
+    local TAUM = consts.TAUM
     local I_c = consts.I_c
     local k_ν = consts.k_ν
     local C_c_m_A_c = consts.C_c_m_A_c
-    local k_20E = consts.k_20E
-    local k_21E = consts.k_21E
-    local k_22E = consts.k_22E
-    local τ_0p = consts.τ_0p
-    local τ_1p = consts.τ_1p
-    local τ_2p = consts.τ_2p
-    local τ_1 = consts.τ_1
-    local τ_2 = consts.τ_2
+    local K2E0 = consts.K2E0
+    local K2E1 = consts.K2E1
+    local K2E2 = consts.K2E2
+    local TAUE0 = consts.TAUE0
+    local TAUE1 = consts.TAUE1
+    local TAUE2 = consts.TAUE2
+    local TAUER1 = consts.TAUER1
+    local TAUER2 = consts.TAUER2
     local tid_num_coeff = consts.tid_num_coeff
     local __t = Taylor1(numtype(t), TS.order(t))
     local S = eltype(q)
@@ -3622,10 +3622,10 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q
     local rv = params.rv
     local params_bwd = (N_bwd, jd0, consts)
     local _ = TaylorIntegration.jetcoeffs!(Val(NBP_pN_A_J23E_J23M_J2S_threads!), t, qq_bwd, dqq_bwd, params_bwd, rv)
-    local q_del_τ_M = evaluate(qq_bwd, __t - τ_M)
-    local q_del_τ_0 = evaluate(qq_bwd, __t - τ_0p)
-    local q_del_τ_1 = evaluate(qq_bwd, __t - τ_1p)
-    local q_del_τ_2 = evaluate(qq_bwd, __t - τ_2p)
+    local q_del_τ_M = evaluate(qq_bwd, __t - TAUM)
+    local q_del_τ_0 = evaluate(qq_bwd, __t - TAUE0)
+    local q_del_τ_1 = evaluate(qq_bwd, __t - TAUE1)
+    local q_del_τ_2 = evaluate(qq_bwd, __t - TAUE2)
     local eulang_del_τ_M = q_del_τ_M[6N_bwd + 1:6N_bwd + 3]::Vector{S}
     local ω_m_del_τ_M = q_del_τ_M[6N_bwd + 4:6N_bwd + 6]::Vector{S}
     local I_m_t = ITM(q_del_τ_M, eulang_del_τ_M, ω_m_del_τ_M, consts)::Matrix{S}
@@ -3763,8 +3763,8 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q
     N_MfigM[1] = Taylor1(identity(constant_term(zero_q_1)), order)
     N_MfigM[2] = Taylor1(identity(constant_term(zero_q_1)), order)
     N_MfigM[3] = Taylor1(identity(constant_term(zero_q_1)), order)
-    local αs = deg2rad(α_p_sun * one_t)
-    local δs = deg2rad(δ_p_sun * one_t)
+    local αs = deg2rad(SUNPOLERA * one_t)
+    local δs = deg2rad(SUNPOLEDEC * one_t)
     RotM = Array{S}(undef, 3, 3, 5)
     local RotM[:, :, ea] = c2t_jpl_de430(dsj2k)
     local RotM[:, :, su] = pole_rotation(αs, δs)
@@ -3921,7 +3921,7 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q
     J2_t = Array{S}(undef, 5)
     J2_t[su] = Taylor1(identity(constant_term(J2S_t)), order)
     J2_t[ea] = Taylor1(identity(constant_term(J2E_t)), order)
-    local N_MfigM_figE_factor = 7.5 * μ[ea] * J2E_t
+    local N_MfigM_figE_factor = 7.5 * GM[ea] * J2E_t
     local q_ME_τ_0 = q_del_τ_0[3mo - 2:3mo] .- q_del_τ_0[3 * ea - 2:3 * ea]
     local q_ME_τ_1 = q_del_τ_1[3mo - 2:3mo] .- q_del_τ_1[3 * ea - 2:3 * ea]
     local q_ME_τ_2 = q_del_τ_2[3mo - 2:3mo] .- q_del_τ_2[3 * ea - 2:3 * ea]
@@ -3929,8 +3929,8 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q
     local q_SE_τ_1 = q_del_τ_1[3su - 2:3su] .- q_del_τ_1[3 * ea - 2:3 * ea]
     local q_SE_τ_2 = q_del_τ_2[3su - 2:3su] .- q_del_τ_2[3 * ea - 2:3 * ea]
     local R30 = RotM[:, :, ea]
-    local R31 = Rz(-ω_E * τ_1) * RotM[:, :, ea]
-    local R32 = Rz(-ω_E * τ_2) * RotM[:, :, ea]
+    local R31 = Rz(-ω_E * TAUER1) * RotM[:, :, ea]
+    local R32 = Rz(-ω_E * TAUER2) * RotM[:, :, ea]
     local r_star_M_0 = R30 * q_ME_τ_0
     local r_star_M_1 = R31 * q_ME_τ_1
     local r_star_M_2 = R32 * q_ME_τ_2
@@ -4137,14 +4137,14 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q
                     tmp4011[i, j] = Taylor1(zero(constant_term(r_p2[i, j])), order)
                     r_p7d2[i, j] = Taylor1(constant_term(r_p2[i, j]) ^ float(constant_term(3.5)), order)
                     tmp4012[i, j] = Taylor1(zero(constant_term(r_p2[i, j])), order)
-                    newtonianCoeff[i, j] = Taylor1(constant_term(μ[i]) / constant_term(r_p3d2[i, j]), order)
+                    newtonianCoeff[i, j] = Taylor1(constant_term(GM[i]) / constant_term(r_p3d2[i, j]), order)
                     tmp3038[i, j] = Taylor1(constant_term(pn2x[i, j]) + constant_term(pn2y[i, j]), order)
                     tmp3039[i, j] = Taylor1(constant_term(tmp3038[i, j]) + constant_term(pn2z[i, j]), order)
                     pn2[i, j] = Taylor1(constant_term(newtonianCoeff[i, j]) * constant_term(tmp3039[i, j]), order)
                     newton_acc_X[i, j] = Taylor1(constant_term(X[i, j]) * constant_term(newtonianCoeff[i, j]), order)
                     newton_acc_Y[i, j] = Taylor1(constant_term(Y[i, j]) * constant_term(newtonianCoeff[i, j]), order)
                     newton_acc_Z[i, j] = Taylor1(constant_term(Z[i, j]) * constant_term(newtonianCoeff[i, j]), order)
-                    newtonian1b_Potential[i, j] = Taylor1(constant_term(μ[i]) / constant_term(r_p1d2[i, j]), order)
+                    newtonian1b_Potential[i, j] = Taylor1(constant_term(GM[i]) / constant_term(r_p1d2[i, j]), order)
                     pn3[i, j] = Taylor1(constant_term(3.5) * constant_term(newtonian1b_Potential[i, j]), order)
                     U_t_pn2[i, j] = Taylor1(constant_term(pn2[i, j]) * constant_term(U[i, j]), order)
                     V_t_pn2[i, j] = Taylor1(constant_term(pn2[i, j]) * constant_term(V[i, j]), order)
@@ -4174,16 +4174,16 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q
     tmp3065 = Taylor1(constant_term(I_M_t[1, 1]) + constant_term(I_M_t[2, 2]), order)
     tmp3067 = Taylor1(constant_term(tmp3065) / constant_term(2), order)
     tmp3068 = Taylor1(constant_term(I_M_t[3, 3]) - constant_term(tmp3067), order)
-    J2M_t = Taylor1(constant_term(tmp3068) / constant_term(μ[mo]), order)
+    J2M_t = Taylor1(constant_term(tmp3068) / constant_term(GM[mo]), order)
     tmp3070 = Taylor1(constant_term(I_M_t[2, 2]) - constant_term(I_M_t[1, 1]), order)
-    tmp3071 = Taylor1(constant_term(tmp3070) / constant_term(μ[mo]), order)
+    tmp3071 = Taylor1(constant_term(tmp3070) / constant_term(GM[mo]), order)
     C22M_t = Taylor1(constant_term(tmp3071) / constant_term(4), order)
     tmp3074 = Taylor1(-(constant_term(I_M_t[1, 3])), order)
-    C21M_t = Taylor1(constant_term(tmp3074) / constant_term(μ[mo]), order)
+    C21M_t = Taylor1(constant_term(tmp3074) / constant_term(GM[mo]), order)
     tmp3076 = Taylor1(-(constant_term(I_M_t[3, 2])), order)
-    S21M_t = Taylor1(constant_term(tmp3076) / constant_term(μ[mo]), order)
+    S21M_t = Taylor1(constant_term(tmp3076) / constant_term(GM[mo]), order)
     tmp3078 = Taylor1(-(constant_term(I_M_t[2, 1])), order)
-    tmp3079 = Taylor1(constant_term(tmp3078) / constant_term(μ[mo]), order)
+    tmp3079 = Taylor1(constant_term(tmp3078) / constant_term(GM[mo]), order)
     S22M_t = Taylor1(constant_term(tmp3079) / constant_term(2), order)
     J2_t[mo] = Taylor1(identity(constant_term(J2M_t)), order)
     tmp3091 = Array{Taylor1{_S}}(undef, size(X_bf_1))
@@ -5058,37 +5058,37 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q
                 continue
             else
                 if UJ_interaction[i, j]
-                    tmp3284[i, j] = Taylor1(constant_term(μ[i]) * constant_term(F_JCS_x[i, j]), order)
+                    tmp3284[i, j] = Taylor1(constant_term(GM[i]) * constant_term(F_JCS_x[i, j]), order)
                     temp_accX_j[i, j] = Taylor1(constant_term(accX[j]) - constant_term(tmp3284[i, j]), order)
                     accX[j] = Taylor1(identity(constant_term(temp_accX_j[i, j])), order)
-                    tmp3286[i, j] = Taylor1(constant_term(μ[i]) * constant_term(F_JCS_y[i, j]), order)
+                    tmp3286[i, j] = Taylor1(constant_term(GM[i]) * constant_term(F_JCS_y[i, j]), order)
                     temp_accY_j[i, j] = Taylor1(constant_term(accY[j]) - constant_term(tmp3286[i, j]), order)
                     accY[j] = Taylor1(identity(constant_term(temp_accY_j[i, j])), order)
-                    tmp3288[i, j] = Taylor1(constant_term(μ[i]) * constant_term(F_JCS_z[i, j]), order)
+                    tmp3288[i, j] = Taylor1(constant_term(GM[i]) * constant_term(F_JCS_z[i, j]), order)
                     temp_accZ_j[i, j] = Taylor1(constant_term(accZ[j]) - constant_term(tmp3288[i, j]), order)
                     accZ[j] = Taylor1(identity(constant_term(temp_accZ_j[i, j])), order)
-                    tmp3290[i, j] = Taylor1(constant_term(μ[j]) * constant_term(F_JCS_x[i, j]), order)
+                    tmp3290[i, j] = Taylor1(constant_term(GM[j]) * constant_term(F_JCS_x[i, j]), order)
                     temp_accX_i[i, j] = Taylor1(constant_term(accX[i]) + constant_term(tmp3290[i, j]), order)
                     accX[i] = Taylor1(identity(constant_term(temp_accX_i[i, j])), order)
-                    tmp3292[i, j] = Taylor1(constant_term(μ[j]) * constant_term(F_JCS_y[i, j]), order)
+                    tmp3292[i, j] = Taylor1(constant_term(GM[j]) * constant_term(F_JCS_y[i, j]), order)
                     temp_accY_i[i, j] = Taylor1(constant_term(accY[i]) + constant_term(tmp3292[i, j]), order)
                     accY[i] = Taylor1(identity(constant_term(temp_accY_i[i, j])), order)
-                    tmp3294[i, j] = Taylor1(constant_term(μ[j]) * constant_term(F_JCS_z[i, j]), order)
+                    tmp3294[i, j] = Taylor1(constant_term(GM[j]) * constant_term(F_JCS_z[i, j]), order)
                     temp_accZ_i[i, j] = Taylor1(constant_term(accZ[i]) + constant_term(tmp3294[i, j]), order)
                     accZ[i] = Taylor1(identity(constant_term(temp_accZ_i[i, j])), order)
                     if j == mo
                         tmp3296[i, j] = Taylor1(constant_term(Y[i, j]) * constant_term(F_JCS_z[i, j]), order)
                         tmp3297[i, j] = Taylor1(constant_term(Z[i, j]) * constant_term(F_JCS_y[i, j]), order)
                         tmp3298[i, j] = Taylor1(constant_term(tmp3296[i, j]) - constant_term(tmp3297[i, j]), order)
-                        N_MfigM_pmA_x[i] = Taylor1(constant_term(μ[i]) * constant_term(tmp3298[i, j]), order)
+                        N_MfigM_pmA_x[i] = Taylor1(constant_term(GM[i]) * constant_term(tmp3298[i, j]), order)
                         tmp3300[i, j] = Taylor1(constant_term(Z[i, j]) * constant_term(F_JCS_x[i, j]), order)
                         tmp3301[i, j] = Taylor1(constant_term(X[i, j]) * constant_term(F_JCS_z[i, j]), order)
                         tmp3302[i, j] = Taylor1(constant_term(tmp3300[i, j]) - constant_term(tmp3301[i, j]), order)
-                        N_MfigM_pmA_y[i] = Taylor1(constant_term(μ[i]) * constant_term(tmp3302[i, j]), order)
+                        N_MfigM_pmA_y[i] = Taylor1(constant_term(GM[i]) * constant_term(tmp3302[i, j]), order)
                         tmp3304[i, j] = Taylor1(constant_term(X[i, j]) * constant_term(F_JCS_y[i, j]), order)
                         tmp3305[i, j] = Taylor1(constant_term(Y[i, j]) * constant_term(F_JCS_x[i, j]), order)
                         tmp3306[i, j] = Taylor1(constant_term(tmp3304[i, j]) - constant_term(tmp3305[i, j]), order)
-                        N_MfigM_pmA_z[i] = Taylor1(constant_term(μ[i]) * constant_term(tmp3306[i, j]), order)
+                        N_MfigM_pmA_z[i] = Taylor1(constant_term(GM[i]) * constant_term(tmp3306[i, j]), order)
                         temp_N_M_x[i] = Taylor1(constant_term(N_MfigM[1]) - constant_term(N_MfigM_pmA_x[i]), order)
                         N_MfigM[1] = Taylor1(identity(constant_term(temp_N_M_x[i])), order)
                         temp_N_M_y[i] = Taylor1(constant_term(N_MfigM[2]) - constant_term(N_MfigM_pmA_y[i]), order)
@@ -5309,8 +5309,8 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q
     tmp3406 = Taylor1(constant_term(tmp3405) / constant_term(r_p2[mo, ea]), order)
     tmp3407 = Taylor1(constant_term(5) * constant_term(tmp3406), order)
     coeff0_S = Taylor1(constant_term(r0s2_S) - constant_term(tmp3407), order)
-    k_20E_div_r0s5_M = Taylor1(constant_term(k_20E) / constant_term(r0s5_M), order)
-    k_20E_div_r0s5_S = Taylor1(constant_term(k_20E) / constant_term(r0s5_S), order)
+    k_20E_div_r0s5_M = Taylor1(constant_term(K2E0) / constant_term(r0s5_M), order)
+    k_20E_div_r0s5_S = Taylor1(constant_term(K2E0) / constant_term(r0s5_S), order)
     tmp3411 = Taylor1(constant_term(ρ0s2_M) + constant_term(coeff0_M), order)
     tmp3412 = Taylor1(constant_term(k_20E_div_r0s5_M) * constant_term(tmp3411), order)
     a_tid_0_M_x = Taylor1(constant_term(tmp3412) * constant_term(X_bf[mo, ea]), order)
@@ -5379,8 +5379,8 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q
     tmp3470 = Taylor1(constant_term(10) * constant_term(coeff1_1_S), order)
     tmp3471 = Taylor1(constant_term(tmp3470) * constant_term(coeff2_1_S), order)
     coeff3_1_S = Taylor1(constant_term(tmp3471) / constant_term(r_p2[mo, ea]), order)
-    k_21E_div_r1s5_M = Taylor1(constant_term(k_21E) / constant_term(r1s5_M), order)
-    k_21E_div_r1s5_S = Taylor1(constant_term(k_21E) / constant_term(r1s5_S), order)
+    k_21E_div_r1s5_M = Taylor1(constant_term(K2E1) / constant_term(r1s5_M), order)
+    k_21E_div_r1s5_S = Taylor1(constant_term(K2E1) / constant_term(r1s5_S), order)
     tmp3476 = Taylor1(constant_term(2) * constant_term(coeff2_1_M), order)
     tmp3477 = Taylor1(constant_term(tmp3476) * constant_term(r_star_M_1[1]), order)
     tmp3478 = Taylor1(constant_term(coeff3_1_M) * constant_term(X_bf[mo, ea]), order)
@@ -5469,8 +5469,8 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q
     tmp3560 = Taylor1(constant_term(tmp3554) - constant_term(tmp3559), order)
     tmp3561 = Taylor1(constant_term(5) * constant_term(tmp3560), order)
     coeff3_2_S = Taylor1(constant_term(tmp3561) / constant_term(r_p2[mo, ea]), order)
-    k_22E_div_r2s5_M = Taylor1(constant_term(k_22E) / constant_term(r2s5_M), order)
-    k_22E_div_r2s5_S = Taylor1(constant_term(k_22E) / constant_term(r2s5_S), order)
+    k_22E_div_r2s5_M = Taylor1(constant_term(K2E2) / constant_term(r2s5_M), order)
+    k_22E_div_r2s5_S = Taylor1(constant_term(K2E2) / constant_term(r2s5_S), order)
     tmp3566 = Taylor1(constant_term(2) * constant_term(coeff1_2_M), order)
     tmp3567 = Taylor1(constant_term(tmp3566) * constant_term(r_star_M_2[1]), order)
     tmp3568 = Taylor1(constant_term(ρ2s2_M) + constant_term(coeff3_2_M), order)
@@ -5505,8 +5505,8 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q
     RE_div_r_p5 = Taylor1(constant_term(tmp3599) ^ float(constant_term(5)), order)
     tmp4066 = Taylor1(zero(constant_term(tmp3599)), order)
     aux_tidacc = Taylor1(constant_term(tid_num_coeff) * constant_term(RE_div_r_p5), order)
-    a_tidal_coeff_M = Taylor1(constant_term(μ[mo]) * constant_term(aux_tidacc), order)
-    a_tidal_coeff_S = Taylor1(constant_term(μ[su]) * constant_term(aux_tidacc), order)
+    a_tidal_coeff_M = Taylor1(constant_term(GM[mo]) * constant_term(aux_tidacc), order)
+    a_tidal_coeff_S = Taylor1(constant_term(GM[su]) * constant_term(aux_tidacc), order)
     tmp3605 = Taylor1(constant_term(a_tid_0_M_x) + constant_term(a_tid_1_M_x), order)
     tmp3606 = Taylor1(constant_term(tmp3605) + constant_term(a_tid_2_M_x), order)
     tmp3607 = Taylor1(constant_term(a_tidal_coeff_M) * constant_term(tmp3606), order)
@@ -5756,17 +5756,17 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q
     N_cmb_2 = Taylor1(constant_term(tmp3840) + constant_term(tmp3842), order)
     tmp3844 = Taylor1(constant_term(q[6N + 12]) - constant_term(q[6N + 6]), order)
     N_cmb_3 = Taylor1(constant_term(k_ν) * constant_term(tmp3844), order)
-    tmp3846 = Taylor1(constant_term(μ[mo]) * constant_term(N_1_LMF), order)
+    tmp3846 = Taylor1(constant_term(GM[mo]) * constant_term(N_1_LMF), order)
     tmp3847 = Taylor1(constant_term(N_MfigM_figE_1) + constant_term(tmp3846), order)
     tmp3848 = Taylor1(constant_term(tmp3847) + constant_term(N_cmb_1), order)
     tmp3849 = Taylor1(constant_term(dIω_x) + constant_term(ωxIω_x), order)
     I_dω_1 = Taylor1(constant_term(tmp3848) - constant_term(tmp3849), order)
-    tmp3851 = Taylor1(constant_term(μ[mo]) * constant_term(N_2_LMF), order)
+    tmp3851 = Taylor1(constant_term(GM[mo]) * constant_term(N_2_LMF), order)
     tmp3852 = Taylor1(constant_term(N_MfigM_figE_2) + constant_term(tmp3851), order)
     tmp3853 = Taylor1(constant_term(tmp3852) + constant_term(N_cmb_2), order)
     tmp3854 = Taylor1(constant_term(dIω_y) + constant_term(ωxIω_y), order)
     I_dω_2 = Taylor1(constant_term(tmp3853) - constant_term(tmp3854), order)
-    tmp3856 = Taylor1(constant_term(μ[mo]) * constant_term(N_3_LMF), order)
+    tmp3856 = Taylor1(constant_term(GM[mo]) * constant_term(N_3_LMF), order)
     tmp3857 = Taylor1(constant_term(N_MfigM_figE_3) + constant_term(tmp3856), order)
     tmp3858 = Taylor1(constant_term(tmp3857) + constant_term(N_cmb_3), order)
     tmp3859 = Taylor1(constant_term(dIω_z) + constant_term(ωxIω_z), order)
@@ -7037,10 +7037,10 @@ function TaylorIntegration.jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::Abstract
     local N_bwd = params.N_bwd
     local consts = params.consts
     local N_ext = consts.N_ext
-    local μ = consts.μ
+    local GM = consts.GM
     local UJ_interaction = consts.UJ_interaction
-    local α_p_sun = consts.α_p_sun
-    local δ_p_sun = consts.δ_p_sun
+    local SUNPOLERA = consts.SUNPOLERA
+    local SUNPOLEDEC = consts.SUNPOLEDEC
     local RE_au = consts.RE_au
     local J2E = consts.J2E
     local J2EDOT = consts.J2EDOT
@@ -7049,18 +7049,18 @@ function TaylorIntegration.jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::Abstract
     local n2M = consts.n2M
     local CM = consts.CM
     local SM = consts.SM
-    local τ_M = consts.τ_M
+    local TAUM = consts.TAUM
     local I_c = consts.I_c
     local k_ν = consts.k_ν
     local C_c_m_A_c = consts.C_c_m_A_c
-    local k_20E = consts.k_20E
-    local k_21E = consts.k_21E
-    local k_22E = consts.k_22E
-    local τ_0p = consts.τ_0p
-    local τ_1p = consts.τ_1p
-    local τ_2p = consts.τ_2p
-    local τ_1 = consts.τ_1
-    local τ_2 = consts.τ_2
+    local K2E0 = consts.K2E0
+    local K2E1 = consts.K2E1
+    local K2E2 = consts.K2E2
+    local TAUE0 = consts.TAUE0
+    local TAUE1 = consts.TAUE1
+    local TAUE2 = consts.TAUE2
+    local TAUER1 = consts.TAUER1
+    local TAUER2 = consts.TAUER2
     local tid_num_coeff = consts.tid_num_coeff
     local __t = Taylor1(numtype(t), TS.order(t))
     local S = eltype(q)
@@ -7073,10 +7073,10 @@ function TaylorIntegration.jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::Abstract
     local rv = params.rv
     local params_bwd = (N_bwd, jd0, consts)
     local _ = TaylorIntegration.jetcoeffs!(Val(NBP_pN_A_J23E_J23M_J2S_threads!), t, qq_bwd, dqq_bwd, params_bwd, rv)
-    local q_del_τ_M = evaluate(qq_bwd, __t - τ_M)
-    local q_del_τ_0 = evaluate(qq_bwd, __t - τ_0p)
-    local q_del_τ_1 = evaluate(qq_bwd, __t - τ_1p)
-    local q_del_τ_2 = evaluate(qq_bwd, __t - τ_2p)
+    local q_del_τ_M = evaluate(qq_bwd, __t - TAUM)
+    local q_del_τ_0 = evaluate(qq_bwd, __t - TAUE0)
+    local q_del_τ_1 = evaluate(qq_bwd, __t - TAUE1)
+    local q_del_τ_2 = evaluate(qq_bwd, __t - TAUE2)
     local eulang_del_τ_M = q_del_τ_M[6N_bwd + 1:6N_bwd + 3]::Vector{S}
     local ω_m_del_τ_M = q_del_τ_M[6N_bwd + 4:6N_bwd + 6]::Vector{S}
     local I_m_t = ITM(q_del_τ_M, eulang_del_τ_M, ω_m_del_τ_M, consts)::Matrix{S}
@@ -7085,13 +7085,13 @@ function TaylorIntegration.jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::Abstract
     local I_c_t = I_c .* one_t
     local inv_I_c_t = inv(I_c_t) .* one_t
     local I_M_t = I_m_t + I_c_t
-    local αs = deg2rad(α_p_sun * one_t)
-    local δs = deg2rad(δ_p_sun * one_t)
+    local αs = deg2rad(SUNPOLERA * one_t)
+    local δs = deg2rad(SUNPOLEDEC * one_t)
     local RotM[:, :, ea] = c2t_jpl_de430(dsj2k)
     local RotM[:, :, su] = pole_rotation(αs, δs)
     local J2E_t = (J2E + J2EDOT * (dsj2k / yr)) * RE_au ^ 2
     local J2S_t = JSEM[su, 2] * one_t
-    local N_MfigM_figE_factor = 7.5 * μ[ea] * J2E_t
+    local N_MfigM_figE_factor = 7.5 * GM[ea] * J2E_t
     local q_ME_τ_0 = q_del_τ_0[3mo - 2:3mo] .- q_del_τ_0[3 * ea - 2:3 * ea]
     local q_ME_τ_1 = q_del_τ_1[3mo - 2:3mo] .- q_del_τ_1[3 * ea - 2:3 * ea]
     local q_ME_τ_2 = q_del_τ_2[3mo - 2:3mo] .- q_del_τ_2[3 * ea - 2:3 * ea]
@@ -7099,8 +7099,8 @@ function TaylorIntegration.jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::Abstract
     local q_SE_τ_1 = q_del_τ_1[3su - 2:3su] .- q_del_τ_1[3 * ea - 2:3 * ea]
     local q_SE_τ_2 = q_del_τ_2[3su - 2:3su] .- q_del_τ_2[3 * ea - 2:3 * ea]
     local R30 = RotM[:, :, ea]
-    local R31 = Rz(-ω_E * τ_1) * RotM[:, :, ea]
-    local R32 = Rz(-ω_E * τ_2) * RotM[:, :, ea]
+    local R31 = Rz(-ω_E * TAUER1) * RotM[:, :, ea]
+    local R32 = Rz(-ω_E * TAUER2) * RotM[:, :, ea]
     local r_star_M_0 = R30 * q_ME_τ_0
     local r_star_M_1 = R31 * q_ME_τ_1
     local r_star_M_2 = R32 * q_ME_τ_2
@@ -7270,14 +7270,14 @@ function TaylorIntegration.jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::Abstract
                         TaylorSeries.sqrt!(r_p1d2[i, j], r_p2[i, j], tmp4010[i, j], ord)
                         TaylorSeries.pow!(r_p3d2[i, j], r_p2[i, j], tmp4011[i, j], 1.5, ord)
                         TaylorSeries.pow!(r_p7d2[i, j], r_p2[i, j], tmp4012[i, j], 3.5, ord)
-                        TaylorSeries.div!(newtonianCoeff[i, j], μ[i], r_p3d2[i, j], ord)
+                        TaylorSeries.div!(newtonianCoeff[i, j], GM[i], r_p3d2[i, j], ord)
                         TaylorSeries.add!(tmp3038[i, j], pn2x[i, j], pn2y[i, j], ord)
                         TaylorSeries.add!(tmp3039[i, j], tmp3038[i, j], pn2z[i, j], ord)
                         TaylorSeries.mul!(pn2[i, j], newtonianCoeff[i, j], tmp3039[i, j], ord)
                         TaylorSeries.mul!(newton_acc_X[i, j], X[i, j], newtonianCoeff[i, j], ord)
                         TaylorSeries.mul!(newton_acc_Y[i, j], Y[i, j], newtonianCoeff[i, j], ord)
                         TaylorSeries.mul!(newton_acc_Z[i, j], Z[i, j], newtonianCoeff[i, j], ord)
-                        TaylorSeries.div!(newtonian1b_Potential[i, j], μ[i], r_p1d2[i, j], ord)
+                        TaylorSeries.div!(newtonian1b_Potential[i, j], GM[i], r_p1d2[i, j], ord)
                         TaylorSeries.mul!(pn3[i, j], 3.5, newtonian1b_Potential[i, j], ord)
                         TaylorSeries.mul!(U_t_pn2[i, j], pn2[i, j], U[i, j], ord)
                         TaylorSeries.mul!(V_t_pn2[i, j], pn2[i, j], V[i, j], ord)
@@ -7304,16 +7304,16 @@ function TaylorIntegration.jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::Abstract
         TaylorSeries.add!(tmp3065, I_M_t[1, 1], I_M_t[2, 2], ord)
         TaylorSeries.div!(tmp3067, tmp3065, 2, ord)
         TaylorSeries.subst!(tmp3068, I_M_t[3, 3], tmp3067, ord)
-        TaylorSeries.div!(J2M_t, tmp3068, μ[mo], ord)
+        TaylorSeries.div!(J2M_t, tmp3068, GM[mo], ord)
         TaylorSeries.subst!(tmp3070, I_M_t[2, 2], I_M_t[1, 1], ord)
-        TaylorSeries.div!(tmp3071, tmp3070, μ[mo], ord)
+        TaylorSeries.div!(tmp3071, tmp3070, GM[mo], ord)
         TaylorSeries.div!(C22M_t, tmp3071, 4, ord)
         TaylorSeries.subst!(tmp3074, I_M_t[1, 3], ord)
-        TaylorSeries.div!(C21M_t, tmp3074, μ[mo], ord)
+        TaylorSeries.div!(C21M_t, tmp3074, GM[mo], ord)
         TaylorSeries.subst!(tmp3076, I_M_t[3, 2], ord)
-        TaylorSeries.div!(S21M_t, tmp3076, μ[mo], ord)
+        TaylorSeries.div!(S21M_t, tmp3076, GM[mo], ord)
         TaylorSeries.subst!(tmp3078, I_M_t[2, 1], ord)
-        TaylorSeries.div!(tmp3079, tmp3078, μ[mo], ord)
+        TaylorSeries.div!(tmp3079, tmp3078, GM[mo], ord)
         TaylorSeries.div!(S22M_t, tmp3079, 2, ord)
         TaylorSeries.identity!(J2_t[mo], J2M_t, ord)
         #= /Users/lerm/.julia/dev/PlanetaryEphemeris.jl/ex.jl:504 =# Threads.@threads for j = 1:N_ext
@@ -7575,37 +7575,37 @@ function TaylorIntegration.jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::Abstract
                     continue
                 else
                     if UJ_interaction[i, j]
-                        TaylorSeries.mul!(tmp3284[i, j], μ[i], F_JCS_x[i, j], ord)
+                        TaylorSeries.mul!(tmp3284[i, j], GM[i], F_JCS_x[i, j], ord)
                         TaylorSeries.subst!(temp_accX_j[i, j], accX[j], tmp3284[i, j], ord)
                         TaylorSeries.identity!(accX[j], temp_accX_j[i, j], ord)
-                        TaylorSeries.mul!(tmp3286[i, j], μ[i], F_JCS_y[i, j], ord)
+                        TaylorSeries.mul!(tmp3286[i, j], GM[i], F_JCS_y[i, j], ord)
                         TaylorSeries.subst!(temp_accY_j[i, j], accY[j], tmp3286[i, j], ord)
                         TaylorSeries.identity!(accY[j], temp_accY_j[i, j], ord)
-                        TaylorSeries.mul!(tmp3288[i, j], μ[i], F_JCS_z[i, j], ord)
+                        TaylorSeries.mul!(tmp3288[i, j], GM[i], F_JCS_z[i, j], ord)
                         TaylorSeries.subst!(temp_accZ_j[i, j], accZ[j], tmp3288[i, j], ord)
                         TaylorSeries.identity!(accZ[j], temp_accZ_j[i, j], ord)
-                        TaylorSeries.mul!(tmp3290[i, j], μ[j], F_JCS_x[i, j], ord)
+                        TaylorSeries.mul!(tmp3290[i, j], GM[j], F_JCS_x[i, j], ord)
                         TaylorSeries.add!(temp_accX_i[i, j], accX[i], tmp3290[i, j], ord)
                         TaylorSeries.identity!(accX[i], temp_accX_i[i, j], ord)
-                        TaylorSeries.mul!(tmp3292[i, j], μ[j], F_JCS_y[i, j], ord)
+                        TaylorSeries.mul!(tmp3292[i, j], GM[j], F_JCS_y[i, j], ord)
                         TaylorSeries.add!(temp_accY_i[i, j], accY[i], tmp3292[i, j], ord)
                         TaylorSeries.identity!(accY[i], temp_accY_i[i, j], ord)
-                        TaylorSeries.mul!(tmp3294[i, j], μ[j], F_JCS_z[i, j], ord)
+                        TaylorSeries.mul!(tmp3294[i, j], GM[j], F_JCS_z[i, j], ord)
                         TaylorSeries.add!(temp_accZ_i[i, j], accZ[i], tmp3294[i, j], ord)
                         TaylorSeries.identity!(accZ[i], temp_accZ_i[i, j], ord)
                         if j == mo
                             TaylorSeries.mul!(tmp3296[i, j], Y[i, j], F_JCS_z[i, j], ord)
                             TaylorSeries.mul!(tmp3297[i, j], Z[i, j], F_JCS_y[i, j], ord)
                             TaylorSeries.subst!(tmp3298[i, j], tmp3296[i, j], tmp3297[i, j], ord)
-                            TaylorSeries.mul!(N_MfigM_pmA_x[i], μ[i], tmp3298[i, j], ord)
+                            TaylorSeries.mul!(N_MfigM_pmA_x[i], GM[i], tmp3298[i, j], ord)
                             TaylorSeries.mul!(tmp3300[i, j], Z[i, j], F_JCS_x[i, j], ord)
                             TaylorSeries.mul!(tmp3301[i, j], X[i, j], F_JCS_z[i, j], ord)
                             TaylorSeries.subst!(tmp3302[i, j], tmp3300[i, j], tmp3301[i, j], ord)
-                            TaylorSeries.mul!(N_MfigM_pmA_y[i], μ[i], tmp3302[i, j], ord)
+                            TaylorSeries.mul!(N_MfigM_pmA_y[i], GM[i], tmp3302[i, j], ord)
                             TaylorSeries.mul!(tmp3304[i, j], X[i, j], F_JCS_y[i, j], ord)
                             TaylorSeries.mul!(tmp3305[i, j], Y[i, j], F_JCS_x[i, j], ord)
                             TaylorSeries.subst!(tmp3306[i, j], tmp3304[i, j], tmp3305[i, j], ord)
-                            TaylorSeries.mul!(N_MfigM_pmA_z[i], μ[i], tmp3306[i, j], ord)
+                            TaylorSeries.mul!(N_MfigM_pmA_z[i], GM[i], tmp3306[i, j], ord)
                             TaylorSeries.subst!(temp_N_M_x[i], N_MfigM[1], N_MfigM_pmA_x[i], ord)
                             TaylorSeries.identity!(N_MfigM[1], temp_N_M_x[i], ord)
                             TaylorSeries.subst!(temp_N_M_y[i], N_MfigM[2], N_MfigM_pmA_y[i], ord)
@@ -7721,8 +7721,8 @@ function TaylorIntegration.jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::Abstract
         TaylorSeries.div!(tmp3406, tmp3405, r_p2[mo, ea], ord)
         TaylorSeries.mul!(tmp3407, 5, tmp3406, ord)
         TaylorSeries.subst!(coeff0_S, r0s2_S, tmp3407, ord)
-        TaylorSeries.div!(k_20E_div_r0s5_M, k_20E, r0s5_M, ord)
-        TaylorSeries.div!(k_20E_div_r0s5_S, k_20E, r0s5_S, ord)
+        TaylorSeries.div!(k_20E_div_r0s5_M, K2E0, r0s5_M, ord)
+        TaylorSeries.div!(k_20E_div_r0s5_S, K2E0, r0s5_S, ord)
         TaylorSeries.add!(tmp3411, ρ0s2_M, coeff0_M, ord)
         TaylorSeries.mul!(tmp3412, k_20E_div_r0s5_M, tmp3411, ord)
         TaylorSeries.mul!(a_tid_0_M_x, tmp3412, X_bf[mo, ea], ord)
@@ -7779,8 +7779,8 @@ function TaylorIntegration.jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::Abstract
         TaylorSeries.mul!(tmp3470, 10, coeff1_1_S, ord)
         TaylorSeries.mul!(tmp3471, tmp3470, coeff2_1_S, ord)
         TaylorSeries.div!(coeff3_1_S, tmp3471, r_p2[mo, ea], ord)
-        TaylorSeries.div!(k_21E_div_r1s5_M, k_21E, r1s5_M, ord)
-        TaylorSeries.div!(k_21E_div_r1s5_S, k_21E, r1s5_S, ord)
+        TaylorSeries.div!(k_21E_div_r1s5_M, K2E1, r1s5_M, ord)
+        TaylorSeries.div!(k_21E_div_r1s5_S, K2E1, r1s5_S, ord)
         TaylorSeries.mul!(tmp3476, 2, coeff2_1_M, ord)
         TaylorSeries.mul!(tmp3477, tmp3476, r_star_M_1[1], ord)
         TaylorSeries.mul!(tmp3478, coeff3_1_M, X_bf[mo, ea], ord)
@@ -7853,8 +7853,8 @@ function TaylorIntegration.jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::Abstract
         TaylorSeries.subst!(tmp3560, tmp3554, tmp3559, ord)
         TaylorSeries.mul!(tmp3561, 5, tmp3560, ord)
         TaylorSeries.div!(coeff3_2_S, tmp3561, r_p2[mo, ea], ord)
-        TaylorSeries.div!(k_22E_div_r2s5_M, k_22E, r2s5_M, ord)
-        TaylorSeries.div!(k_22E_div_r2s5_S, k_22E, r2s5_S, ord)
+        TaylorSeries.div!(k_22E_div_r2s5_M, K2E2, r2s5_M, ord)
+        TaylorSeries.div!(k_22E_div_r2s5_S, K2E2, r2s5_S, ord)
         TaylorSeries.mul!(tmp3566, 2, coeff1_2_M, ord)
         TaylorSeries.mul!(tmp3567, tmp3566, r_star_M_2[1], ord)
         TaylorSeries.add!(tmp3568, ρ2s2_M, coeff3_2_M, ord)
@@ -7888,8 +7888,8 @@ function TaylorIntegration.jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::Abstract
         TaylorSeries.div!(tmp3599, RE_au, r_p1d2[mo, ea], ord)
         TaylorSeries.pow!(RE_div_r_p5, tmp3599, tmp4066, 5, ord)
         TaylorSeries.mul!(aux_tidacc, tid_num_coeff, RE_div_r_p5, ord)
-        TaylorSeries.mul!(a_tidal_coeff_M, μ[mo], aux_tidacc, ord)
-        TaylorSeries.mul!(a_tidal_coeff_S, μ[su], aux_tidacc, ord)
+        TaylorSeries.mul!(a_tidal_coeff_M, GM[mo], aux_tidacc, ord)
+        TaylorSeries.mul!(a_tidal_coeff_S, GM[su], aux_tidacc, ord)
         TaylorSeries.add!(tmp3605, a_tid_0_M_x, a_tid_1_M_x, ord)
         TaylorSeries.add!(tmp3606, tmp3605, a_tid_2_M_x, ord)
         TaylorSeries.mul!(tmp3607, a_tidal_coeff_M, tmp3606, ord)
@@ -8137,17 +8137,17 @@ function TaylorIntegration.jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::Abstract
         TaylorSeries.add!(N_cmb_2, tmp3840, tmp3842, ord)
         TaylorSeries.subst!(tmp3844, q[6N + 12], q[6N + 6], ord)
         TaylorSeries.mul!(N_cmb_3, k_ν, tmp3844, ord)
-        TaylorSeries.mul!(tmp3846, μ[mo], N_1_LMF, ord)
+        TaylorSeries.mul!(tmp3846, GM[mo], N_1_LMF, ord)
         TaylorSeries.add!(tmp3847, N_MfigM_figE_1, tmp3846, ord)
         TaylorSeries.add!(tmp3848, tmp3847, N_cmb_1, ord)
         TaylorSeries.add!(tmp3849, dIω_x, ωxIω_x, ord)
         TaylorSeries.subst!(I_dω_1, tmp3848, tmp3849, ord)
-        TaylorSeries.mul!(tmp3851, μ[mo], N_2_LMF, ord)
+        TaylorSeries.mul!(tmp3851, GM[mo], N_2_LMF, ord)
         TaylorSeries.add!(tmp3852, N_MfigM_figE_2, tmp3851, ord)
         TaylorSeries.add!(tmp3853, tmp3852, N_cmb_2, ord)
         TaylorSeries.add!(tmp3854, dIω_y, ωxIω_y, ord)
         TaylorSeries.subst!(I_dω_2, tmp3853, tmp3854, ord)
-        TaylorSeries.mul!(tmp3856, μ[mo], N_3_LMF, ord)
+        TaylorSeries.mul!(tmp3856, GM[mo], N_3_LMF, ord)
         TaylorSeries.add!(tmp3857, N_MfigM_figE_3, tmp3856, ord)
         TaylorSeries.add!(tmp3858, tmp3857, N_cmb_3, ord)
         TaylorSeries.add!(tmp3859, dIω_z, ωxIω_z, ord)

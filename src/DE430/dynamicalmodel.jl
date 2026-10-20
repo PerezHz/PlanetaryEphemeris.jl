@@ -131,10 +131,10 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     local N, jd0, consts = params
     # Physical parameters of the model
     local N_ext = consts.N_ext
-    local μ = consts.μ
+    local GM = consts.GM
     local UJ_interaction = consts.UJ_interaction
-    local α_p_sun = consts.α_p_sun
-    local δ_p_sun = consts.δ_p_sun
+    local SUNPOLERA = consts.SUNPOLERA
+    local SUNPOLEDEC = consts.SUNPOLEDEC
     local RE_au = consts.RE_au
     local J2E = consts.J2E
     local J2EDOT = consts.J2EDOT
@@ -153,12 +153,12 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     local zero_q_1 = zero(q[1])                  # Zero of type S
     local one_t = one(t)                         # One of the same type as time t
     local dsj2k = t+(jd0-J2000)                  # Days since J2000.0 (TDB)
-    # Matrix elements of lunar moment of inertia at time t-τ_M (without tidal distortion)
+    # Matrix elements of lunar moment of inertia at time t-TAUM (without tidal distortion)
     # See equations (36) to (41) in pages 16-17 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     # ITM(q_del_τ_M, eulang_del_τ_M)
     local I_m_t = (ITM_und-I_c) .* one_t         # Undistorted moment of inertia of the mantle, see equation (40)
-    local dI_m_t = ordpres_differentiate.(I_m_t) # Time-derivative of lunar mantle I at time t-τ_M
-    local inv_I_m_t = inv(I_m_t) .* one_t        # Inverse of lunar mantle I matrix at time t-τ_M
+    local dI_m_t = ordpres_differentiate.(I_m_t) # Time-derivative of lunar mantle I at time t-TAUM
+    local inv_I_m_t = inv(I_m_t) .* one_t        # Inverse of lunar mantle I matrix at time t-TAUM
     local I_c_t = I_c .* one_t                   # Lunar core I matrix, see equation (39)
     local inv_I_c_t = inv(I_c_t) .* one_t        # Inverse of lunar core I matrix
     local I_M_t = I_m_t+I_c_t                    # Total I matrix (mantle + core)
@@ -392,8 +392,8 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     N_MfigM[3] = zero_q_1                     # z-axis component
 
     # Rotations to and from Earth, Sun and Moon pole-oriented frames
-    local αs = deg2rad(α_p_sun*one_t)           # Sun's rotation pole right ascension (radians)
-    local δs = deg2rad(δ_p_sun*one_t)           # Sun's rotation pole right ascension (radians)
+    local αs = deg2rad(SUNPOLERA*one_t)           # Sun's rotation pole right ascension (radians)
+    local δs = deg2rad(SUNPOLEDEC*one_t)           # Sun's rotation pole right ascension (radians)
     # Space-fixed -> body-fixed coordinate transformations
     RotM = Array{S}(undef, 3, 3, 5)
     local RotM[:,:,ea] = c2t_jpl_de430(dsj2k)   # Earth
@@ -442,7 +442,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     J2_t[su] = J2S_t             # Earth
     J2_t[ea] = J2E_t             # Sun
     # Lunar torques: overall numerical factor in equation (44) in page 18 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    local N_MfigM_figE_factor = 7.5*μ[ea]*J2E_t
+    local N_MfigM_figE_factor = 7.5*GM[ea]*J2E_t
 
     #=
     Compute point-mass Newtonian accelerations, all bodies
@@ -508,7 +508,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
                 r_p7d2[i,j] = r_p2[i,j]^3.5                        # r_{ij}^7
 
                 # Newtonian coefficient, i.e., mass parameter / distance^3 -> \mu_i / r_{ij}^3
-                newtonianCoeff[i,j] =  μ[i]/r_p3d2[i,j]
+                newtonianCoeff[i,j] =  GM[i]/r_p3d2[i,j]
 
                 # Second term without (\mathbf{v}_i - \mathbf{v}_j)
                 pn2[i,j] = newtonianCoeff[i,j]*(( pn2x+pn2y ) + pn2z)
@@ -520,7 +520,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
                 newton_acc_Z[i,j] = Z[i,j]*newtonianCoeff[i,j]    # Z-axis component
 
                 # Newtonian potential of 1 body \mu_i / r_{ij}
-                newtonian1b_Potential[i,j] = μ[i]/r_p1d2[i, j]
+                newtonian1b_Potential[i,j] = GM[i]/r_p1d2[i, j]
                 pn3[i,j] = 3.5newtonian1b_Potential[i,j]
                 U_t_pn2[i,j] = pn2[i,j]*U[i,j]
                 V_t_pn2[i,j] = pn2[i,j]*V[i,j]
@@ -551,11 +551,11 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     # 2nd-order lunar zonal (J_2) and tesseral (C_2, S_2) harmonics coefficients
     # times the equatorial radius of the moon squared R_M^2
     # See equation (30) in page 13 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    J2M_t = ( I_M_t[3,3] - ((I_M_t[1,1]+I_M_t[2,2])/2) )/(μ[mo]) # J_{2,M}*R_M^2
-    C22M_t = ((I_M_t[2,2] - I_M_t[1,1])/(μ[mo]))/4               # C_{22,M}*R_M^2
-    C21M_t = (-I_M_t[1,3])/(μ[mo])                               # C_{21,M}*R_M^2
-    S21M_t = (-I_M_t[3,2])/(μ[mo])                               # S_{21,M}*R_M^2
-    S22M_t = ((-I_M_t[2,1])/(μ[mo]))/2                           # S_{22,M}*R_M^2
+    J2M_t = ( I_M_t[3,3] - ((I_M_t[1,1]+I_M_t[2,2])/2) )/(GM[mo]) # J_{2,M}*R_M^2
+    C22M_t = ((I_M_t[2,2] - I_M_t[1,1])/(GM[mo]))/4               # C_{22,M}*R_M^2
+    C21M_t = (-I_M_t[1,3])/(GM[mo])                               # C_{21,M}*R_M^2
+    S21M_t = (-I_M_t[3,2])/(GM[mo])                               # S_{21,M}*R_M^2
+    S22M_t = ((-I_M_t[2,1])/(GM[mo]))/2                           # S_{22,M}*R_M^2
     J2_t[mo] = J2M_t
 
     Threads.@threads for j in 1:N_ext
@@ -758,28 +758,28 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
                     # J_n, C_{nm}, S_{nm} accelerations, if j-th body is flattened
 
                     # Add result to total acceleration upon j-th body figure due to i-th point mass
-                    temp_accX_j[i,j] = accX[j] - (μ[i]*F_JCS_x[i,j])
+                    temp_accX_j[i,j] = accX[j] - (GM[i]*F_JCS_x[i,j])
                     accX[j] = temp_accX_j[i,j]
-                    temp_accY_j[i,j] = accY[j] - (μ[i]*F_JCS_y[i,j])
+                    temp_accY_j[i,j] = accY[j] - (GM[i]*F_JCS_y[i,j])
                     accY[j] = temp_accY_j[i,j]
-                    temp_accZ_j[i,j] = accZ[j] - (μ[i]*F_JCS_z[i,j])
+                    temp_accZ_j[i,j] = accZ[j] - (GM[i]*F_JCS_z[i,j])
                     accZ[j] = temp_accZ_j[i,j]
 
                     # Reaction force on i-th body
-                    temp_accX_i[i,j] = accX[i] + (μ[j]*F_JCS_x[i,j])
+                    temp_accX_i[i,j] = accX[i] + (GM[j]*F_JCS_x[i,j])
                     accX[i] = temp_accX_i[i,j]
-                    temp_accY_i[i,j] = accY[i] + (μ[j]*F_JCS_y[i,j])
+                    temp_accY_i[i,j] = accY[i] + (GM[j]*F_JCS_y[i,j])
                     accY[i] = temp_accY_i[i,j]
-                    temp_accZ_i[i,j] = accZ[i] + (μ[j]*F_JCS_z[i,j])
+                    temp_accZ_i[i,j] = accZ[i] + (GM[j]*F_JCS_z[i,j])
                     accZ[i] = temp_accZ_i[i,j]
 
                     # Lunar torques
                     if j == mo
                         # Compute torques acting upon the body-figure of the Moon due to external point masses
                         # See equation (43) in page 13 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-                        N_MfigM_pmA_x[i] = μ[i]*( (Y[i,j]*F_JCS_z[i,j]) - (Z[i,j]*F_JCS_y[i,j]) )
-                        N_MfigM_pmA_y[i] = μ[i]*( (Z[i,j]*F_JCS_x[i,j]) - (X[i,j]*F_JCS_z[i,j]) )
-                        N_MfigM_pmA_z[i] = μ[i]*( (X[i,j]*F_JCS_y[i,j]) - (Y[i,j]*F_JCS_x[i,j]) )
+                        N_MfigM_pmA_x[i] = GM[i]*( (Y[i,j]*F_JCS_z[i,j]) - (Z[i,j]*F_JCS_y[i,j]) )
+                        N_MfigM_pmA_y[i] = GM[i]*( (Z[i,j]*F_JCS_x[i,j]) - (X[i,j]*F_JCS_z[i,j]) )
+                        N_MfigM_pmA_z[i] = GM[i]*( (X[i,j]*F_JCS_y[i,j]) - (Y[i,j]*F_JCS_x[i,j]) )
                         # Expressions below have minus sign since N_MfigM_pmA_{x,y,z} have inverted signs in cross product
                         temp_N_M_x[i] = N_MfigM[1] - N_MfigM_pmA_x[i]
                         N_MfigM[1] = temp_N_M_x[i]
@@ -991,9 +991,9 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     N_cmb_3 = (k_ν*(q[6N+12]-q[6N+6]))
 
     # I*(dω/dt); i.e., I times RHS of equation (34) in page 16 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    I_dω_1 = ((N_MfigM_figE_1 + (μ[mo]*N_1_LMF)) + N_cmb_1) - (dIω_x + ωxIω_x)
-    I_dω_2 = ((N_MfigM_figE_2 + (μ[mo]*N_2_LMF)) + N_cmb_2) - (dIω_y + ωxIω_y)
-    I_dω_3 = ((N_MfigM_figE_3 + (μ[mo]*N_3_LMF)) + N_cmb_3) - (dIω_z + ωxIω_z)
+    I_dω_1 = ((N_MfigM_figE_1 + (GM[mo]*N_1_LMF)) + N_cmb_1) - (dIω_x + ωxIω_x)
+    I_dω_2 = ((N_MfigM_figE_2 + (GM[mo]*N_2_LMF)) + N_cmb_2) - (dIω_y + ωxIω_y)
+    I_dω_3 = ((N_MfigM_figE_3 + (GM[mo]*N_3_LMF)) + N_cmb_3) - (dIω_z + ωxIω_z)
 
     # RHS of equation (35) in page 16 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 
@@ -1091,10 +1091,10 @@ function DE430!(dq, q, params, t)
     # Physical parameters of the model (see DE430Constants)
     local consts = params.consts
     local N_ext = consts.N_ext
-    local μ = consts.μ
+    local GM = consts.GM
     local UJ_interaction = consts.UJ_interaction
-    local α_p_sun = consts.α_p_sun
-    local δ_p_sun = consts.δ_p_sun
+    local SUNPOLERA = consts.SUNPOLERA
+    local SUNPOLEDEC = consts.SUNPOLEDEC
     local RE_au = consts.RE_au
     local J2E = consts.J2E
     local J2EDOT = consts.J2EDOT
@@ -1103,18 +1103,18 @@ function DE430!(dq, q, params, t)
     local n2M = consts.n2M
     local CM = consts.CM
     local SM = consts.SM
-    local τ_M = consts.τ_M
+    local TAUM = consts.TAUM
     local I_c = consts.I_c
     local k_ν = consts.k_ν
     local C_c_m_A_c = consts.C_c_m_A_c
-    local k_20E = consts.k_20E
-    local k_21E = consts.k_21E
-    local k_22E = consts.k_22E
-    local τ_0p = consts.τ_0p
-    local τ_1p = consts.τ_1p
-    local τ_2p = consts.τ_2p
-    local τ_1 = consts.τ_1
-    local τ_2 = consts.τ_2
+    local K2E0 = consts.K2E0
+    local K2E1 = consts.K2E1
+    local K2E2 = consts.K2E2
+    local TAUE0 = consts.TAUE0
+    local TAUE1 = consts.TAUE1
+    local TAUE2 = consts.TAUE2
+    local TAUER1 = consts.TAUER1
+    local TAUER2 = consts.TAUER2
     local tid_num_coeff = consts.tid_num_coeff
     # Time Taylor variable
     local __t = Taylor1(numtype(t), TS.order(t))
@@ -1140,20 +1140,20 @@ function DE430!(dq, q, params, t)
     local _ = TaylorIntegration.jetcoeffs!(Val(NBP_pN_A_J23E_J23M_J2S_threads!), t, qq_bwd, dqq_bwd, params_bwd, rv)
 
     # Evaluation of time-delayed positions
-    local q_del_τ_M = evaluate(qq_bwd, __t-τ_M)   # τ_M
-    local q_del_τ_0 = evaluate(qq_bwd, __t-τ_0p)  # τ_0p
-    local q_del_τ_1 = evaluate(qq_bwd, __t-τ_1p)  # τ_1p
-    local q_del_τ_2 = evaluate(qq_bwd, __t-τ_2p)  # τ_2p
-    # Lunar mantle euler angles delayed τ_M
+    local q_del_τ_M = evaluate(qq_bwd, __t-TAUM)   # TAUM
+    local q_del_τ_0 = evaluate(qq_bwd, __t-TAUE0)  # TAUE0
+    local q_del_τ_1 = evaluate(qq_bwd, __t-TAUE1)  # TAUE1
+    local q_del_τ_2 = evaluate(qq_bwd, __t-TAUE2)  # TAUE2
+    # Lunar mantle euler angles delayed TAUM
     local eulang_del_τ_M = q_del_τ_M[6N_bwd+1:6N_bwd+3]::Vector{S}
-    # Lunar mantle angular velocity delayed τ_M
+    # Lunar mantle angular velocity delayed TAUM
     local ω_m_del_τ_M = q_del_τ_M[6N_bwd+4:6N_bwd+6]::Vector{S}
 
-    # Matrix elements of lunar mantle moment of inertia at time t-τ_M (including tidal distortion)
+    # Matrix elements of lunar mantle moment of inertia at time t-TAUM (including tidal distortion)
     # See equations (36) to (41) in pages 16-17 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     local I_m_t = ITM(q_del_τ_M, eulang_del_τ_M, ω_m_del_τ_M, consts)::Matrix{S}
-    local dI_m_t = ordpres_differentiate.(I_m_t) # Time-derivative of lunar mantle I at time t-τ_M
-    local inv_I_m_t = inv(I_m_t) .* one_t        # Inverse of lunar mantle I matrix at time t-τ_M
+    local dI_m_t = ordpres_differentiate.(I_m_t) # Time-derivative of lunar mantle I at time t-TAUM
+    local inv_I_m_t = inv(I_m_t) .* one_t        # Inverse of lunar mantle I matrix at time t-TAUM
     local I_c_t = I_c.*one_t                     # Lunar core I matrix, see equation (39)
     local inv_I_c_t = inv(I_c_t) .* one_t        # Inverse of lunar core I matrix
     local I_M_t = I_m_t+I_c_t                    # Total I matrix (mantle + core)
@@ -1388,8 +1388,8 @@ function DE430!(dq, q, params, t)
     N_MfigM[3] = zero_q_1                     # z-axis component
 
     # Rotations to and from Earth, Sun and Moon pole-oriented frames
-    local αs = deg2rad(α_p_sun*one_t)           # Sun's rotation pole right ascension (radians)
-    local δs = deg2rad(δ_p_sun*one_t)           # Sun's rotation pole right ascension (radians)
+    local αs = deg2rad(SUNPOLERA*one_t)           # Sun's rotation pole right ascension (radians)
+    local δs = deg2rad(SUNPOLEDEC*one_t)           # Sun's rotation pole right ascension (radians)
     # Space-fixed -> body-fixed coordinate transformations
     RotM = Array{S}(undef, 3, 3, 5)
     local RotM[:,:,ea] = c2t_jpl_de430(dsj2k)   # Earth
@@ -1438,7 +1438,7 @@ function DE430!(dq, q, params, t)
     J2_t[su] = J2S_t             # Earth
     J2_t[ea] = J2E_t             # Sun
     # Lunar torques: overall numerical factor in equation (44) in page 18 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    local N_MfigM_figE_factor = 7.5*μ[ea]*J2E_t
+    local N_MfigM_figE_factor = 7.5*GM[ea]*J2E_t
 
     #=
     Tidal accelerations
@@ -1456,8 +1456,8 @@ function DE430!(dq, q, params, t)
     local q_SE_τ_2 = q_del_τ_2[3su-2:3su] .- q_del_τ_2[3ea-2:3ea]
     # R3X: geocentric space-fixed -> rotational time-delay -> geocentric Earth true-equator-of-date frame
     local R30 = RotM[:,:,ea]               # *Rz(-ω_E*τ_0) == Id(3x3), since τ_0=0
-    local R31 = Rz(-ω_E*τ_1)*RotM[:,:,ea]
-    local R32 = Rz(-ω_E*τ_2)*RotM[:,:,ea]
+    local R31 = Rz(-ω_E*TAUER1)*RotM[:,:,ea]
+    local R32 = Rz(-ω_E*TAUER2)*RotM[:,:,ea]
 
     # Position vectors of tide-raising body in geocentric Earth true-equator-of-date frame
     local r_star_M_0 = R30*q_ME_τ_0 # r-star 0, Moon
@@ -1530,7 +1530,7 @@ function DE430!(dq, q, params, t)
                 r_p7d2[i,j] = r_p2[i,j]^3.5                        # r_{ij}^7
 
                 # Newtonian coefficient, i.e., mass parameter / distance^3 -> \mu_i / r_{ij}^3
-                newtonianCoeff[i,j] =  μ[i]/r_p3d2[i,j]
+                newtonianCoeff[i,j] =  GM[i]/r_p3d2[i,j]
 
                 # Second term without (\mathbf{v}_i - \mathbf{v}_j)
                 pn2[i,j] = newtonianCoeff[i,j]*(( pn2x+pn2y ) + pn2z)
@@ -1542,7 +1542,7 @@ function DE430!(dq, q, params, t)
                 newton_acc_Z[i,j] = Z[i,j]*newtonianCoeff[i,j]    # Z-axis component
 
                 # Newtonian potential of 1 body \mu_i / r_{ij}
-                newtonian1b_Potential[i,j] = μ[i]/r_p1d2[i, j]
+                newtonian1b_Potential[i,j] = GM[i]/r_p1d2[i, j]
                 # Third term without newtonian accelerations \mathbf{a}_i
                 pn3[i,j] = 3.5newtonian1b_Potential[i,j]
                 # Full second term
@@ -1576,11 +1576,11 @@ function DE430!(dq, q, params, t)
     # 2nd-order lunar zonal (J_2) and tesseral (C_2, S_2) harmonics coefficients
     # times the equatorial radius of the moon squared R_M^2
     # See equation (30) in page 13 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    J2M_t = ( I_M_t[3,3] - ((I_M_t[1,1]+I_M_t[2,2])/2) )/(μ[mo]) # J_{2,M}*R_M^2
-    C22M_t = ((I_M_t[2,2] - I_M_t[1,1])/(μ[mo]))/4               # C_{22,M}*R_M^2
-    C21M_t = (-I_M_t[1,3])/(μ[mo])                               # C_{21,M}*R_M^2
-    S21M_t = (-I_M_t[3,2])/(μ[mo])                               # S_{21,M}*R_M^2
-    S22M_t = ((-I_M_t[2,1])/(μ[mo]))/2                           # S_{22,M}*R_M^2
+    J2M_t = ( I_M_t[3,3] - ((I_M_t[1,1]+I_M_t[2,2])/2) )/(GM[mo]) # J_{2,M}*R_M^2
+    C22M_t = ((I_M_t[2,2] - I_M_t[1,1])/(GM[mo]))/4               # C_{22,M}*R_M^2
+    C21M_t = (-I_M_t[1,3])/(GM[mo])                               # C_{21,M}*R_M^2
+    S21M_t = (-I_M_t[3,2])/(GM[mo])                               # S_{21,M}*R_M^2
+    S22M_t = ((-I_M_t[2,1])/(GM[mo]))/2                           # S_{22,M}*R_M^2
     J2_t[mo] = J2M_t
 
     Threads.@threads for j in 1:N_ext
@@ -1782,28 +1782,28 @@ function DE430!(dq, q, params, t)
                     # J_n, C_{nm}, S_{nm} accelerations, if j-th body is flattened
 
                     # Add result to total acceleration upon j-th body figure due to i-th point mass
-                    temp_accX_j[i,j] = accX[j] - (μ[i]*F_JCS_x[i,j])
+                    temp_accX_j[i,j] = accX[j] - (GM[i]*F_JCS_x[i,j])
                     accX[j] = temp_accX_j[i,j]
-                    temp_accY_j[i,j] = accY[j] - (μ[i]*F_JCS_y[i,j])
+                    temp_accY_j[i,j] = accY[j] - (GM[i]*F_JCS_y[i,j])
                     accY[j] = temp_accY_j[i,j]
-                    temp_accZ_j[i,j] = accZ[j] - (μ[i]*F_JCS_z[i,j])
+                    temp_accZ_j[i,j] = accZ[j] - (GM[i]*F_JCS_z[i,j])
                     accZ[j] = temp_accZ_j[i,j]
 
                     # Reaction force on i-th body
-                    temp_accX_i[i,j] = accX[i] + (μ[j]*F_JCS_x[i,j])
+                    temp_accX_i[i,j] = accX[i] + (GM[j]*F_JCS_x[i,j])
                     accX[i] = temp_accX_i[i,j]
-                    temp_accY_i[i,j] = accY[i] + (μ[j]*F_JCS_y[i,j])
+                    temp_accY_i[i,j] = accY[i] + (GM[j]*F_JCS_y[i,j])
                     accY[i] = temp_accY_i[i,j]
-                    temp_accZ_i[i,j] = accZ[i] + (μ[j]*F_JCS_z[i,j])
+                    temp_accZ_i[i,j] = accZ[i] + (GM[j]*F_JCS_z[i,j])
                     accZ[i] = temp_accZ_i[i,j]
 
                     # Lunar torques
                     if j == mo
                         # Compute torques acting upon the body-figure of the Moon due to external point masses
                         # See equation (43) in page 13 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-                        N_MfigM_pmA_x[i] = μ[i]*( (Y[i,j]*F_JCS_z[i,j]) - (Z[i,j]*F_JCS_y[i,j]) )
-                        N_MfigM_pmA_y[i] = μ[i]*( (Z[i,j]*F_JCS_x[i,j]) - (X[i,j]*F_JCS_z[i,j]) )
-                        N_MfigM_pmA_z[i] = μ[i]*( (X[i,j]*F_JCS_y[i,j]) - (Y[i,j]*F_JCS_x[i,j]) )
+                        N_MfigM_pmA_x[i] = GM[i]*( (Y[i,j]*F_JCS_z[i,j]) - (Z[i,j]*F_JCS_y[i,j]) )
+                        N_MfigM_pmA_y[i] = GM[i]*( (Z[i,j]*F_JCS_x[i,j]) - (X[i,j]*F_JCS_z[i,j]) )
+                        N_MfigM_pmA_z[i] = GM[i]*( (X[i,j]*F_JCS_y[i,j]) - (Y[i,j]*F_JCS_x[i,j]) )
                         # Expressions below have minus sign since N_MfigM_pmA_{x,y,z} have inverted signs in cross product
                         temp_N_M_x[i] = N_MfigM[1] - N_MfigM_pmA_x[i]
                         N_MfigM[1] = temp_N_M_x[i]
@@ -1946,8 +1946,8 @@ function DE430!(dq, q, params, t)
 
     # Love number (2, 0) / distance^5
     # See first term inside the {} in equation (32)
-    k_20E_div_r0s5_M = k_20E/r0s5_M
-    k_20E_div_r0s5_S = k_20E/r0s5_S
+    k_20E_div_r0s5_M = K2E0/r0s5_M
+    k_20E_div_r0s5_S = K2E0/r0s5_S
 
     # Long-period tidal accelerations
 
@@ -2002,8 +2002,8 @@ function DE430!(dq, q, params, t)
 
     # Love number (2, 1) / distance^5
     # See second term inside the {} in equation (32)
-    k_21E_div_r1s5_M = k_21E/r1s5_M
-    k_21E_div_r1s5_S = k_21E/r1s5_S
+    k_21E_div_r1s5_M = K2E1/r1s5_M
+    k_21E_div_r1s5_S = K2E1/r1s5_S
 
     # Diurnal tidal accelerations
 
@@ -2055,8 +2055,8 @@ function DE430!(dq, q, params, t)
 
     # Love number (2, 2) / distance^5
     # See third term inside the {} in equation (32)
-    k_22E_div_r2s5_M = k_22E/r2s5_M
-    k_22E_div_r2s5_S = k_22E/r2s5_S
+    k_22E_div_r2s5_M = K2E2/r2s5_M
+    k_22E_div_r2s5_S = K2E2/r2s5_S
 
     # Semi-diurnal tidal accelerations
 
@@ -2074,8 +2074,8 @@ function DE430!(dq, q, params, t)
     aux_tidacc = tid_num_coeff*RE_div_r_p5  # 3*(m_E + m_M) * R_E^5 / 2 / m_E / r^5
 
     # Moon's and Sun's contributions * mass parameter
-    a_tidal_coeff_M = μ[mo]*aux_tidacc
-    a_tidal_coeff_S = μ[su]*aux_tidacc
+    a_tidal_coeff_M = GM[mo]*aux_tidacc
+    a_tidal_coeff_S = GM[su]*aux_tidacc
 
     # Add contributions from long-period, diurnal and semi-diurnal tides (true-of-date coordinates)
     a_tidal_tod_x = (a_tidal_coeff_M*((a_tid_0_M_x+a_tid_1_M_x)+a_tid_2_M_x)) + (a_tidal_coeff_S*((a_tid_0_S_x+a_tid_1_S_x)+a_tid_2_S_x))
@@ -2207,9 +2207,9 @@ function DE430!(dq, q, params, t)
     N_cmb_3 = (k_ν*(q[6N+12]-q[6N+6]))
 
     # I*(dω/dt); i.e., I times RHS of equation (34) in page 16 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    I_dω_1 = ((N_MfigM_figE_1 + (μ[mo]*N_1_LMF)) + N_cmb_1) - (dIω_x + ωxIω_x)
-    I_dω_2 = ((N_MfigM_figE_2 + (μ[mo]*N_2_LMF)) + N_cmb_2) - (dIω_y + ωxIω_y)
-    I_dω_3 = ((N_MfigM_figE_3 + (μ[mo]*N_3_LMF)) + N_cmb_3) - (dIω_z + ωxIω_z)
+    I_dω_1 = ((N_MfigM_figE_1 + (GM[mo]*N_1_LMF)) + N_cmb_1) - (dIω_x + ωxIω_x)
+    I_dω_2 = ((N_MfigM_figE_2 + (GM[mo]*N_2_LMF)) + N_cmb_2) - (dIω_y + ωxIω_y)
+    I_dω_3 = ((N_MfigM_figE_3 + (GM[mo]*N_3_LMF)) + N_cmb_3) - (dIω_z + ωxIω_z)
 
     # RHS of equation (35) in page 16 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 

@@ -1102,7 +1102,7 @@ function ITM1(x::T, y::T, z::T, consts) where {T <: Number}
     m[3,1] = m[1,3]
     m[2,3] = y*z
     m[3,2] = m[2,3]
-    return (-(consts.k_2M*consts.μ[ea]*consts.R_moon^5)/r5)*m
+    return (-(consts.K2M*consts.GM[ea]*consts.R_moon^5)/r5)*m
 end
 
 @doc raw"""
@@ -1151,7 +1151,7 @@ function ITM2(ωx::T, ωy::T, ωz::T, consts) where {T <: Number}
     m[3,1] = m[1,3]
     m[2,3] = ωy*ωz
     m[3,2] = m[2,3]
-    return ((consts.k_2M*consts.R_moon^5)/3)*m
+    return ((consts.K2M*consts.R_moon^5)/3)*m
 end
 
 @doc raw"""

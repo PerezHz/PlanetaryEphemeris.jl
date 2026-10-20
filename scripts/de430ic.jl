@@ -7,6 +7,18 @@ const PLANETS_KERNEL_URL = "https://ssd.jpl.nasa.gov/ftp/eph/planets/bsp/de430_1
 const ASTEROIDS_KERNEL_URL = "https://ssd.jpl.nasa.gov/ftp/eph/small_bodies/asteroids_de430/ast343de430.bsp"
 const TTMTDB_KERNEL_URL = "https://ssd.jpl.nasa.gov/ftp/eph/planets/bsp/TTmTDB.de430.19feb2015.bsp"
 
+# Parameters of the DE430 dynamical model not listed in the technical comments file
+# See Table 9 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
+const SUNPOLERA = 286.13   # Sun's rotation pole right ascension [deg]
+const SUNPOLEDEC = 63.87   # Sun's rotation pole declination [deg]
+# See Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
+const TAUER0 = 0.0         # Earth's rotational time-lag for long-period deformation [day]
+# Mean semimajor axis of the lunar orbit [km], see Table 3 in page 5 of J. G. Williams,
+# D. H. Boggs, and W. M. Folkner (2013), "DE430 Lunar Orbit, Physical Librations and
+# Surface Coordinates," JPL IOM 335-JW,DB,WF-20130722-016
+# https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/de430_moon_coord.pdf
+const AMOON = 384399.014
+
 function parse_commandline()
 
     s = ArgParseSettings()
@@ -14,19 +26,23 @@ function parse_commandline()
     # Program name (for usage & help screen)
     s.prog = "de430ic.jl"
     # Desciption (for help screen)
-    s.description = "Generate the initial conditions file for the DE430 ephemeris"
+    s.description = "Generate the initial conditions and parameters files for the DE430 ephemeris"
 
     @add_arg_table! s begin
         "--output", "-o"
-            help = "Output file"
+            help = "Initial conditions output file"
             arg_type = String
             default = "de430ic.txt"
+        "--params", "-p"
+            help = "Parameters output file"
+            arg_type = String
+            default = "de430params.txt"
     end
 
     s.epilog = """
         examples:\n
         \n
-        julia --project de430ic.jl -o de430ic.txt\n
+        julia --project de430ic.jl -o de430ic.txt -p de430params.txt\n
         \n
     """
 
@@ -93,6 +109,37 @@ function write_initial_conditions(filename::AbstractString, model::AbstractStrin
     return nothing
 end
 
+# Line of a parameters file
+paramline(name, value, unit, source) = string(rpad(name, 12),
+    rpad(@sprintf("%+.16E", value), 26), rpad(unit, 13), source)
+
+"""
+    write_parameters(filename, model, nbodies, sources, params)
+
+Write the parameters of a planetary ephemeris `model` with `nbodies` bodies, with one
+parameter per line. `params` is a vector of `(name, value, unit, source)` tuples, where
+`name` is the parameter's name in the technical comments file (with an index in
+brackets for arrays) and `source` is where `value` comes from.
+"""
+function write_parameters(filename::AbstractString, model::AbstractString,
+        nbodies::Int, sources::AbstractVector{<:AbstractString}, params::AbstractVector)
+    open(filename, "w") do io
+        println(io, "# format   = PlanetaryEphemeris.jl parameters v1")
+        println(io, "# model    = ", model)
+        println(io, "# nbodies  = ", nbodies)
+        println(io, "# nparams  = ", length(params))
+        println(io, "# sources  = ", join(sources, ", "))
+        println(io, "# created  = ", round(now(), Second), " by scripts/",
+            basename(@__FILE__))
+        println(io, "#")
+        println(io, "# ", rpad("name", 10), rpad("value", 26), rpad("unit", 13), "source")
+        for (name, value, unit, source) in params
+            println(io, paramline(name, value, unit, source))
+        end
+    end
+    return nothing
+end
+
 float_regex(c::Char = 'E') =  Regex("([\\s|\\+|\\-]\\d\\.\\d+$c[\\+|\\-]\\d{2})")
 
 function parse_constant(name::AbstractString, text::AbstractString; c::Char = 'E')
@@ -124,10 +171,11 @@ function main()
 
     # Parse arguments from commandline
     parsed_args = parse_commandline()
-    # Output file
+    # Output files
     output::String = parsed_args["output"]
+    params_output::String = parsed_args["params"]
 
-    printitle("Generate the initial conditions file for the DE430 ephemeris", "=")
+    printitle("Generate the initial conditions and parameters files for the DE430 ephemeris", "=")
 
     # Global initial time
     global_initial_time = now()
@@ -174,6 +222,7 @@ function main()
     N = 11 + 343
     # Pre-allocate memory
     ids = Vector{String}(undef, N)
+    gmnames = Vector{String}(undef, N)
     gms = Vector{Float64}(undef, N)
     rvs = Matrix{Float64}(undef, N, 6)
     # Initial epoch
@@ -184,21 +233,23 @@ function main()
     planets_ids = [10, 199, 299, 399, 301, 4, 5, 6, 7, 8, 9]
     @. ids[1:11] = string(planets_ids)
     for (i, id) in enumerate(planets_ids)
-        name = planet_id2gm(id)
-        gms[i] = parse_constant(name, tech_comments; c = 'D')
+        gmnames[i] = planet_id2gm(id)
+        gms[i] = parse_constant(gmnames[i], tech_comments; c = 'D')
         rvs[i, :] .= kmsec2auday(spkgeo(id, et, "J2000", 0)[1])
     end
 
     # Asteroids
     @. ids[12:N] = string(asteroids_ids)
     for (i, id) in enumerate(asteroids_ids)
-        name = "MA" * lpad(id - 2000000, 4, '0')
-        gms[11+i] = parse_constant(name, tech_comments; c = 'E')
+        gmnames[11+i] = "MA" * lpad(id - 2000000, 4, '0')
+        gms[11+i] = parse_constant(gmnames[11+i], tech_comments; c = 'E')
         rvs[11+i, :] .= kmsec2auday(spkgeo(id, et, "J2000", 0)[1])
     end
     # Sort asteroids by decreasing mass parameter
     perm = 11 .+ sortperm(view(gms, 12:N), rev = true)
     ids[12:N] .= ids[perm]
+    gmnames[12:N] .= gmnames[perm]
+    gms[12:N] .= gms[perm]
     rvs[12:N, :] .= rvs[perm, :]
 
     # Additional coordinates: lunar mantle and core Euler angles and angular velocities
@@ -220,6 +271,41 @@ function main()
     sources = basename.([PLANETS_KERNEL_URL, ASTEROIDS_KERNEL_URL, TTMTDB_KERNEL_URL,
         TECH_COMMENTS_URL])
     write_initial_conditions(output, "DE430", jd0, sources, ids, rvs, extras)
+    println("Done")
+
+    # Parameters: mass parameters in the same order as the initial conditions...
+    params = Tuple{String, Float64, String, String}[]
+    for i in 1:N
+        push!(params, ("GM[$i]", gms[i], "au^3/day^2", gmnames[i]))
+    end
+    # ...followed by the parameters of the Sun, the Earth and the Moon
+    # (name, unit) of the parameters listed in the technical comments file
+    sun_names = [("ASUN", "km"), ("J2SUN", "-")]
+    earth_names = [("RE", "km"), ("J2E", "-"), ("J3E", "-"), ("J4E", "-"), ("J5E", "-"),
+        ("J2EDOT", "1/yr"), ("K2E0", "-"), ("K2E1", "-"), ("K2E2", "-"), ("TAUE0", "day"),
+        ("TAUE1", "day"), ("TAUE2", "day"), ("TAUER1", "day"), ("TAUER2", "day")]
+    moon_names = [("AM", "km"), ("K2M", "-"), ("TAUM", "day"), ("LBET", "-"), ("LGAM", "-"),
+        ("IFAC", "-"), ("COBLAT", "-"), ("KVC", "1/day"), ("J2M", "-"), ("J3M", "-"),
+        ("J4M", "-"), ("J5M", "-"), ("J6M", "-"), ("C22M", "-")]
+    for n in 3:6, m in 1:n, c in ('C', 'S')
+        push!(moon_names, (string(c, n, m, 'M'), "-"))
+    end
+    tech_comments_file = basename(TECH_COMMENTS_URL)
+    for (name, unit) in vcat(sun_names, earth_names, moon_names)
+        push!(params, (name, parse_constant(name, tech_comments), unit, tech_comments_file))
+    end
+    # Parameters not listed in the technical comments file
+    folkner2014 = "Folkner et al. (2014)"
+    williams2013 = "Williams et al. (2013)"
+    push!(params, ("SUNPOLERA", SUNPOLERA, "deg", folkner2014))
+    push!(params, ("SUNPOLEDEC", SUNPOLEDEC, "deg", folkner2014))
+    push!(params, ("TAUER0", TAUER0, "day", folkner2014))
+    push!(params, ("AMOON", AMOON, "km", williams2013))
+
+    # Save parameters
+    print("• Saving parameters to $params_output... ")
+    sources = [tech_comments_file, folkner2014, williams2013]
+    write_parameters(params_output, "DE430", N, sources, params)
     println("Done")
 
     # Final time

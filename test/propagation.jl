@@ -14,8 +14,9 @@ using LinearAlgebra: norm
 
 const PKG_DATA = joinpath(pkgdir(PlanetaryEphemeris), "data")
 const TEST_DATA = joinpath(pkgdir(PlanetaryEphemeris), "test", "data")
-# DE430 initial conditions file and its epoch [JD TDB]
+# DE430 initial conditions and parameters files, and the epoch of the former [JD TDB]
 const DE430_IC_FILE = joinpath(PKG_DATA, "de430ic.txt")
+const DE430_PARAMS_FILE = joinpath(PKG_DATA, "de430params.txt")
 const DE430_JD0 = datetime2julian(DateTime(1969, 6, 28))
 
 # Total number of bodies
@@ -38,7 +39,7 @@ mre(x, y, z) = maximum(@. abs(x - y) / z)
     # Reference epoch [JDTDB]
     jd0 = 2459200.5
     # Gravitational parameters [au^3/day^2]
-    μ_S, μ_A = PE.GMS, 0.0
+    μ_S, μ_A = DE430Constants{Float64}(DE430_PARAMS_FILE).GM[su], 0.0
 
     # Cartesian state vector [au, au/day]
     rv = [-0.17380033054708824, 0.99450381407683, -0.057081276307106465,
@@ -98,6 +99,17 @@ end
         @test isa(q0_128, Vector{Float128})
         @test length(q0_64) == length(q0_128) == 6*N+13
         @test q0_64 == q0_128
+
+        # read_parameters and DE430Constants
+        params = read_parameters(DE430_PARAMS_FILE)
+        consts_64 = DE430Constants{Float64}(DE430_PARAMS_FILE)
+        consts_128 = DE430Constants{Float128}(DE430_PARAMS_FILE)
+
+        @test length(params["GM"]) == length(consts_64.GM) == N
+        @test consts_64.GM == params["GM"]
+        @test consts_64.TAUE1 == params["TAUE1"]
+        @test isa(consts_128.JSEM, Matrix{Float128})
+        @test consts_128.GM == Float128.(consts_64.GM)
     end
 
     @testset "Earth orientation model" begin
@@ -222,30 +234,31 @@ end
         tspan = (DE430_JD0, DE430_JD0 + nyears * yr)
         q0 = read_initial_conditions(DE430_IC_FILE)
         params = DE430Params(DE430_JD0, q0, _order)
+        GM = params.consts.GM
         PP = PlanetaryEphemerisProblem(DE430!, tspan, q0, params)
         # Test propagation
         @time propagate(PP; maxsteps = 1, order = _order, abstol)
         @time sol = propagate(PP; maxsteps = 100, order = _order, abstol)
 
         # Solar system barycenter
-        rvec_ssb, vvec_ssb, μ_star_SSB = ssb_posvel_pN(PE.μ, q0)
-        rvec_sun, vvec_sun = sun_posvel_pN(PE.μ, q0)
+        rvec_ssb, vvec_ssb, μ_star_SSB = ssb_posvel_pN(GM, q0)
+        rvec_sun, vvec_sun = sun_posvel_pN(GM, q0)
 
         _rvec_ssb_ = [
-            sum(PE.μ[i] * q0[j] for (i, j) in enumerate(1:3:3N)),
-            sum(PE.μ[i] * q0[j] for (i, j) in enumerate(2:3:3N)),
-            sum(PE.μ[i] * q0[j] for (i, j) in enumerate(3:3:3N))
+            sum(GM[i] * q0[j] for (i, j) in enumerate(1:3:3N)),
+            sum(GM[i] * q0[j] for (i, j) in enumerate(2:3:3N)),
+            sum(GM[i] * q0[j] for (i, j) in enumerate(3:3:3N))
         ]
         _vvec_ssb_ = [
-            sum(PE.μ[i] * q0[j] for (i, j) in enumerate(3N+1:3:6N)),
-            sum(PE.μ[i] * q0[j] for (i, j) in enumerate(3N+2:3:6N)),
-            sum(PE.μ[i] * q0[j] for (i, j) in enumerate(3N+3:3:6N))
+            sum(GM[i] * q0[j] for (i, j) in enumerate(3N+1:3:6N)),
+            sum(GM[i] * q0[j] for (i, j) in enumerate(3N+2:3:6N)),
+            sum(GM[i] * q0[j] for (i, j) in enumerate(3N+3:3:6N))
         ]
 
         @test norm(rvec_ssb) < norm(_rvec_ssb_)
         @test norm(vvec_ssb) < norm(_vvec_ssb_)
-        @test μ_star_SSB ≈ sum(PE.μ)
-        @test q0[sundofs] ≈ vcat(rvec_sun, vvec_sun)
+        @test μ_star_SSB ≈ sum(GM)
+        @test q0[nbodyind(N, su)] ≈ vcat(rvec_sun, vvec_sun)
 
         # Save results
         bodyind = 1:(11+16)
@@ -254,7 +267,7 @@ end
 
         @test selecteph(sol, bodyind, euler = true, ttmtdb = true) == recovered_sol
 
-        acceph, poteph = loadeph(recovered_sol, PE.μ)
+        acceph, poteph = loadeph(recovered_sol, GM)
 
         @test size(acceph.p, 1) == size(poteph.p, 1) == size(recovered_sol.p, 1)
         @test size(acceph.p, 2) == (size(recovered_sol.p, 2) - 13) ÷ 2
