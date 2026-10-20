@@ -175,7 +175,7 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_thr
     local αs = deg2rad(SUNPOLERA * one_t)
     local δs = deg2rad(SUNPOLEDEC * one_t)
     RotM = Array{S}(undef, 3, 3, 5)
-    local RotM[:, :, ea] = c2t_jpl_de430(dsj2k)
+    local RotM[:, :, ea] = c2t_jpl_de430(dsj2k, consts)
     local RotM[:, :, su] = pole_rotation(αs, δs)
     ϕ_m = Taylor1(identity(constant_term(q[6N + 1])), order)
     θ_m = Taylor1(identity(constant_term(q[6N + 2])), order)
@@ -2716,7 +2716,7 @@ function TaylorIntegration.jetcoeffs!(::Val{NBP_pN_A_J23E_J23M_J2S_threads!}, t:
     local I_M_t = I_m_t + I_c_t
     local αs = deg2rad(SUNPOLERA * one_t)
     local δs = deg2rad(SUNPOLEDEC * one_t)
-    local RotM[:, :, ea] = c2t_jpl_de430(dsj2k)
+    local RotM[:, :, ea] = c2t_jpl_de430(dsj2k, consts)
     local RotM[:, :, su] = pole_rotation(αs, δs)
     local J2E_t = (J2E + J2EDOT * (dsj2k / yr)) * RE_au ^ 2
     local J2S_t = JSEM[su, 2] * one_t
@@ -3766,7 +3766,7 @@ function TaylorIntegration._allocate_jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q
     local αs = deg2rad(SUNPOLERA * one_t)
     local δs = deg2rad(SUNPOLEDEC * one_t)
     RotM = Array{S}(undef, 3, 3, 5)
-    local RotM[:, :, ea] = c2t_jpl_de430(dsj2k)
+    local RotM[:, :, ea] = c2t_jpl_de430(dsj2k, consts)
     local RotM[:, :, su] = pole_rotation(αs, δs)
     ϕ_m = Taylor1(identity(constant_term(q[6N + 1])), order)
     θ_m = Taylor1(identity(constant_term(q[6N + 2])), order)
@@ -7087,7 +7087,7 @@ function TaylorIntegration.jetcoeffs!(::Val{DE430!}, t::Taylor1{_T}, q::Abstract
     local I_M_t = I_m_t + I_c_t
     local αs = deg2rad(SUNPOLERA * one_t)
     local δs = deg2rad(SUNPOLEDEC * one_t)
-    local RotM[:, :, ea] = c2t_jpl_de430(dsj2k)
+    local RotM[:, :, ea] = c2t_jpl_de430(dsj2k, consts)
     local RotM[:, :, su] = pole_rotation(αs, δs)
     local J2E_t = (J2E + J2EDOT * (dsj2k / yr)) * RE_au ^ 2
     local J2S_t = JSEM[su, 2] * one_t

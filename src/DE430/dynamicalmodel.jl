@@ -396,7 +396,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     local δs = deg2rad(SUNPOLEDEC*one_t)           # Sun's rotation pole right ascension (radians)
     # Space-fixed -> body-fixed coordinate transformations
     RotM = Array{S}(undef, 3, 3, 5)
-    local RotM[:,:,ea] = c2t_jpl_de430(dsj2k)   # Earth
+    local RotM[:,:,ea] = c2t_jpl_de430(dsj2k, consts)   # Earth
     local RotM[:,:,su] = pole_rotation(αs, δs)  # Sun
     # Lunar mantle Euler angles
     ϕ_m = q[6N+1]
@@ -1392,7 +1392,7 @@ function DE430!(dq, q, params, t)
     local δs = deg2rad(SUNPOLEDEC*one_t)           # Sun's rotation pole right ascension (radians)
     # Space-fixed -> body-fixed coordinate transformations
     RotM = Array{S}(undef, 3, 3, 5)
-    local RotM[:,:,ea] = c2t_jpl_de430(dsj2k)   # Earth
+    local RotM[:,:,ea] = c2t_jpl_de430(dsj2k, consts)   # Earth
     local RotM[:,:,su] = pole_rotation(αs, δs)  # Sun
     # Lunar mantle Euler angles
     ϕ_m = q[6N+1]

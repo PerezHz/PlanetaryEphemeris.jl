@@ -10,7 +10,7 @@ using Test
 
 using PlanetaryEphemeris: freeparticle!, sun_posvel_pN, loadeph
 using SPICE: furnsh, spkgeo
-using LinearAlgebra: norm
+using LinearAlgebra: norm, I
 
 const PKG_DATA = joinpath(pkgdir(PlanetaryEphemeris), "data")
 const TEST_DATA = joinpath(pkgdir(PlanetaryEphemeris), "test", "data")
@@ -133,11 +133,12 @@ end
         xT = Taylor1(rand(_order+1))
         xTN = Taylor1([rand() * TaylorN(1) + rand() * TaylorN(2) for _ in 0:_order])
         xT1 = Taylor1([Taylor1(rand(7)) for _ in 0:_order])
+        consts = DE430Constants{Float64}(DE430_PARAMS_FILE)
 
-        M0 = t2c_jpl_de430(t)
-        MT = t2c_jpl_de430(t, zero(xT))
-        MTN = t2c_jpl_de430(t, zero(xTN))
-        MT1 = t2c_jpl_de430(t, zero(xT1))
+        M0 = t2c_jpl_de430(t, consts)
+        MT = t2c_jpl_de430(t, zero(xT), consts)
+        MTN = t2c_jpl_de430(t, zero(xTN), consts)
+        MT1 = t2c_jpl_de430(t, zero(xT1), consts)
 
         @test MT == M0
         @test constant_term.(MTN) == constant_term.(M0)
@@ -152,13 +153,19 @@ end
         @. MMTN[:, :, ea] = zero(xTN)
         @. MMT1[:, :, ea] = zero(xT1)
 
-        t2c_jpl_de430!(MMT, ea, t, zero(xT), rotatBuf)
-        t2c_jpl_de430!(MMTN, ea, t, zero(xTN), rotatBuf)
-        t2c_jpl_de430!(MMT1, ea, t, zero(xT1), rotatBuf)
+        t2c_jpl_de430!(MMT, ea, t, zero(xT), rotatBuf, consts)
+        t2c_jpl_de430!(MMTN, ea, t, zero(xTN), rotatBuf, consts)
+        t2c_jpl_de430!(MMT1, ea, t, zero(xT1), rotatBuf, consts)
 
         @test all(@. isapprox(constant_term(MMT[:, :, ea]), constant_term(M0)))
         @test all(@. isapprox(constant_term(MMTN[:, :, ea]), constant_term(M0)))
         @test all(@. isapprox(constant_term(MMT1[:, :, ea]), constant_term(M0)))
+
+        # DE440 Earth orientation: a rotation matrix close to the DE430 one at J2000.0
+        consts_440 = DE440Constants{Float64}(DE440_PARAMS_FILE)
+        M440 = constant_term.(t2c_jpl_de440(t, consts_440))
+        @test M440 * transpose(M440) ≈ I(3)
+        @test isapprox(M440, constant_term.(M0), atol = 1E-6)
     end
 
     @testset "TaylorSolution" begin

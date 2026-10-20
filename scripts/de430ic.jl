@@ -283,7 +283,9 @@ function main()
     sun_names = [("ASUN", "km"), ("J2SUN", "-")]
     earth_names = [("RE", "km"), ("J2E", "-"), ("J3E", "-"), ("J4E", "-"), ("J5E", "-"),
         ("J2EDOT", "1/yr"), ("K2E0", "-"), ("K2E1", "-"), ("K2E2", "-"), ("TAUE0", "day"),
-        ("TAUE1", "day"), ("TAUE2", "day"), ("TAUER1", "day"), ("TAUER2", "day")]
+        ("TAUE1", "day"), ("TAUE2", "day"), ("TAUER1", "day"), ("TAUER2", "day"),
+        ("ROTEX", "arcsec"), ("ROTEY", "arcsec"), ("DROTEX", "arcsec/yr"),
+        ("DROTEY", "arcsec/yr")]
     moon_names = [("AM", "km"), ("K2M", "-"), ("TAUM", "day"), ("LBET", "-"), ("LGAM", "-"),
         ("IFAC", "-"), ("COBLAT", "-"), ("KVC", "1/day"), ("J2M", "-"), ("J3M", "-"),
         ("J4M", "-"), ("J5M", "-"), ("J6M", "-"), ("C22M", "-")]

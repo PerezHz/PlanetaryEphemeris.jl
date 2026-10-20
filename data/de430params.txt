@@ -1,9 +1,9 @@
 # format   = PlanetaryEphemeris.jl parameters v1
 # model    = DE430
 # nbodies  = 354
-# nparams  = 424
+# nparams  = 428
 # sources  = de430_tech-comments.txt, Folkner et al. (2014), Williams et al. (2013)
-# created  = 2026-10-20T10:46:28 by scripts/de430ic.jl
+# created  = 2026-10-20T15:48:28 by scripts/de430ic.jl
 #
 # name      value                     unit         source
 GM[1]       +2.9591220828559109E-04   au^3/day^2   GMS
@@ -376,6 +376,10 @@ TAUE1       -4.3999999999999991E-02   day          de430_tech-comments.txt
 TAUE2       -1.0000000000000001E-01   day          de430_tech-comments.txt
 TAUER1      +7.3632190228041889E-03   day          de430_tech-comments.txt
 TAUER2      +2.5352978633388719E-03   day          de430_tech-comments.txt
+ROTEX       +5.6754203322893467E-03   arcsec       de430_tech-comments.txt
+ROTEY       -1.7022656914989529E-02   arcsec       de430_tech-comments.txt
+DROTEX      +2.7689915574483548E-04   arcsec/yr    de430_tech-comments.txt
+DROTEY      -1.2118591216559241E-03   arcsec/yr    de430_tech-comments.txt
 AM          +1.7380000000000000E+03   km           de430_tech-comments.txt
 K2M         +2.4059000000000001E-02   -            de430_tech-comments.txt
 TAUM        +9.5830547273306685E-02   day          de430_tech-comments.txt

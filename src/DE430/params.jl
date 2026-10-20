@@ -1,4 +1,4 @@
-"""
+@doc raw"""
     DE430Constants{T <: Real}
 
 Physical parameters of the JPL DE430 dynamical model used by
@@ -20,6 +20,14 @@ and derive the remaining quantities used by the model.
     rotation pole [deg].
 - `RE_au::T`: Earth's radius [au].
 - `J2E::T`, `J2EDOT::T`: Earth's second zonal harmonic and its rate of change [1/yr].
+- `ROTEX::T`, `ROTEY::T`: X and Y axes rotations of the Earth orientation model at
+    J2000.0 [arcsec].
+- `DROTEX::T`, `DROTEY::T`: rates of `ROTEX` and `ROTEY` [arcsec/yr].
+- `nut_Δψ::T`, `nut_Δϵ::T`: amplitudes of the 18.6-year nutation terms in longitude
+    and obliquity [arcsec].
+- `coeffs_Zeta::Vector{T}`, `coeffs_Theta::Vector{T}`, `coeffs_zeta::Vector{T}`:
+    coefficients of the IAU 1976 precession angles ``\zeta_A``, ``\theta_A`` and
+    ``z_A`` [arcsec] as polynomials in Julian centuries from J2000.0.
 - `JSEM::Matrix{T}`: zonal harmonics `J_n` times the radius of the body [au] to the
     `n`-th power (row: body, column: degree).
 - `n1SEM::Vector{Int}`: degree of the zonal harmonics expansion of each extended body.
@@ -53,6 +61,15 @@ struct DE430Constants{T <: Real}
     RE_au::T
     J2E::T
     J2EDOT::T
+    ROTEX::T
+    ROTEY::T
+    DROTEX::T
+    DROTEY::T
+    nut_Δψ::T
+    nut_Δϵ::T
+    coeffs_Zeta::Vector{T}
+    coeffs_Theta::Vector{T}
+    coeffs_zeta::Vector{T}
     JSEM::Matrix{T}
     n1SEM::Vector{Int}
     n2M::Int
@@ -121,6 +138,18 @@ struct DE430Constants{T <: Real}
         J2E, J2EDOT = param("J2E"), param("J2EDOT")
         # Vector of zonal harmonic coefficients J_n * Earth's radius in au ^n
         JE = [J2E*RE_au^2, param("J3E")*RE_au^3, param("J4E")*RE_au^4, param("J5E")*RE_au^5]
+        # Earth orientation: X and Y axes rotations at J2000.0 and their rates
+        # See equation (25) in page 11 and Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
+        ROTEX, ROTEY = param("ROTEX"), param("ROTEY")
+        DROTEX, DROTEY = param("DROTEX"), param("DROTEY")
+        # Amplitudes of the 18.6-year nutation terms in longitude and obliquity
+        # See equation (22) in page 11 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
+        nut_Δψ, nut_Δϵ = T(-17.206262), T(9.205348)
+        # IAU 1976 precession angles
+        # See equation (26) in page 11 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
+        coeffs_Zeta = T[0.0, 2306.2181, 0.30188, 0.017998]
+        coeffs_Theta = T[0.0, 2004.3109, -0.42665, -0.041833]
+        coeffs_zeta = T[0.0, 2306.2181, 1.09468, 0.018203]
         # Love numbers, orbital and rotational time-lags
         K2E0, K2E1, K2E2 = param("K2E0"), param("K2E1"), param("K2E2")
         TAUE0, TAUE1, TAUE2 = param("TAUE0"), param("TAUE1"), param("TAUE2")
@@ -180,7 +209,8 @@ struct DE430Constants{T <: Real}
             $(join(sort!(collect(unused)), ", "))"))
 
         return new{T}(N_ext, GM, UJ_interaction, SUNPOLERA, SUNPOLEDEC, RE_au, J2E,
-            J2EDOT, JSEM, n1SEM, n2M, CM, SM, R_moon, K2M, TAUM, n_moon, ITM_und, I_c,
+            J2EDOT, ROTEX, ROTEY, DROTEX, DROTEY, nut_Δψ, nut_Δϵ, coeffs_Zeta, coeffs_Theta,
+            coeffs_zeta, JSEM, n1SEM, n2M, CM, SM, R_moon, K2M, TAUM, n_moon, ITM_und, I_c,
             k_ν, C_c_m_A_c, K2E0, K2E1, K2E2, TAUE0, TAUE1, TAUE2, TAUER0, TAUER1,
             TAUER2, tid_num_coeff)
     end

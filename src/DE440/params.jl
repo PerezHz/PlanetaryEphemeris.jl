@@ -26,6 +26,13 @@ and derive the remaining quantities used by the model.
 - `J2E::T`, `J2EDOT::T`: Earth's second zonal harmonic and its rate of change [1/yr].
 - `ROTEX::T`, `ROTEY::T`: rotations about the X and Y axes in the Earth orientation
     model [arcsec].
+- `nut_Δψ::T`, `nut_Δϵ::T`: amplitudes of the 18.6-year nutation terms in longitude
+    and obliquity [arcsec].
+- `ltp_eps0::T`: obliquity at J2000.0 of the long-term precession model [arcsec].
+- `ltp_pqpol::Matrix{T}`, `ltp_pqper::Matrix{T}`: polynomial and periodic coefficients
+    of the ecliptic pole ``(P_A, Q_A)`` of the long-term precession model [arcsec].
+- `ltp_xypol::Matrix{T}`, `ltp_xyper::Matrix{T}`: polynomial and periodic coefficients
+    of the equator pole ``(X_A, Y_A)`` of the long-term precession model [arcsec].
 - `JSEM::Matrix{T}`: zonal harmonics `J_n` times the radius of the body [au] to the
     `n`-th power (row: body, column: degree).
 - `n1SEM::Vector{Int}`: degree of the zonal harmonics expansion of each extended body.
@@ -66,6 +73,13 @@ struct DE440Constants{T <: Real}
     J2EDOT::T
     ROTEX::T
     ROTEY::T
+    nut_Δψ::T
+    nut_Δϵ::T
+    ltp_eps0::T
+    ltp_pqpol::Matrix{T}
+    ltp_pqper::Matrix{T}
+    ltp_xypol::Matrix{T}
+    ltp_xyper::Matrix{T}
     JSEM::Matrix{T}
     n1SEM::Vector{Int}
     n2M::Int
@@ -139,8 +153,45 @@ struct DE440Constants{T <: Real}
         J2E, J2EDOT = param("J2E"), param("J2EDOT")
         # Vector of zonal harmonic coefficients J_n * Earth's radius in au ^n
         JE = [J2E*RE_au^2, param("J3E")*RE_au^3, param("J4E")*RE_au^4, param("J5E")*RE_au^5]
-        # Orientation offsets
+        # Earth orientation
+        # See Section 2.5 in pages 4-5 of https://doi.org/10.3847/1538-3881/abd414
+        # Offsets of the EME2000 pole from the ICRF pole
         ROTEX, ROTEY = param("ROTEX"), param("ROTEY")
+        # Amplitudes of the 18.6-year nutation terms in longitude and obliquity, see
+        # equations (21)-(22) in page 5 of https://doi.org/10.3847/1538-3881/abd414
+        nut_Δψ, nut_Δϵ = T(-17.1996), T(9.2025)
+        # Long-term precession model of Vondrák et al. (2011), see
+        # https://doi.org/10.1051/0004-6361/201117274 and functions eraLtpecl and eraLtpequ
+        # of ERFA (https://github.com/liberfa/erfa). Periodic terms are given as
+        # [period (yr), cos coefficient (P_A or X_A), cos coefficient (Q_A or Y_A),
+        # sin coefficient (P_A or X_A), sin coefficient (Q_A or Y_A)]
+        ltp_eps0 = T(84381.406)
+        ltp_pqpol = T[ 5851.607687 -0.1189000 -0.00028913  0.000000101;
+                      -1600.886300  1.1689818 -0.00000020 -0.000000437]
+        ltp_pqper = T[ 708.15 -5486.751211 -684.661560   667.666730 -5523.863691;
+                      2309.00   -17.127623 2446.283880 -2354.886252  -549.747450;
+                      1620.00  -617.517403  399.671049  -428.152441  -310.998056;
+                       492.20   413.442940 -356.652376   376.202861   421.535876;
+                      1183.00    78.614193 -186.387003   184.778874   -36.776172;
+                       622.00  -180.732815 -316.800070   335.321713  -145.278396;
+                       882.00   -87.676083  198.296701  -185.138669   -34.744450;
+                       547.00    46.140315  101.135679  -120.972830    22.885731]
+        ltp_xypol = T[  5453.282155  0.4252841 -0.00037173 -0.000000152;
+                      -73750.930350 -0.7675452 -0.00018725  0.000000231]
+        ltp_xyper = T[ 256.75  -819.940624 75004.344875 81491.287984  1558.515853;
+                       708.15 -8444.676815   624.033993   787.163481  7774.939698;
+                       274.20  2600.009459  1251.136893  1251.296102 -2219.534038;
+                       241.45  2755.175630 -1102.212834 -1257.950837 -2523.969396;
+                      2309.00  -167.659835 -2660.664980 -2966.799730   247.850422;
+                       492.20   871.855056   699.291817   639.744522  -846.485643;
+                       396.10    44.769698   153.167220   131.600209 -1393.124055;
+                       288.90  -512.313065  -950.865637  -445.040117   368.526116;
+                       231.10  -819.415595   499.754645   584.522874   749.045012;
+                      1610.00  -538.071099  -145.188210   -89.756563   444.704518;
+                       620.00  -189.793622   558.116553   524.429630   235.934465;
+                       157.87  -402.922932   -23.923029   -13.549067   374.049623;
+                       220.30   179.516345  -165.405086  -210.157124  -171.330180;
+                      1200.00    -9.814756     9.344131   -44.919798   -22.899655]
         # Love numbers, orbital and rotational time-lags
         K2E0, K2E1, K2E2 = param("K2E0"), param("K2E1"), param("K2E2")
         TAUE0, TAUE1, TAUE2 = param("TAUE0"), param("TAUE1"), param("TAUE2")
@@ -195,7 +246,8 @@ struct DE440Constants{T <: Real}
             $(join(sort!(collect(unused)), ", "))"))
 
         return new{T}(N_ext, GM, UJ_interaction, SUNPOLERA, SUNPOLEDEC, R_sun, MOISUN,
-            OMGSUN, EPSSRPE, EPSSRPM, RE_au, J2E, J2EDOT, ROTEX, ROTEY, JSEM, n1SEM, n2M,
+            OMGSUN, EPSSRPE, EPSSRPM, RE_au, J2E, J2EDOT, ROTEX, ROTEY, nut_Δψ, nut_Δϵ,
+            ltp_eps0, ltp_pqpol, ltp_pqper, ltp_xypol, ltp_xyper, JSEM, n1SEM, n2M,
             CM, SM, R_moon, K2M, TAUM, n_moon, ITM_und, I_c, k_ν, C_c_m_A_c, K2E0, K2E1,
             K2E2, TAUE0, TAUE1, TAUE2, TAUER0, TAUER1, TAUER2, tid_num_coeff)
     end
