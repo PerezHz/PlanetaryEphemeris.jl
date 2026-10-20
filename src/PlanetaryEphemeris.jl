@@ -7,9 +7,9 @@ export PE, au, yr, su, ea, mo, daysec, clightkms, c_au_per_day, c_au_per_sec,
        c_cm_per_sec, J2000, ω_E, kmsec2auday, auday2kmsec, numberofbodies,
        ssb_posvel_pN, nbodyind, read_initial_conditions, read_parameters
 export Rx, Ry, Rz, ITM1, ITM2, pole_rotation
-export DE430Constants, DE430Params, NBP_pN_A_J23E_J23M_J2S_threads!, DE430!,
+export DE430Constants, DE430Params, DE430_bwd!, DE430!,
        t2c_jpl_de430, c2t_jpl_de430
-export DE440Constants, DE440Params, t2c_jpl_de440, c2t_jpl_de440
+export DE440Constants, DE440Params, DE440_bwd!, DE440!, t2c_jpl_de440, c2t_jpl_de440
 export semimajoraxis, eccentricity, inclination, longascnode, argperi, longperi, ecanomaly,
        trueanomaly,  meananomaly, timeperipass, lrlvec, eccentricanomaly, meanan2truean,
        meanmotion, time2truean
@@ -46,5 +46,7 @@ include("DE430/dynamicalmodel.jl")
 include("DE430/jetcoeffs.jl")
 include("DE440/params.jl")
 include("DE440/orientation.jl")
+include("DE440/dynamicalmodel.jl")
+include("DE440/jetcoeffs.jl")
 
 end # module

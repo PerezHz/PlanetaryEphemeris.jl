@@ -56,6 +56,33 @@ and derive the remaining quantities used by the model.
     diurnal and semi-diurnal deformations [day].
 - `tid_num_coeff::T`: overall numerical factor of the tidal acceleration of the
     Moon, `1.5 * (1 + GM[mo] / GM[ea])`.
+- `tid_frac_mo::T`, `tid_frac_ea::T`: fractions of the tidal acceleration of the Moon
+    relative to the Earth applied to the Moon and (with opposite sign) to the Earth,
+    `GM[ea] / (GM[ea] + GM[mo])` and `GM[mo] / (GM[ea] + GM[mo])`.
+- `RotM_su::Matrix{T}`: space-fixed -> Sun-fixed coordinate transformation,
+    `pole_rotation(deg2rad(SUNPOLERA), deg2rad(SUNPOLEDEC))`.
+- `J2EDOT_RE2::T`: rate of change of `J2E * RE_au^2`, `J2EDOT * RE_au^2 / yr` [au^2/day].
+- `N_MfigM_figE_coeff::T`: numerical factor of the torque on the Moon's figure due to
+    the Earth's figure, `7.5 * GM[ea]` [au^3/day^2].
+- `Rz_TAUER1::Matrix{T}`, `Rz_TAUER2::Matrix{T}`: rotations of the Earth by its rotational
+    time-lags for diurnal and semi-diurnal deformations, `Rz(-ω_E * TAUER1)` and
+    `Rz(-ω_E * TAUER2)`.
+- `tid_coeff_M::T`, `tid_coeff_S::T`: tidal acceleration coefficients of the Moon and the
+    Sun, `tid_num_coeff * GM[mo] * RE_au^5` and `tid_num_coeff * GM[su] * RE_au^5`
+    [au^8/day^2].
+- `I_m_und::Matrix{T}`, `inv_I_m_und::Matrix{T}`: Moon's undistorted mantle moment of
+    inertia, `ITM_und - I_c`, and its inverse.
+- `inv_I_c::Matrix{T}`: inverse of the Moon's core moment of inertia.
+- `ITM1_coeff::T`, `ITM2_coeff::T`: numerical factors of the time-dependent part of the
+    Moon's moment of inertia, `K2M * GM[ea] * R_moon^5` and `K2M * R_moon^5 / 3`.
+- `n_moon_p2::T`: square of the Moon's mean motion [rad^2/day^2].
+- `GJ::Vector{T}`: Sun's angular momentum times the gravitational constant, in the
+    space-fixed frame, `MOISUN * GM[su] * R_sun^2 * OMGSUN * RotM_su[3, :]`
+    [au^5/day^3].
+- `srp_E_fac::T`, `srp_M_fac::T`: solar radiation pressure coefficients of the Earth and
+    the Moon, `EPSSRPE * GM[su]` and `EPSSRPM * GM[su]` [au^3/day^2].
+- `gp_E_fac::T`, `gp_S_fac::T`: geodetic precession coefficients of the Earth and the
+    Sun, `3 GM[ea] / (2 c^2)` and `3 GM[su] / (2 c^2)` [au].
 """
 struct DE440Constants{T <: Real}
     N_ext::Int
@@ -103,6 +130,26 @@ struct DE440Constants{T <: Real}
     TAUER1::T
     TAUER2::T
     tid_num_coeff::T
+    tid_frac_mo::T
+    tid_frac_ea::T
+    GJ::Vector{T}
+    srp_E_fac::T
+    srp_M_fac::T
+    gp_E_fac::T
+    gp_S_fac::T
+    RotM_su::Matrix{T}
+    J2EDOT_RE2::T
+    N_MfigM_figE_coeff::T
+    Rz_TAUER1::Matrix{T}
+    Rz_TAUER2::Matrix{T}
+    tid_coeff_M::T
+    tid_coeff_S::T
+    I_m_und::Matrix{T}
+    inv_I_m_und::Matrix{T}
+    inv_I_c::Matrix{T}
+    ITM1_coeff::T
+    ITM2_coeff::T
+    n_moon_p2::T
 
     function DE440Constants{T}(filename::AbstractString) where {T <: Real}
         # Parameters in file
@@ -239,6 +286,43 @@ struct DE440Constants{T <: Real}
         n_moon = sqrt((GM[ea]+GM[mo])/((param("AMOON")/au)^3))
         # Overall numerical factor of the tidal acceleration of the Moon
         tid_num_coeff = 1.5*(1.0 + GM[mo]/GM[ea])
+        # Fractions of the tidal acceleration of the Moon relative to the Earth applied to
+        # the Moon and the Earth, so that it does not affect the Earth-Moon barycenter
+        tid_frac_mo = GM[ea]/(GM[ea]+GM[mo])
+        tid_frac_ea = GM[mo]/(GM[ea]+GM[mo])
+        # Space-fixed -> Sun-fixed coordinate transformation
+        RotM_su = pole_rotation(deg2rad(SUNPOLERA), deg2rad(SUNPOLEDEC))
+        # Rate of change of J2E * RE_au^2 [au^2/day]
+        J2EDOT_RE2 = J2EDOT*(RE_au^2)/yr
+        # Numerical factor of the torque on the Moon's figure due to the Earth's figure
+        N_MfigM_figE_coeff = 7.5*GM[ea]
+        # Rotations of the Earth by its diurnal and semi-diurnal rotational time-lags
+        Rz_TAUER1 = Rz(-ω_E*TAUER1)
+        Rz_TAUER2 = Rz(-ω_E*TAUER2)
+        # Tidal acceleration coefficients of the Moon and the Sun
+        tid_coeff_M = tid_num_coeff*(GM[mo]*(RE_au^5))
+        tid_coeff_S = tid_num_coeff*(GM[su]*(RE_au^5))
+        # Lunar undistorted mantle moment of inertia and its inverse
+        I_m_und = ITM_und - I_c
+        inv_I_m_und = inv(I_m_und)
+        # Inverse of the lunar core moment of inertia
+        inv_I_c = inv(I_c)
+        # Numerical factors of the time-dependent part of the lunar moment of inertia
+        # See equation (41) in page 17 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
+        ITM1_coeff = K2M*(GM[ea]*(R_moon^5))
+        ITM2_coeff = K2M*(R_moon^5)/3
+        # Square of the lunar mean motion
+        n_moon_p2 = n_moon^2
+        # Sun's angular momentum (times G), see equation (39) in page 7 of https://doi.org/10.3847/1538-3881/abd414
+        # The Sun's spin pole is the third row of the space-fixed -> Sun-fixed transformation
+        GJ = (MOISUN*(GM[su]*(R_sun^2))*OMGSUN)*RotM_su[3, :]
+        # Solar radiation pressure coefficients, see equations (40)-(41) in page 7 of https://doi.org/10.3847/1538-3881/abd414
+        srp_E_fac = EPSSRPE*GM[su]
+        srp_M_fac = EPSSRPM*GM[su]
+        # Geodetic precession coefficients ((1 + 2γ) / (2c^2) GM, γ = 1), see equation (44)
+        # in page 8 of https://doi.org/10.3847/1538-3881/abd414
+        gp_E_fac = 1.5*(c_m2*GM[ea])
+        gp_S_fac = 1.5*(c_m2*GM[su])
 
         # Check that all the parameters in file were used
         unused = setdiff(keys(params), used)
@@ -249,7 +333,10 @@ struct DE440Constants{T <: Real}
             OMGSUN, EPSSRPE, EPSSRPM, RE_au, J2E, J2EDOT, ROTEX, ROTEY, nut_Δψ, nut_Δϵ,
             ltp_eps0, ltp_pqpol, ltp_pqper, ltp_xypol, ltp_xyper, JSEM, n1SEM, n2M,
             CM, SM, R_moon, K2M, TAUM, n_moon, ITM_und, I_c, k_ν, C_c_m_A_c, K2E0, K2E1,
-            K2E2, TAUE0, TAUE1, TAUE2, TAUER0, TAUER1, TAUER2, tid_num_coeff)
+            K2E2, TAUE0, TAUE1, TAUE2, TAUER0, TAUER1, TAUER2, tid_num_coeff, tid_frac_mo,
+            tid_frac_ea, GJ, srp_E_fac, srp_M_fac, gp_E_fac, gp_S_fac, RotM_su, J2EDOT_RE2, N_MfigM_figE_coeff, Rz_TAUER1,
+            Rz_TAUER2, tid_coeff_M, tid_coeff_S, I_m_und, inv_I_m_und, inv_I_c, ITM1_coeff,
+            ITM2_coeff, n_moon_p2)
     end
 end
 
@@ -268,24 +355,37 @@ Parameters for the JPL DE440 planetary ephemeris model.
     tidal interactions.
 - `jd0::T`: reference epoch [JDTDB].
 - `consts::DE440Constants{T}`: physical parameters of the model.
+- `rv::RetAlloc{Taylor1{T}}`: time-delayed tidal interactions
+    buffer.
 """
 struct DE440Params{T <: Real}
     N::Int
     N_bwd::Int
     jd0::T
     consts::DE440Constants{T}
+    rv::RetAlloc{Taylor1{T}}
 end
 
 # Outer constructor
-function DE440Params(jd0::T; consts::DE440Constants{T} = DE440Constants{T}(joinpath(
-                     pkgdir(PlanetaryEphemeris), "data", "de440params.txt"))
+function DE440Params(jd0::T, q0::AbstractVector{T}, order::Int;
+                     parse_eqs::Bool = true,
+                     consts::DE440Constants{T} = DE440Constants{T}(joinpath(
+                         pkgdir(PlanetaryEphemeris), "data", "de440params.txt"))
                      ) where {T <: Real}
     # Total number of bodies
     N = length(consts.GM)
+    @assert length(q0) == 6N+12 "Length of q0 ($(length(q0))) is not 6N+12 = $(6N+12)"
     # Number of bodies used to compute time-delayed tidal interactions
     N_bwd = 11
+    # Time-delayed tidal interactions buffer
+    params_bwd = (N_bwd, jd0, consts)
+    t, x, dx = init_expansions(zero(T), q0, order)
+    idxs_bwd = union(nbodyind(N, 1:N_bwd), 6N+1:6N+12)
+    qq_bwd = [Taylor1(constant_term(x[i]), order) for i in idxs_bwd]
+    dqq_bwd = [Taylor1(constant_term(dx[i]), order) for i in idxs_bwd]
+    _, rv = _determine_parsing!(parse_eqs, DE440_bwd!, t, qq_bwd, dqq_bwd, params_bwd)
 
-    return DE440Params{T}(N, N_bwd, jd0, consts)
+    return DE440Params{T}(N, N_bwd, jd0, consts, rv)
 end
 
 # Print method for DE440Params

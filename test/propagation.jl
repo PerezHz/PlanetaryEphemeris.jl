@@ -117,7 +117,7 @@ end
 
         # DE440Constants and DE440Params
         q0_440 = read_initial_conditions(DE440_IC_FILE)
-        params_440 = DE440Params(DE440_JD0)
+        params_440 = DE440Params(DE440_JD0, q0_440, _order)
         consts_440 = params_440.consts
 
         @test params_440.N == length(consts_440.GM) == 11 + 343 + 30 + 36
@@ -357,6 +357,23 @@ end
         end
 
         # TO DO: test propagation with Float128
+
+    end
+
+    @testset "Propagation: DE440 dynamical model" begin
+
+        # Planetary ephemeris problem
+        tspan = (DE440_JD0, DE440_JD0 + nyears * yr)
+        q0 = read_initial_conditions(DE440_IC_FILE)
+        params = DE440Params(DE440_JD0, q0, _order)
+        PP = PlanetaryEphemerisProblem(DE440!, tspan, q0, params)
+        # Test propagation
+        @time sol = propagate(PP; maxsteps = 2, order = _order, abstol)
+
+        @test length(sol.t) == 3
+        @test size(sol.p) == (2, length(q0))
+        @test sol(sol.t[1]) == q0
+        @test all(isfinite, constant_term.(sol.p))
 
     end
 

@@ -524,7 +524,7 @@ function ITM1(x::T, y::T, z::T, consts) where {T <: Number}
     m[3,1] = m[1,3]
     m[2,3] = y*z
     m[3,2] = m[2,3]
-    return (-(consts.K2M*consts.GM[ea]*consts.R_moon^5)/r5)*m
+    return (-consts.ITM1_coeff/r5)*m
 end
 
 @doc raw"""
@@ -561,11 +561,11 @@ function ITM2(ωx::T, ωy::T, ωz::T, consts) where {T <: Number}
     ωz2 = ωz*ωz
     # Angular speed
     ω2 = ωx2+ωy2+ωz2
-    aux = (ω2-consts.n_moon^2)/3
+    aux = (ω2-consts.n_moon_p2)/3
     # Diagonal
     m[1,1] = ωx2-aux
     m[2,2] = ωy2-aux
-    m[3,3] = ωz2-(ω2+2*consts.n_moon^2)/3
+    m[3,3] = ωz2-(ω2+2*consts.n_moon_p2)/3
     # Off diagonal (the matrix is symmetric)
     m[1,2] = ωx*ωy
     m[2,1] = m[1,2]
@@ -573,7 +573,7 @@ function ITM2(ωx::T, ωy::T, ωz::T, consts) where {T <: Number}
     m[3,1] = m[1,3]
     m[2,3] = ωy*ωz
     m[3,2] = m[2,3]
-    return ((consts.K2M*consts.R_moon^5)/3)*m
+    return consts.ITM2_coeff*m
 end
 
 @doc raw"""
@@ -625,5 +625,5 @@ function ITM(q::Vector{T}, eulang::Vector{T}, ω_m::Vector{T}, consts) where {T 
     # Second term of the time-dependent part of lunar total moment of intertia
     itm2 = ITM2(ω_m[1], ω_m[2], ω_m[3], consts)
     # Lunar mantle intertia tensor
-    return (consts.ITM_und-consts.I_c)*one(q[1]) + itm1 + itm2
+    return consts.I_m_und*one(q[1]) + itm1 + itm2
 end

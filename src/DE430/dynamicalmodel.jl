@@ -12,9 +12,10 @@
 
 @doc raw"""
 
-    NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
+    DE430_bwd!(dq, q, params, t)
 
-Multi-threaded Solar System (JPL DE430/431) dynamical model. Bodies considered in the model are: the Sun,
+Multi-threaded Solar System (JPL DE430/431) dynamical model used to compute the
+time-delayed interactions of [`DE430!`](@ref). Bodies considered in the model are: the Sun,
 the eight planets, the Moon and the 343 main-belt asteroids included in the JPL DE430
 ephemeris. Effects considered are:
 
@@ -124,7 +125,7 @@ are the mantle and core angular velocities in the mantle frame; and ``\mathbf{N}
 to interaction between the mantle and core.
 
 """
-function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
+function DE430_bwd!(dq, q, params, t)
     # N: number of bodies
     # jd0: reference epoch [JDTDB]
     # consts: physical parameters of the model (see DE430Constants)
@@ -133,18 +134,18 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     local N_ext = consts.N_ext
     local GM = consts.GM
     local UJ_interaction = consts.UJ_interaction
-    local SUNPOLERA = consts.SUNPOLERA
-    local SUNPOLEDEC = consts.SUNPOLEDEC
-    local RE_au = consts.RE_au
-    local J2E = consts.J2E
-    local J2EDOT = consts.J2EDOT
+    local RotM_su = consts.RotM_su
+    local J2EDOT_RE2 = consts.J2EDOT_RE2
+    local N_MfigM_figE_coeff = consts.N_MfigM_figE_coeff
     local JSEM = consts.JSEM
     local n1SEM = consts.n1SEM
     local n2M = consts.n2M
     local CM = consts.CM
     local SM = consts.SM
-    local ITM_und = consts.ITM_und
+    local I_m_und = consts.I_m_und
+    local inv_I_m_und = consts.inv_I_m_und
     local I_c = consts.I_c
+    local inv_I_c = consts.inv_I_c
     local k_ν = consts.k_ν
     local C_c_m_A_c = consts.C_c_m_A_c
 
@@ -156,11 +157,11 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     # Matrix elements of lunar moment of inertia at time t-TAUM (without tidal distortion)
     # See equations (36) to (41) in pages 16-17 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     # ITM(q_del_τ_M, eulang_del_τ_M)
-    local I_m_t = (ITM_und-I_c) .* one_t         # Undistorted moment of inertia of the mantle, see equation (40)
+    local I_m_t = I_m_und .* one_t               # Undistorted moment of inertia of the mantle, see equation (40)
     local dI_m_t = ordpres_differentiate.(I_m_t) # Time-derivative of lunar mantle I at time t-TAUM
-    local inv_I_m_t = inv(I_m_t) .* one_t        # Inverse of lunar mantle I matrix at time t-TAUM
+    local inv_I_m_t = inv_I_m_und .* one_t       # Inverse of lunar mantle I matrix at time t-TAUM
     local I_c_t = I_c .* one_t                   # Lunar core I matrix, see equation (39)
-    local inv_I_c_t = inv(I_c_t) .* one_t        # Inverse of lunar core I matrix
+    local inv_I_c_t = inv_I_c .* one_t           # Inverse of lunar core I matrix
     local I_M_t = I_m_t+I_c_t                    # Total I matrix (mantle + core)
 
     #=
@@ -392,12 +393,10 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     N_MfigM[3] = zero_q_1                     # z-axis component
 
     # Rotations to and from Earth, Sun and Moon pole-oriented frames
-    local αs = deg2rad(SUNPOLERA*one_t)           # Sun's rotation pole right ascension (radians)
-    local δs = deg2rad(SUNPOLEDEC*one_t)           # Sun's rotation pole right ascension (radians)
     # Space-fixed -> body-fixed coordinate transformations
     RotM = Array{S}(undef, 3, 3, 5)
     local RotM[:,:,ea] = c2t_jpl_de430(dsj2k, consts)   # Earth
-    local RotM[:,:,su] = pole_rotation(αs, δs)  # Sun
+    local RotM[:,:,su] = RotM_su .* one_t  # Sun
     # Lunar mantle Euler angles
     ϕ_m = q[6N+1]
     θ_m = q[6N+2]
@@ -435,14 +434,14 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
 
     # Second zonal harmonic coefficient
     # See Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract                          # Earth's radius in au
-    local J2E_t = (J2E + J2EDOT*(dsj2k/yr))*(RE_au^2)  # Earth (considering a linear change in time with rate J2EDOT)
+    local J2E_t = JSEM[ea,2] + (J2EDOT_RE2*dsj2k)  # Earth (considering a linear change in time with rate J2EDOT)
     local J2S_t = JSEM[su,2]*one_t                     # Sun (static)
     # Vector of second zonal harmonic coefficients
     J2_t = Array{S}(undef, 5)
     J2_t[su] = J2S_t             # Earth
     J2_t[ea] = J2E_t             # Sun
     # Lunar torques: overall numerical factor in equation (44) in page 18 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    local N_MfigM_figE_factor = 7.5*GM[ea]*J2E_t
+    local N_MfigM_figE_factor = N_MfigM_figE_coeff*J2E_t
 
     #=
     Compute point-mass Newtonian accelerations, all bodies
@@ -1050,7 +1049,7 @@ end
     DE430!(dq, q, params, t)
 
 Solar System (JPL DE430/431) dynamical model. This function uses threads and includes all the effects in
-`NBP_pN_A_J23E_J23M_J2S_threads!` plus
+`DE430_bwd!` plus
 
 - Tidal secular acceleration of Moon due to rides raised on Earth by both the Moon and the Sun: see equation (32) in page 14 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 ```math
@@ -1077,9 +1076,12 @@ the position vectors ``\mathbf{r}`` and ``\mathbf{r}_j^*`` with ``j = 0, 1, 2`` 
 expressed in cylindrical coordinates with the ``Z`` axis perpendicular to the Earth’s equator,
 so that ``\mathbf{r} = \mathbf{\rho} + \mathbf{z}`` and the time-delayed position of the tide-raising
 body is given by ``\mathbf{r}_j^* = \mathbf{\rho}_j^* + \mathbf{z}_j^*``; and ``\mathbf{a}_{M,tide}`` is
-the acceleration of the Moon with respect to Earth, for each tide-raising body.
+the acceleration of the Moon with respect to Earth, for each tide-raising body. This
+acceleration is split between the Moon (a fraction ``m_E/(m_E+m_M)``) and the Earth (a
+fraction ``-m_M/(m_E+m_M)``), so that it does not affect the motion of the Earth-Moon
+barycenter.
 
-See also [`NBP_pN_A_J23E_J23M_J2S_threads!`](@ref).
+See also [`DE430_bwd!`](@ref).
 """
 function DE430!(dq, q, params, t)
     # Total number of bodies
@@ -1093,11 +1095,9 @@ function DE430!(dq, q, params, t)
     local N_ext = consts.N_ext
     local GM = consts.GM
     local UJ_interaction = consts.UJ_interaction
-    local SUNPOLERA = consts.SUNPOLERA
-    local SUNPOLEDEC = consts.SUNPOLEDEC
-    local RE_au = consts.RE_au
-    local J2E = consts.J2E
-    local J2EDOT = consts.J2EDOT
+    local RotM_su = consts.RotM_su
+    local J2EDOT_RE2 = consts.J2EDOT_RE2
+    local N_MfigM_figE_coeff = consts.N_MfigM_figE_coeff
     local JSEM = consts.JSEM
     local n1SEM = consts.n1SEM
     local n2M = consts.n2M
@@ -1105,6 +1105,7 @@ function DE430!(dq, q, params, t)
     local SM = consts.SM
     local TAUM = consts.TAUM
     local I_c = consts.I_c
+    local inv_I_c = consts.inv_I_c
     local k_ν = consts.k_ν
     local C_c_m_A_c = consts.C_c_m_A_c
     local K2E0 = consts.K2E0
@@ -1113,9 +1114,12 @@ function DE430!(dq, q, params, t)
     local TAUE0 = consts.TAUE0
     local TAUE1 = consts.TAUE1
     local TAUE2 = consts.TAUE2
-    local TAUER1 = consts.TAUER1
-    local TAUER2 = consts.TAUER2
-    local tid_num_coeff = consts.tid_num_coeff
+    local Rz_TAUER1 = consts.Rz_TAUER1
+    local Rz_TAUER2 = consts.Rz_TAUER2
+    local tid_coeff_M = consts.tid_coeff_M
+    local tid_coeff_S = consts.tid_coeff_S
+    local tid_frac_mo = consts.tid_frac_mo
+    local tid_frac_ea = consts.tid_frac_ea
     # Time Taylor variable
     local __t = Taylor1(numtype(t), TS.order(t))
     # Type of positions/velocities components
@@ -1137,7 +1141,7 @@ function DE430!(dq, q, params, t)
     local rv = params.rv
     local params_bwd = (N_bwd, jd0, consts)
     # Backward integration
-    local _ = TaylorIntegration.jetcoeffs!(Val(NBP_pN_A_J23E_J23M_J2S_threads!), t, qq_bwd, dqq_bwd, params_bwd, rv)
+    local _ = TaylorIntegration.jetcoeffs!(Val(DE430_bwd!), t, qq_bwd, dqq_bwd, params_bwd, rv)
 
     # Evaluation of time-delayed positions
     local q_del_τ_M = evaluate(qq_bwd, __t-TAUM)   # TAUM
@@ -1155,7 +1159,7 @@ function DE430!(dq, q, params, t)
     local dI_m_t = ordpres_differentiate.(I_m_t) # Time-derivative of lunar mantle I at time t-TAUM
     local inv_I_m_t = inv(I_m_t) .* one_t        # Inverse of lunar mantle I matrix at time t-TAUM
     local I_c_t = I_c.*one_t                     # Lunar core I matrix, see equation (39)
-    local inv_I_c_t = inv(I_c_t) .* one_t        # Inverse of lunar core I matrix
+    local inv_I_c_t = inv_I_c .* one_t           # Inverse of lunar core I matrix
     local I_M_t = I_m_t+I_c_t                    # Total I matrix (mantle + core)
 
     #=
@@ -1388,12 +1392,10 @@ function DE430!(dq, q, params, t)
     N_MfigM[3] = zero_q_1                     # z-axis component
 
     # Rotations to and from Earth, Sun and Moon pole-oriented frames
-    local αs = deg2rad(SUNPOLERA*one_t)           # Sun's rotation pole right ascension (radians)
-    local δs = deg2rad(SUNPOLEDEC*one_t)           # Sun's rotation pole right ascension (radians)
     # Space-fixed -> body-fixed coordinate transformations
     RotM = Array{S}(undef, 3, 3, 5)
     local RotM[:,:,ea] = c2t_jpl_de430(dsj2k, consts)   # Earth
-    local RotM[:,:,su] = pole_rotation(αs, δs)  # Sun
+    local RotM[:,:,su] = RotM_su .* one_t  # Sun
     # Lunar mantle Euler angles
     ϕ_m = q[6N+1]
     θ_m = q[6N+2]
@@ -1431,14 +1433,14 @@ function DE430!(dq, q, params, t)
 
     # Second zonal harmonic coefficient
     # See Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract                          # Earth's radius in au
-    local J2E_t = (J2E + J2EDOT*(dsj2k/yr))*(RE_au^2)  # Earth (considering a linear change in time with rate J2EDOT)
+    local J2E_t = JSEM[ea,2] + (J2EDOT_RE2*dsj2k)  # Earth (considering a linear change in time with rate J2EDOT)
     local J2S_t = JSEM[su,2]*one_t                     # Sun (static)
     # Vector of second zonal harmonic coefficients
     J2_t = Array{S}(undef, 5)
     J2_t[su] = J2S_t             # Earth
     J2_t[ea] = J2E_t             # Sun
     # Lunar torques: overall numerical factor in equation (44) in page 18 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    local N_MfigM_figE_factor = 7.5*GM[ea]*J2E_t
+    local N_MfigM_figE_factor = N_MfigM_figE_coeff*J2E_t
 
     #=
     Tidal accelerations
@@ -1456,8 +1458,8 @@ function DE430!(dq, q, params, t)
     local q_SE_τ_2 = q_del_τ_2[3su-2:3su] .- q_del_τ_2[3ea-2:3ea]
     # R3X: geocentric space-fixed -> rotational time-delay -> geocentric Earth true-equator-of-date frame
     local R30 = RotM[:,:,ea]               # *Rz(-ω_E*τ_0) == Id(3x3), since τ_0=0
-    local R31 = Rz(-ω_E*TAUER1)*RotM[:,:,ea]
-    local R32 = Rz(-ω_E*TAUER2)*RotM[:,:,ea]
+    local R31 = Rz_TAUER1*RotM[:,:,ea]
+    local R32 = Rz_TAUER2*RotM[:,:,ea]
 
     # Position vectors of tide-raising body in geocentric Earth true-equator-of-date frame
     local r_star_M_0 = R30*q_ME_τ_0 # r-star 0, Moon
@@ -2069,13 +2071,12 @@ function DE430!(dq, q, params, t)
     a_tid_2_S_y = k_22E_div_r2s5_S*(  (2coeff1_2_S*r_star_S_2[2])-(ρ2s2_S+coeff3_2_S)*Y_bf[mo,ea]  )
     a_tid_2_S_z = k_22E_div_r2s5_S*(  -coeff3_2_S*Z_bf[mo,ea]  )
 
-    # Numerical factors
-    RE_div_r_p5 = (RE_au/r_p1d2[mo,ea])^5   # (Earth's radius / distance)^5
-    aux_tidacc = tid_num_coeff*RE_div_r_p5  # 3*(m_E + m_M) * R_E^5 / 2 / m_E / r^5
+    # Earth-Moon distance^5
+    r_EM_p5 = r_p1d2[mo,ea]^5
 
-    # Moon's and Sun's contributions * mass parameter
-    a_tidal_coeff_M = GM[mo]*aux_tidacc
-    a_tidal_coeff_S = GM[su]*aux_tidacc
+    # Moon's and Sun's contributions: 3*(m_E + m_M) * R_E^5 * mass parameter / 2 / m_E / r^5
+    a_tidal_coeff_M = tid_coeff_M/r_EM_p5
+    a_tidal_coeff_S = tid_coeff_S/r_EM_p5
 
     # Add contributions from long-period, diurnal and semi-diurnal tides (true-of-date coordinates)
     a_tidal_tod_x = (a_tidal_coeff_M*((a_tid_0_M_x+a_tid_1_M_x)+a_tid_2_M_x)) + (a_tidal_coeff_S*((a_tid_0_S_x+a_tid_1_S_x)+a_tid_2_S_x))
@@ -2087,14 +2088,22 @@ function DE430!(dq, q, params, t)
     a_tidal_y = ((RotM[1,2,ea]*a_tidal_tod_x)+(RotM[2,2,ea]*a_tidal_tod_y)) + (RotM[3,2,ea]*a_tidal_tod_z)
     a_tidal_z = ((RotM[1,3,ea]*a_tidal_tod_x)+(RotM[2,3,ea]*a_tidal_tod_y)) + (RotM[3,3,ea]*a_tidal_tod_z)
 
-    # Add tidal acceleration to Moon's acceleration due to extended-body effects
-    accX_mo_tides = accX[mo] + a_tidal_x
-    accY_mo_tides = accY[mo] + a_tidal_y
-    accZ_mo_tides = accZ[mo] + a_tidal_z
+    # Split the tidal acceleration of the Moon relative to the Earth between the Moon and
+    # the Earth, so that it does not affect the motion of the Earth-Moon barycenter
+    # See Section III.C in page 14 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
+    accX_mo_tides = accX[mo] + (tid_frac_mo*a_tidal_x)
+    accY_mo_tides = accY[mo] + (tid_frac_mo*a_tidal_y)
+    accZ_mo_tides = accZ[mo] + (tid_frac_mo*a_tidal_z)
+    accX_ea_tides = accX[ea] - (tid_frac_ea*a_tidal_x)
+    accY_ea_tides = accY[ea] - (tid_frac_ea*a_tidal_y)
+    accZ_ea_tides = accZ[ea] - (tid_frac_ea*a_tidal_z)
     # Total extended-body effects
     accX[mo] = accX_mo_tides
     accY[mo] = accY_mo_tides
     accZ[mo] = accZ_mo_tides
+    accX[ea] = accX_ea_tides
+    accY[ea] = accY_ea_tides
+    accZ[ea] = accZ_ea_tides
 
     # Fill accelerations (post-Newtonian and extended body accelerations)
     # postNewton -> post-Newtonian accelerations (all bodies)
