@@ -13,9 +13,9 @@ export DE440Constants, DE440Params, DE440_bwd!, DE440!, t2c_jpl_de440, c2t_jpl_d
 export semimajoraxis, eccentricity, inclination, longascnode, argperi, longperi, ecanomaly,
        trueanomaly,  meananomaly, timeperipass, lrlvec, eccentricanomaly, meanan2truean,
        meanmotion, time2truean
-export propagate, selecteph2jld2, save2jld2andcheck, selecteph
+export propagate, selecteph
 
-using TaylorIntegration, LinearAlgebra, Printf, DelimitedFiles, JLD2, Quadmath
+using TaylorIntegration, LinearAlgebra, Printf, DelimitedFiles, Quadmath
 
 using Dates: DateTime, datetime2julian, year
 using Parameters: @unpack

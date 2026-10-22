@@ -1,4 +1,4 @@
-using ArgParse, PlanetaryEphemeris, Dates, Printf
+using ArgParse, PlanetaryEphemeris, Dates, JLD2, Printf
 
 # Parse a vector of body indices given as a comma-separated list of indices and
 # ranges, e.g. "1:27", "1,2,3", "1:11,55,66" or "[1:2:11, 55]"
@@ -37,6 +37,10 @@ function parse_commandline()
             help = "Initial conditions file"
             arg_type = String
             default = joinpath(pkgdir(PlanetaryEphemeris), "data", "de430ic.txt")
+        "--output", "-o"
+            help = "Output (.jld2) ephemeris file"
+            arg_type = String
+            required = true
         "--nyears"
             help = "Number of years"
             arg_type = Float64
@@ -68,13 +72,13 @@ function parse_commandline()
         examples:\n
         \n
         # Multi-threaded\n
-        julia -t 10 --project de430.jl -p ../data/de430params.txt -i ../data/de430ic.txt --nyears 100.0\n
+        julia -t 10 --project de430.jl -p ../data/de430params.txt -i ../data/de430ic.txt --nyears 100.0 -o de430.jld2\n
         \n
         # Single-threaded\n
-        julia --project de430.jl -p ../data/de430params.txt -i ../data/de430ic.txt --nyears 100.0\n
+        julia --project de430.jl -p ../data/de430params.txt -i ../data/de430ic.txt --nyears 100.0 -o de430.jld2\n
         \n
         # Save the Sun, planets, Moon, Pluto and Ceres only\n
-        julia -t 10 --project de430.jl --nyears 100.0 --bodyind 1:12\n
+        julia -t 10 --project de430.jl --nyears 100.0 -o de430.jld2 --bodyind 1:12\n
         \n
     """
 
@@ -103,6 +107,10 @@ function main()
     # Initial conditions file
     icfile::String = parsed_args["initcond"]
     println("• Initial conditions file: ", icfile)
+
+    # Output ephemeris file
+    output::String = parsed_args["output"]
+    println("• Output ephemeris file: ", output)
 
     # Initial conditions and their epoch [JD TDB]
     jd0, q0 = read_initial_conditions(icfile)
@@ -147,7 +155,11 @@ function main()
     @time sol = propagate(PE; maxsteps, order, abstol, parse_eqs)
 
     # Save results
-    selecteph2jld2(sol, bodyind, nyears)
+    # Select the `bodyind`-th bodies and the lunar mantle and core Euler angles and
+    # angular velocities and TT-TDB
+    sseph = selecteph(sol, bodyind; euler = true, ttmtdb = true)
+    println("Saving ephemeris to file: ", output)
+    jldsave(output; sseph)
 
     return nothing
 end

@@ -285,10 +285,12 @@ end
 
         # Save results
         bodyind = 1:(11+16)
-        filename = selecteph2jld2(sol, bodyind, nyears)
-        recovered_sol = JLD2.load(filename, "ss16ast_eph")
+        filename = "sseph.jld2"
+        sseph = selecteph(sol, bodyind; euler = true, ttmtdb = true)
+        jldsave(filename; sseph)
+        recovered_sol = JLD2.load(filename, "sseph")
 
-        @test selecteph(sol, bodyind, euler = true, ttmtdb = true) == recovered_sol
+        @test sseph == recovered_sol
 
         acceph, poteph = loadeph(recovered_sol, GM)
 
@@ -296,11 +298,11 @@ end
         @test size(acceph.p, 2) == (size(recovered_sol.p, 2) - 13) ÷ 2
         @test size(poteph.p, 2) == (size(recovered_sol.p, 2) - 13) ÷ 6
 
-        @test isnothing(save2jld2andcheck(filename, Dict(
-           "sseph" => recovered_sol,
-           "acceph" => acceph,
-           "poteph" => poteph
-        )))
+        jldsave(filename; sseph = recovered_sol, acceph, poteph)
+
+        @test JLD2.load(filename, "sseph") == recovered_sol
+        @test JLD2.load(filename, "acceph") == acceph
+        @test JLD2.load(filename, "poteph") == poteph
         rm(filename)
 
         # Test selecteph
