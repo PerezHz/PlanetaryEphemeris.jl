@@ -96,9 +96,10 @@ end
 
     @testset "Initial conditions" begin
         # read_initial_conditions
-        q0_64 = read_initial_conditions(DE430_IC_FILE)
+        jd0_64, q0_64 = read_initial_conditions(DE430_IC_FILE)
         q0_128 = Float128.(q0_64)
 
+        @test jd0_64 == DE430_JD0
         @test isa(q0_64, Vector{Float64})
         @test isa(q0_128, Vector{Float128})
         @test length(q0_64) == length(q0_128) == 6*N+13
@@ -116,10 +117,11 @@ end
         @test consts_128.GM == Float128.(consts_64.GM)
 
         # DE440Constants and DE440Params
-        q0_440 = read_initial_conditions(DE440_IC_FILE)
+        jd0_440, q0_440 = read_initial_conditions(DE440_IC_FILE)
         params_440 = DE440Params(DE440_JD0, q0_440, _order)
         consts_440 = params_440.consts
 
+        @test jd0_440 == DE440_JD0
         @test params_440.N == length(consts_440.GM) == 11 + 343 + 30 + 36
         @test length(q0_440) == 6 * params_440.N + 12
         @test all(consts_440.UJ_interaction[2:end, su])
@@ -178,7 +180,7 @@ end
 
         # Test propagation
         tspan = (DE430_JD0, DE430_JD0 + nyears * yr)
-        q0 = read_initial_conditions(DE430_IC_FILE)
+        _, q0 = read_initial_conditions(DE430_IC_FILE)
         params = (N, DE430_JD0)
         PP = PlanetaryEphemerisProblem(freeparticle!, tspan, q0, params)
         sol = propagate(PP; order = _order, abstol)
@@ -253,7 +255,7 @@ end
 
         # Planetary ephemeris problem
         tspan = (DE430_JD0, DE430_JD0 + nyears * yr)
-        q0 = read_initial_conditions(DE430_IC_FILE)
+        _, q0 = read_initial_conditions(DE430_IC_FILE)
         params = DE430Params(DE430_JD0, q0, _order)
         GM = params.consts.GM
         PP = PlanetaryEphemerisProblem(DE430!, tspan, q0, params)
@@ -364,7 +366,7 @@ end
 
         # Planetary ephemeris problem
         tspan = (DE440_JD0, DE440_JD0 + nyears * yr)
-        q0 = read_initial_conditions(DE440_IC_FILE)
+        _, q0 = read_initial_conditions(DE440_IC_FILE)
         params = DE440Params(DE440_JD0, q0, _order)
         PP = PlanetaryEphemerisProblem(DE440!, tspan, q0, params)
         # Test propagation
@@ -372,6 +374,7 @@ end
 
         @test length(sol.t) == 3
         @test size(sol.p) == (2, length(q0))
+        @test numberofbodies(sol) == params.N
         @test sol(sol.t[1]) == q0
         @test all(isfinite, constant_term.(sol.p))
 

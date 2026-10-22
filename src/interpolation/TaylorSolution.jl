@@ -6,9 +6,11 @@ timespan(sol::TaylorSolution) = minmax(sol.t[1], sol.t[end])
     numberofbodies(sol::TaylorSolution)
 
 Return the number of bodies saved in a dense `TaylorSolution` produced by
-`PlanetaryEphemeris`.
+`PlanetaryEphemeris`, i.e. with `6N` positions and velocities followed by the 12
+lunar mantle and core Euler angles and angular velocities and, optionally (e.g. in
+DE430), TT-TDB.
 """
-numberofbodies(L::Int) = (L - 13) ÷ 6
+numberofbodies(L::Int) = (L - 12) ÷ 6
 numberofbodies(v::AbstractVector{T}) where {T} = numberofbodies(length(v))
 numberofbodies(m::AbstractMatrix{T}) where {T} = numberofbodies(size(m, 2))
 numberofbodies(sol::TaylorSolution) = numberofbodies(size(sol.p, 2))

@@ -28,8 +28,9 @@ The current version of this package may be installed in Julia pkg manager via:
 ## Usage
 
 `PlanetaryEphemeris.propagate` is a high-level function which performs the
-numerical integration. The file `de430.jl` in the `scripts` directory
-contains an example script. This script may be called as:
+numerical integration. The files `de430.jl` and `de440.jl` in the `scripts`
+directory contain example scripts for the JPL DE430 and DE440 models. These
+scripts may be called as:
 
 `julia --project de430.jl --help`
 

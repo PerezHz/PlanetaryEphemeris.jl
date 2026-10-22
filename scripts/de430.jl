@@ -1,5 +1,24 @@
 using ArgParse, PlanetaryEphemeris, Dates, Printf
 
+# Parse a vector of body indices given as a comma-separated list of indices and
+# ranges, e.g. "1:27", "1,2,3", "1:11,55,66" or "[1:2:11, 55]"
+function ArgParse.parse_item(::Type{AbstractVector{Int}}, x::AbstractString)
+    v = Int[]
+    for item in split(strip(x, ['[', ']', ' ']), r"[,\s]+"; keepempty = false)
+        r = parse.(Int, split(item, ':'))
+        if length(r) == 1
+            push!(v, r[1])
+        elseif length(r) == 2
+            append!(v, r[1]:r[2])
+        elseif length(r) == 3
+            append!(v, r[1]:r[2]:r[3])
+        else
+            throw(ArgumentError("Invalid body indices: $x"))
+        end
+    end
+    return v
+end
+
 function parse_commandline()
 
     s = ArgParseSettings()
@@ -10,11 +29,11 @@ function parse_commandline()
     s.description = "Integrate JPL DE430 ephemeris"
 
     @add_arg_table! s begin
-        "--d0"
-            help = "Initial date"
-            arg_type = DateTime
-            default = DateTime(1969, 6, 28)
-        "--q0"
+        "--params", "-p"
+            help = "Parameters file"
+            arg_type = String
+            default = joinpath(pkgdir(PlanetaryEphemeris), "data", "de430params.txt")
+        "--initcond", "-i"
             help = "Initial conditions file"
             arg_type = String
             default = joinpath(pkgdir(PlanetaryEphemeris), "data", "de430ic.txt")
@@ -39,8 +58,9 @@ function parse_commandline()
             arg_type = Bool
             default = true
         "--bodyind"
-            help = "Body indices in output"
-            arg_type = UnitRange{Int}
+            help = "Body indices in output, e.g. 1:27 or 1:11,55,66 (default: Sun, \
+                planets, Moon, Pluto and the 16 most massive asteroids)"
+            arg_type = AbstractVector{Int}
             default = 1:(11+16)
     end
 
@@ -48,10 +68,13 @@ function parse_commandline()
         examples:\n
         \n
         # Multi-threaded\n
-        julia -t 10 --project de430.jl --d0 "1969-06-28T00:00:00" --nyears 100.0\n
+        julia -t 10 --project de430.jl -p ../data/de430params.txt -i ../data/de430ic.txt --nyears 100.0\n
         \n
         # Single-threaded\n
-        julia --project de430.jl --d0 "1969-06-28T00:00:00" --nyears 100.0\n
+        julia --project de430.jl -p ../data/de430params.txt -i ../data/de430ic.txt --nyears 100.0\n
+        \n
+        # Save the Sun, planets, Moon, Pluto and Ceres only\n
+        julia -t 10 --project de430.jl --nyears 100.0 --bodyind 1:12\n
         \n
     """
 
@@ -73,13 +96,17 @@ function main()
     # Number of threads
     println("• Number of threads: ", Threads.nthreads())
 
-    # Initial date
-    d0::DateTime = parsed_args["d0"]
-    println("• Initial date: ", d0)
+    # Parameters file
+    paramsfile::String = parsed_args["params"]
+    println("• Parameters file: ", paramsfile)
 
     # Initial conditions file
-    filename::String = parsed_args["q0"]
-    println("• Initial conditions file: ", filename)
+    icfile::String = parsed_args["initcond"]
+    println("• Initial conditions file: ", icfile)
+
+    # Initial conditions and their epoch [JD TDB]
+    jd0, q0 = read_initial_conditions(icfile)
+    println("• Initial date: ", julian2datetime(jd0))
 
     # Number of years
     nyears::Float64 = parsed_args["nyears"]
@@ -102,14 +129,13 @@ function main()
     println("• Use @taylorize: ", parse_eqs)
 
     # Body indices in output
-    bodyind::UnitRange{Int} = parsed_args["bodyind"]
+    bodyind::AbstractVector{Int} = parsed_args["bodyind"]
     println("• Body indices in output: ", bodyind)
 
     # Planetary ephemeris problem
-    jd0 = datetime2julian(d0)
     tspan = (jd0, jd0 + nyears * yr)
-    q0 = read_initial_conditions(filename)
-    params = DE430Params(jd0, q0, order)
+    consts = DE430Constants{Float64}(paramsfile)
+    params = DE430Params(jd0, q0, order; parse_eqs, consts)
     PE = PlanetaryEphemerisProblem(DE430!, tspan, q0, params)
 
     printitle("Integrator warmup", "-")

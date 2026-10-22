@@ -3,10 +3,9 @@ using PrecompileTools
 @setup_workload begin
     # Initial conditions and their epoch [JD TDB]
     const filename = joinpath(pkgdir(PlanetaryEphemeris), "data", "de430ic.txt")
-    const jd0 = 2440400.5
+    const jd0, q0 = read_initial_conditions(filename)
     # Time span
     const tspan = (jd0, jd0 + yr)
-    const q0 = read_initial_conditions(filename)
     # Parameters
     const maxsteps = 1
     const precompile_order = 15

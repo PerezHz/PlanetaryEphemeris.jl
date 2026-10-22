@@ -69,10 +69,11 @@ function loadeph(ss16asteph::TaylorSolution, μ::Vector{<:Real})
 end
 
 """
-    selecteph2jld2(sseph::TaylorSolution, bodyind, nyears)
+    selecteph2jld2(sseph::TaylorSolution, bodyind, nyears; ttmtdb = true)
 
 Save a subset of `sseph` containing only the ephemeris of the
-`bodyind`-th bodies in a `.jld2` file named as follows
+`bodyind`-th bodies, the lunar mantle and core Euler angles and angular
+velocities and, if `ttmtdb` is `true`, TT-TDB, in a `.jld2` file named as follows
 
     sseph{N}ast{n}_{p/m}{nyears}y_et.jld2
 
@@ -81,7 +82,7 @@ of asteroids to be saved in the file, `p/m` indicates a forward
 or backward integration and `nyears` is the number of years.
 """
 function selecteph2jld2(sseph::TaylorSolution, bodyind::AbstractVector{Int},
-                        nyears::Number)
+                        nyears::Number; ttmtdb::Bool = true)
     # Total number of bodies
     N = numberofbodies(sseph)
     # Number of asteroids in sseph
@@ -98,9 +99,9 @@ function selecteph2jld2(sseph::TaylorSolution, bodyind::AbstractVector{Int},
     # Name of the file
     ss16ast_fname = "sseph$(lpad(nast,3,'0'))ast$(lpad(nastout,3,'0'))_" *
         sgn_yrs * "$(nyrs_int)y_et.jld2"
-    # Select bodies to be saved + Lunar orientation + TT-TDB
+    # Select bodies to be saved + Lunar orientation (+ TT-TDB)
     t0, tf = timespan(sseph)
-    ss16ast_eph = selecteph(sseph, bodyind, t0, tf, euler = true, ttmtdb = true)
+    ss16ast_eph = selecteph(sseph, bodyind, t0, tf; euler = true, ttmtdb)
     # Open file
     println("Saving solution to file: ", ss16ast_fname)
     jldsave(ss16ast_fname; ss16ast_eph)

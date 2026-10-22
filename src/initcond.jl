@@ -3,15 +3,17 @@
 """
     read_initial_conditions(filename)
 
-Read a vector of initial conditions from a file.
+Read a vector of initial conditions from a file and return its epoch [JD TDB]
+and the vector, i.e. `jd0, q0 = read_initial_conditions(filename)`.
 
 # Extended help
 
 The file must follow the `PlanetaryEphemeris.jl initial conditions v1` format,
 written by `scripts/de430ic.jl` and `scripts/de440ic.jl`:
-- A header of `# key = value` lines with, at least, keys `format` and `ncoords`
-  (the length of the initial conditions vector). Other lines starting with `#`
-  and blank lines are ignored.
+- A header of `# key = value` lines with, at least, keys `format`, `epoch` (the
+  epoch of the initial conditions [JD TDB]) and `ncoords` (the length of the
+  initial conditions vector). Other lines starting with `#` and blank lines are
+  ignored.
 - One `index id coordinate value unit` line per coordinate, where `index` is
   the position of `value` in the initial conditions vector.
 
@@ -42,6 +44,8 @@ function read_initial_conditions(filename::AbstractString)
     fmt = get(header, "format", "")
     fmt == "PlanetaryEphemeris.jl initial conditions v1" ||
         throw(ArgumentError("Unknown initial conditions format: \"$fmt\""))
+    haskey(header, "epoch") || throw(ArgumentError("Missing epoch in header"))
+    jd0 = parse(Float64, header["epoch"])
     haskey(header, "ncoords") || throw(ArgumentError("Missing ncoords in header"))
     ncoords = parse(Int, header["ncoords"])
     # Check indices
@@ -51,5 +55,5 @@ function read_initial_conditions(filename::AbstractString)
     q = Vector{Float64}(undef, ncoords)
     q[idxs] .= vals
 
-    return q
+    return jd0, q
 end
