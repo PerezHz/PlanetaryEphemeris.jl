@@ -277,7 +277,7 @@ function main()
     sseph = taylorinteg(evaleph!, q0, t0, tf, order, abstol, params; maxstepsize, maxsteps)
 
     # Acceleration and Newtonian potential ephemerides
-    acceph, poteph = PlanetaryEphemeris.loadeph(sseph, μ)
+    acceph, poteph = PlanetaryEphemeris.accpoteph(sseph, μ)
 
     # Save output
     jldsave(output; spkids, μ, sseph, acceph, poteph)

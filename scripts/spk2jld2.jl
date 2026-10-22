@@ -1,6 +1,6 @@
 using ArgParse, PlanetaryEphemeris, Dates, TaylorSeries, LinearAlgebra
 using SPICE, Printf, JLD2
-using PlanetaryEphemeris: loadeph
+using PlanetaryEphemeris: accpoteph
 
 const TS = TaylorSeries
 const DensePropagation2{T, U} = TaylorSolution{
