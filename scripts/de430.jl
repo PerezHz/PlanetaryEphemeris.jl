@@ -19,6 +19,20 @@ function ArgParse.parse_item(::Type{AbstractVector{Int}}, x::AbstractString)
     return v
 end
 
+# NAIF ids of the `N` bodies in the initial conditions file `filename`
+function read_ids(filename::AbstractString, N::Int)
+    ids = Vector{String}(undef, N)
+    for line in eachline(filename)
+        line = strip(line)
+        (isempty(line) || startswith(line, '#')) && continue
+        # The x coordinate of the `j`-th body has index `3j-2`
+        fields = split(line)
+        i = parse(Int, fields[1])
+        (i ≤ 3N && i % 3 == 1) && (ids[(i + 2) ÷ 3] = fields[2])
+    end
+    return ids
+end
+
 function parse_commandline()
 
     s = ArgParseSettings()
@@ -158,8 +172,10 @@ function main()
     # Select the `bodyind`-th bodies and the lunar mantle and core Euler angles and
     # angular velocities and TT-TDB
     sseph = selecteph(sol, bodyind; euler = true, ttmtdb = true)
+    # NAIF ids of the `bodyind`-th bodies
+    ids = read_ids(icfile, params.N)[bodyind]
     println("Saving ephemeris to file: ", output)
-    jldsave(output; sseph)
+    jldsave(output; sseph, ids)
 
     return nothing
 end
