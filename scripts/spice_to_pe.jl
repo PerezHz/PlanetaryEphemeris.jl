@@ -43,6 +43,9 @@ lunar PCK is given.
 Additional keys in the output file:
     spkids::Vector{Int}      NAIF ids of the N bodies, in ephemeris order
     μ::Vector{Float64}       gravitational parameters [au^3/day^2], same order
+    model::String            name of the ephemeris model (e.g. "DE440")
+    params::Dict{String, Float64}  model parameters used by NEOs.jl, with the names and
+                             units of the technical comments file (see MODEL_PARAMS)
     kernels::Vector{String}  basenames of the input kernels
 =#
 
@@ -56,6 +59,9 @@ const J2000_FRAME = 1
 const J2000_DATETIME = DateTime(2000, 1, 1, 12)
 # Breakpoints closer than this [s] are merged
 const BREAKPOINT_TOL = 1E-3
+# Model parameters written to the output file, with the names and units of the technical
+# comments file: Earth's equatorial radius [km] and second and third zonal harmonics
+const MODEL_PARAMS = ["RE", "J2E", "J3E"]
 
 isasteroid(id::Integer) = (2_000_000 < id < 3_000_000) || (20_000_000 < id < 30_000_000)
 
@@ -106,6 +112,10 @@ function parse_commandline()
                 degree in the kernels (larger values are zero-padded)"
             arg_type = Int
             default = -1
+        "--model", "-m"
+            help = "name of the ephemeris model (e.g. DE440); default: inferred from \
+                the technical comments file"
+            arg_type = String
         "--check", "-c"
             help = "number of epochs used to validate the output against \
                 direct Chebyshev evaluation of the kernels (0 to skip)"
@@ -316,6 +326,16 @@ function techconstant(text::AbstractString, name::AbstractString)
     allequal(values) || error("Constant $name has inconsistent values in the \
         technical comments file: $values")
     return first(values)
+end
+
+# Name of the ephemeris model, inferred from the name of the technical comments file
+# `techfile` (e.g. de440_tech-comments.txt) or, failing that, from its contents `text`
+function modelname(techfile::AbstractString, text::AbstractString)
+    m = match(r"de(\d{3,4})"i, basename(techfile))
+    isnothing(m) || return "DE" * m[1]
+    ms = unique(m[1] for m in eachmatch(r"\bDE[- ]?(\d{3,4})\b", text))
+    length(ms) == 1 && return "DE" * ms[1]
+    error("Could not infer the ephemeris model from $techfile; use --model")
 end
 
 ## Chebyshev -> Taylor
@@ -530,6 +550,15 @@ function main()
     N = length(spkids)
     μ = [techconstant(text, gmname(id)) for id in spkids]
 
+    # Ephemeris model and model parameters
+    model::String = isnothing(parsed_args["model"]) ? modelname(techfile, text) :
+        parsed_args["model"]
+    params = Dict{String, Float64}(name => techconstant(text, name)
+        for name in MODEL_PARAMS)
+    println("• Ephemeris model: ", model)
+    println("• Model parameters: ", join(["$name = $(params[name])"
+        for name in MODEL_PARAMS], ", "))
+
     # Chains of SPK edges
     chains = [spkchain(edges, id) for id in spkids]
     haskey(spksegs, (TTMTDB_SPKID, TTMTDB_CENTER)) || error("The kernels have no \
@@ -719,7 +748,7 @@ function main()
 
     # Save output
     kernels = basename.(vcat(bspfiles, isnothing(pckfile) ? String[] : [pckfile]))
-    jldsave(output; ss16ast_eph = sseph, spkids, μ, kernels)
+    jldsave(output; ss16ast_eph = sseph, spkids, μ, model, params, kernels)
     println("• Saved output to: ", output)
 
     global_final_time = now()
