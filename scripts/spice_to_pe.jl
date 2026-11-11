@@ -27,7 +27,7 @@ time grids and degrees that differ from body to body. This script:
 
 Output layout (same as the ephemerides integrated by PlanetaryEphemeris.jl)
 --------------------------------------------------------------------------------
-Columns of `ss16ast_eph.p` (N bodies, see `spkids`):
+Columns of `sseph.p` (N bodies, see `spkids`):
     1:3N        barycentric positions [au]
     3N+1:6N     barycentric velocities [au/day]
     6N+1:6N+3   lunar mantle Euler angles φ, θ, ψ (3-1-3, ICRF -> PA) [rad]
@@ -37,7 +37,7 @@ Columns of `ss16ast_eph.p` (N bodies, see `spkids`):
     6N+7:6N+12  lunar core Euler angles and angular velocity (not available in
                 SPICE kernels; filled with zeros)
     6N+13       TT-TDB [s]
-Time `ss16ast_eph.t` is in TDB days since J2000. Columns 6N+1:6N+6 are zero when no
+Time `sseph.t` is in TDB days since J2000. Columns 6N+1:6N+6 are zero when no
 lunar PCK is given.
 
 Additional keys in the output file:
@@ -748,7 +748,7 @@ function main()
 
     # Save output
     kernels = basename.(vcat(bspfiles, isnothing(pckfile) ? String[] : [pckfile]))
-    jldsave(output; ss16ast_eph = sseph, spkids, μ, model, params, kernels)
+    jldsave(output; sseph, spkids, μ, model, params, kernels)
     println("• Saved output to: ", output)
 
     global_final_time = now()

@@ -6,7 +6,7 @@ export PlanetaryEphemerisProblem, TaylorSolution, DE430Params
 export NBP_pN_A_J23E_J23M_J2S_threads!, DE430!
 export semimajoraxis, eccentricity, inclination, longascnode, argperi, longperi, ecanomaly,
        trueanomaly,  meananomaly, timeperipass, lrlvec, eccentricanomaly, meanan2truean,
-       meanmotion, time2truean, Rx, Ry, Rz, selecteph2jld2, save2jld2andcheck, selecteph,
+       meanmotion, time2truean, Rx, Ry, Rz, selecteph,
        numberofbodies,  kmsec2auday, auday2kmsec, ssb_posvel_pN, nbodyind, t2c_jpl_de430,
        propagate,  c2t_jpl_de430, pole_rotation, read_initial_conditions
 export PE, au, yr, sundofs, earthdofs, c_au_per_day, μ, su, ea, mo, au, yr, daysec,

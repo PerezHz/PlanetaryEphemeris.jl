@@ -1,4 +1,10 @@
-using ArgParse, PlanetaryEphemeris, Dates, Printf
+using ArgParse, PlanetaryEphemeris, Dates, JLD2, Printf
+
+# NAIF ids of the Sun, Mercury, Venus, the Earth, the Moon, and the barycenters of Mars,
+# Jupiter, Saturn, Uranus, Neptune and Pluto; i.e. the first 11 bodies of the ephemeris
+const PLANETS_SPKIDS = [10, 199, 299, 399, 301, 4, 5, 6, 7, 8, 9]
+# NAIF ids of the bodies in the JPL DE430 model, in the order of the integration
+const DE430_SPKIDS = vcat(PLANETS_SPKIDS, 2_000_000 .+ de430_343ast_ids)
 
 function parse_commandline()
 
@@ -42,16 +48,19 @@ function parse_commandline()
             help = "Body indices in output"
             arg_type = UnitRange{Int}
             default = 1:(11+16)
+        "--output", "-o"
+            help = "Output (.jld2) ephemeris file"
+            arg_type = String
     end
 
     s.epilog = """
         examples:\n
         \n
         # Multi-threaded\n
-        julia -t 10 --project de430.jl --d0 "2000-01-01T12:00:00" --nyears 100.0\n
+        julia -t 10 --project de430.jl --d0 "2000-01-01T12:00:00" --nyears 100.0 -o de430.jld2\n
         \n
         # Single-threaded\n
-        julia --project de430.jl --d0 "2000-01-01T12:00:00" --nyears 100.0\n
+        julia --project de430.jl --d0 "2000-01-01T12:00:00" --nyears 100.0 -o de430.jld2\n
         \n
     """
 
@@ -105,6 +114,11 @@ function main()
     bodyind::UnitRange{Int} = parsed_args["bodyind"]
     println("• Body indices in output: ", bodyind)
 
+    # Output file (checked before integrating, so a long run is not lost)
+    isnothing(parsed_args["output"]) && error("Missing output file (--output)")
+    output::String = parsed_args["output"]
+    println("• Output file: ", output)
+
     # Planetary ephemeris problem
     jd0 = datetime2julian(d0)
     tspan = (jd0, jd0 + nyears * yr)
@@ -120,8 +134,21 @@ function main()
     println( "Final time of integration: ", string(julian2datetime(PE.tspan[2])))
     @time sol = propagate(PE; maxsteps, order, abstol, parse_eqs)
 
+    # Bodies in output, lunar mantle and core Euler angles, and TT-TDB
+    sseph = selecteph(sol, bodyind, euler = true, ttmtdb = true)
+    # NAIF ids and gravitational parameters [au^3/day^2] of the bodies in output
+    spkids = DE430_SPKIDS[bodyind]
+    μ = PlanetaryEphemeris.μ[bodyind]
+    # Ephemeris model and model parameters used by NEOs.jl, with the names and units of
+    # the JPL DE430 technical comments file (same as scripts/spice_to_pe.jl): Earth's
+    # equatorial radius [km] and second and third zonal harmonics
+    model = "DE430"
+    params = Dict{String, Float64}("RE" => RE, "J2E" => J2E,
+        "J3E" => PlanetaryEphemeris.J3E)
+
     # Save results
-    selecteph2jld2(sol, bodyind, nyears)
+    jldsave(output; sseph, spkids, μ, model, params)
+    println("• Saved output to: ", output)
 
     return nothing
 end
