@@ -89,9 +89,10 @@ printitle(s::AbstractString, d::AbstractString) = println(d ^ length(s),
 datetime2days(d::DateTime) = datetime2julian(d) - J2000
 days2datetime(t::Real) = julian2datetime(J2000 + t)
 
-# Load the ephemeris and the NAIF ids of its bodies from a .jld2 file. Supported
-# layouts: `sseph` + `ids` (PlanetaryEphemeris.jl integrations) and `ss16ast_eph` +
-# `spkids` (scripts/spice_to_pe.jl). The ids can also be given explicitly (`idsarg`)
+# Load the ephemeris and the NAIF ids of its bodies from a .jld2 file. The ephemeris is
+# read from the key `sseph` (scripts/de430.jl and scripts/spice_to_pe.jl) or
+# `ss16ast_eph` (older files), and the ids from the key `ids` or `spkids`. The ids can
+# also be given explicitly (`idsarg`)
 function loadpe(filename::AbstractString, idsarg::Union{Nothing, AbstractString})
     file = JLD2.load(filename)
     key = findfirst(k -> haskey(file, k), ["sseph", "ss16ast_eph"])
