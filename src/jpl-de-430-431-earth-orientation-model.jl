@@ -209,8 +209,8 @@ end
 
 # where
 
-const phi_x0 = 5.6754203322893470E-03     # x-axis rotation at J2000.0 (arcseconds)
-const Dt_phi_x = 2.7689915574483550E-04   # Negative obliquity rate correction (arcseconds/year)
+const phi_x0 = 5.6754203322893470E-03/3600     # x-axis rotation at J2000.0 (degrees)
+const Dt_phi_x = 2.7689915574483550E-04/3600   # Negative obliquity rate correction (degrees/year)
 
 @doc raw"""
     phi_x(t::Number)
@@ -220,14 +220,14 @@ Return the X-axis linear correction to precession (in radians)
 \phi_x = \phi_{x0} + 100T\times \frac{d\phi_x}{dt},
 ```
 where ``t = 36,525 T`` is the TDB time in Julian days from J2000.0, ``\phi_{x0}`` is the
-X–axis rotation at J2000.0 (in arcseconds) and ``\frac{d\phi_x}{dt}`` is the negative
-obliquity rate correction (in arcseconds per year).
+X–axis rotation at J2000.0 (in degrees) and ``\frac{d\phi_x}{dt}`` is the negative
+obliquity rate correction (in degrees per year).
 
 See equation (25) in page 11 and Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract.
 
 See also [`pole_frame`](@ref).
 """
-phi_x(t::Real) = deg2rad((t/yr)*Dt_phi_x/3600 + phi_x0)
+phi_x(t::Real) = deg2rad((t/yr)*Dt_phi_x + phi_x0)
 
 @doc raw"""
     phi_x!(res, t)
@@ -236,7 +236,7 @@ Inplace version of ``phi_x(t)``; see [`phi_x`](@ref) for details.
 """
 function phi_x!(phix::Taylor1{T}, t::Taylor1{T}) where {T<:Real}
     for ord in eachindex(t)
-        phix[ord] = (t[ord]/yr)*Dt_phi_x/3600
+        phix[ord] = (t[ord]/yr)*Dt_phi_x
     end
     phix[0] += phi_x0
     for ord in eachindex(t)
@@ -245,8 +245,8 @@ function phi_x!(phix::Taylor1{T}, t::Taylor1{T}) where {T<:Real}
     return nothing
 end
 
-const phi_y0 = -1.7022656914989530E-02     # y-axis rotation at J2000.0 (arcseconds)
-const Dt_phi_y = -1.2118591216559240E-03   # Precession rate correction times sine of obliquity (arcseconds/year)
+const phi_y0 = -1.7022656914989530E-02/3600     # y-axis rotation at J2000.0 (degrees)
+const Dt_phi_y = -1.2118591216559240E-03/3600   # Precession rate correction times sine of obliquity (degrees/year)
 
 @doc raw"""
     phi_y(t::Number)
@@ -256,14 +256,14 @@ Return the Y-axis linear correction to precession (in radians)
 \phi_y = \phi_{y0} + 100T\times \frac{d\phi_y}{dt},
 ```
 where ``t = 36,525 T`` is the TDB time in Julian days from J2000.0, ``\phi_{y0}`` is the
-Y–axis rotation at J2000.0 (in arcseconds) and ``\frac{d\phi_y}{dt}`` is precession rate
-correction times sine of obliquity (in arcseconds per year).
+Y–axis rotation at J2000.0 (in degrees) and ``\frac{d\phi_y}{dt}`` is precession rate
+correction times sine of obliquity (in degrees per year).
 
 See equation (25) in page 11 and Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract.
 
 See also [`pole_frame`](@ref).
 """
-phi_y(t::Real) = deg2rad((t/yr)*Dt_phi_y/3600 + phi_y0)
+phi_y(t::Real) = deg2rad((t/yr)*Dt_phi_y + phi_y0)
 
 @doc raw"""
     phi_y!(res, t)
@@ -272,7 +272,7 @@ Inplace version of ``phi_y(t)``; see [`phi_y`](@ref) for details.
 """
 function phi_y!(phiy::Taylor1{T}, t::Taylor1{T}) where {T<:Real}
     for ord in eachindex(t)
-        phiy[ord] = (t[ord]/yr)*Dt_phi_y/3600
+        phiy[ord] = (t[ord]/yr)*Dt_phi_y
     end
     phiy[0] += phi_y0
     for ord in eachindex(t)
