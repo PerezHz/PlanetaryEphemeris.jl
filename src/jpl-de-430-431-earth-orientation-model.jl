@@ -9,8 +9,10 @@
 # an estimated linear correction and on a modified IAU 1980 nutation model \* including
 # only terms with a period of 18.6 years.
 
+const coeffs_Ω_A = [125+2/60+40.280/3600, -(1934+8/60+10.539/3600), 7.455/3600, 0.008/3600]
+
 @doc raw"""
-    Ω(t)
+    Ω(t::Number)
 
 Return the longitude (in radians) of the mean ascending node of the lunar orbit on the
 ecliptic, measured from the mean equinox of date
@@ -21,9 +23,7 @@ where ``t = 36,525 T`` is the TDB time in Julian days from J2000.0.
 
 See equation (5-64) in page 5-27 of https://doi.org/10.1002/0471728470.
 """
-Ω(t) = deg2rad( evaluate(Taylor1(coeffs_Ω_A, TS.order(t)), t/36525) )
-
-const coeffs_Ω_A = [125+2/60+40.280/3600, -(1934+8/60+10.539/3600), 7.455/3600, 0.008/3600]
+Ω(t::Real) = deg2rad(evalpoly(t/36525, coeffs_Ω_A))
 
 @doc raw"""
     Ω!(res, t, auxs)
@@ -49,8 +49,10 @@ function Ω!(res::Taylor1{T}, t::Taylor1{T}, auxs) where {T<:Real}
     return nothing
 end
 
+const coeff_Δψ = -17.1996 # arcseconds
+
 @doc raw"""
-    Delta_psi(t)
+    Delta_psi(t::Number)
 
 Return the nutation in longitude (in radians)
 ```math
@@ -63,7 +65,7 @@ See equation (5-190) in page 5-72 of https://doi.org/10.1002/0471728470.
 
 See also [`Ω`](@ref).
 """
-Delta_psi(t) = deg2rad( (-17.1996/3600)*sin(Ω(t)) )
+Delta_psi(t::Real) = deg2rad((coeff_Δψ/3600)*sin(Ω(t)))
 
 @doc raw"""
     Delta_psi!(res, t, auxs)
@@ -71,7 +73,7 @@ Delta_psi(t) = deg2rad( (-17.1996/3600)*sin(Ω(t)) )
 Inplace version of ``Delta_psi(t)``; see [`Delta_psi`](@ref) for details.
 """
 function Delta_psi!(deltapsi::Taylor1{T}, t::Taylor1{T}, auxs) where {T<:Real}
-    numfactor = -17.1996/3600
+    numfactor = coeff_Δψ/3600
     omega_t_cy = auxs[1]
     Ω!(omega_t_cy, t, view(auxs, 2:4))
     sinO = auxs[5]
@@ -83,8 +85,10 @@ function Delta_psi!(deltapsi::Taylor1{T}, t::Taylor1{T}, auxs) where {T<:Real}
     return nothing
 end
 
+const coeff_Δϵ = 9.2025 # arcseconds
+
 @doc raw"""
-    Delta_epsilon(t)
+    Delta_epsilon(t::Number)
 
 Return the nutation in obliquity (in radians)
 ```math
@@ -97,7 +101,7 @@ See equation (5-190) in page 5-72 of https://doi.org/10.1002/0471728470.
 
 See also [`Ω`](@ref).
 """
-Delta_epsilon(t) = deg2rad( (9.2025/3600)*cos(Ω(t)) )
+Delta_epsilon(t::Real) = deg2rad((coeff_Δϵ/3600)*cos(Ω(t)))
 
 @doc raw"""
     Delta_epsilon!(res, t, auxs)
@@ -105,7 +109,7 @@ Delta_epsilon(t) = deg2rad( (9.2025/3600)*cos(Ω(t)) )
 Inplace version of ``Delta_epsilon(t)``; see [`Delta_epsilon`](@ref) for details.
 """
 function Delta_epsilon!(deltaepsilon::Taylor1{T}, t::Taylor1{T}, auxs) where {T<:Real}
-    numfactor = 9.2025/3600
+    numfactor = coeff_Δϵ/3600
     omega_t_cy = auxs[1]
     Ω!(omega_t_cy, t, view(auxs, 2:4))
     sinO = auxs[5]
@@ -139,8 +143,10 @@ function pole_date(t)
     return Nut_mat[3,:]
 end
 
+const coeffs_ϵ̄ = [84381.448/3600, -46.815/3600, -0.00059/3600, 0.001813/3600]
+
 @doc raw"""
-    ϵ̄(t)
+    ϵ̄(t::Number)
 
 Return the mean obliquity (in radians)
 ```math
@@ -150,9 +156,7 @@ where ``t = 36,525 T`` is the TDB time in Julian days from J2000.0.
 
 See equation (5-153) in page 5-61 of https://doi.org/10.1002/0471728470.
 """
-ϵ̄(t) = deg2rad( evaluate(Taylor1(coeffs_ϵ̄, TS.order(t)), t/36525) )
-
-const coeffs_ϵ̄ = [84381.448/3600, -46.815/3600, -0.00059/3600, 0.001813/3600]
+ϵ̄(t::Real) = deg2rad(evalpoly(t/36525, coeffs_ϵ̄))
 
 @doc raw"""
     ϵ̄!(res, t, auxs)
@@ -205,8 +209,11 @@ end
 
 # where
 
+const phi_x0 = 5.6754203322893470E-03     # x-axis rotation at J2000.0 (arcseconds)
+const Dt_phi_x = 2.7689915574483550E-04   # Negative obliquity rate correction (arcseconds/year)
+
 @doc raw"""
-    phi_x(t)
+    phi_x(t::Number)
 
 Return the X-axis linear correction to precession (in radians)
 ```math
@@ -220,17 +227,7 @@ See equation (25) in page 11 and Table 10 in page 50 of https://ui.adsabs.harvar
 
 See also [`pole_frame`](@ref).
 """
-function phi_x(t)
-    phix = zero(t)
-    for ord in eachindex(t)
-        phix[ord] = (t[ord]/yr)*Dt_phi_x/3600
-    end
-    phix[0] += phi_x0
-    for ord in eachindex(t)
-        phix[ord] = deg2rad( phix[ord] )
-    end
-    return phix
-end
+phi_x(t::Real) = deg2rad((t/yr)*Dt_phi_x/3600 + phi_x0)
 
 @doc raw"""
     phi_x!(res, t)
@@ -248,12 +245,11 @@ function phi_x!(phix::Taylor1{T}, t::Taylor1{T}) where {T<:Real}
     return nothing
 end
 
-
-const phi_x0 = 5.6754203322893470E-03     # x-axis rotation at J2000.0 (arcseconds)
-const Dt_phi_x = 2.7689915574483550E-04   # Negative obliquity rate correction (arcseconds/year)
+const phi_y0 = -1.7022656914989530E-02     # y-axis rotation at J2000.0 (arcseconds)
+const Dt_phi_y = -1.2118591216559240E-03   # Precession rate correction times sine of obliquity (arcseconds/year)
 
 @doc raw"""
-    phi_y(t)
+    phi_y(t::Number)
 
 Return the Y-axis linear correction to precession (in radians)
 ```math
@@ -267,17 +263,7 @@ See equation (25) in page 11 and Table 10 in page 50 of https://ui.adsabs.harvar
 
 See also [`pole_frame`](@ref).
 """
-function phi_y(t)
-    phiy = zero(t)
-    for ord in eachindex(t)
-        phiy[ord] = (t[ord]/yr)*Dt_phi_y/3600
-    end
-    phiy[0] += phi_y0
-    for ord in eachindex(t)
-        phiy[ord] = deg2rad( phiy[ord] )
-    end
-    return phiy
-end
+phi_y(t::Real) = deg2rad((t/yr)*Dt_phi_y/3600 + phi_y0)
 
 @doc raw"""
     phi_y!(res, t)
@@ -295,11 +281,10 @@ function phi_y!(phiy::Taylor1{T}, t::Taylor1{T}) where {T<:Real}
     return nothing
 end
 
-const phi_y0 = -1.7022656914989530E-02     # y-axis rotation at J2000.0 (arcseconds)
-const Dt_phi_y = -1.2118591216559240E-03   # Precession rate correction times sine of obliquity (arcseconds/year)
+const coeffs_Zeta = [0.0, 2306.2181, 0.30188, 0.017998]
 
 @doc raw"""
-    Zeta(t)
+    Zeta(t::Number)
 
 Return the ``\zeta_A`` equatorial precession angle (in radians)
 ```math
@@ -311,15 +296,7 @@ See equation (5-143) in page 5-58 of https://doi.org/10.1002/0471728470.
 
 See also [`Theta`](@ref) and [`zeta`](@ref).
 """
-function Zeta(t)
-    t_cy = t/(100yr)
-    # Zeta_arcsec = 0.017998*t_cy
-    # Zeta_arcsec = (0.30188 + Zeta_arcsec)*t_cy
-    # Zeta_arcsec = (2306.2181 + Zeta_arcsec)*t_cy
-    ZetaA = Taylor1(coeffs_Zeta, TS.order(t))
-    Zeta_arcsec = ZetaA(t_cy)
-    return deg2rad(Zeta_arcsec/3600)
-end
+Zeta(t::Real) = deg2rad(evalpoly(t/(100yr), coeffs_Zeta)/3600)
 
 @doc raw"""
     Zeta!(res, t, auxs)
@@ -346,10 +323,10 @@ function Zeta!(res::Taylor1{T}, t::Taylor1{T}, auxs) where {T<:Real}
     return nothing
 end
 
-const coeffs_Zeta = [0.0, 2306.2181, 0.30188, 0.017998]
+const coeffs_Theta = [0.0, 2004.3109, -0.42665, -0.041833]
 
 @doc raw"""
-    Theta(t)
+    Theta(t::Number)
 
 Return the ``\theta_A`` equatorial precession angle (in radians)
 ```math
@@ -361,15 +338,7 @@ See equation (5-143) in page 5-58 of https://doi.org/10.1002/0471728470.
 
 See also [`Zeta`](@ref) and [`zeta`](@ref).
 """
-function Theta(t)
-    t_cy = t/(100yr)
-    # Theta_arcsec = -0.041833*t_cy
-    # Theta_arcsec = (-0.42665 + Theta_arcsec)*t_cy
-    # Theta_arcsec = (2004.3109 + Theta_arcsec)*t_cy
-    theta_A = Taylor1(coeffs_Theta, TS.order(t))
-    Theta_arcsec = theta_A(t_cy)
-    return deg2rad(Theta_arcsec/3600)
-end
+Theta(t::Real) = deg2rad(evalpoly(t/(100yr), coeffs_Theta)/3600)
 
 @doc raw"""
     Theta!(res, t, auxs)
@@ -396,11 +365,10 @@ function Theta!(res::Taylor1{T}, t::Taylor1{T}, auxs) where {T<:Real}
     return nothing
 end
 
-const coeffs_Theta = [0.0, 2004.3109, -0.42665, -0.041833]
-
+const coeffs_zeta = [0.0, 2306.2181, 1.09468, 0.018203]
 
 @doc raw"""
-    zeta(t)
+    zeta(t::Number)
 
 Return the ``z_A`` equatorial precession angle (in radians)
 ```math
@@ -412,15 +380,7 @@ See equation (5-143) in page 5-58 of https://doi.org/10.1002/0471728470.
 
 See also [`Zeta`](@ref) and [`Theta`](@ref).
 """
-function zeta(t)
-    t_cy = t/(100yr)
-    # zeta_arcsec = 0.018203*t_cy
-    # zeta_arcsec = (1.09468 + zeta_arcsec)*t_cy
-    # zeta_arcsec = (2306.2181 + zeta_arcsec)*t_cy
-    zeta_A = Taylor1(coeffs_zeta, TS.order(t))
-    zeta_arcsec = zeta_A(t_cy)
-    return deg2rad(zeta_arcsec/3600)
-end
+zeta(t::Real) = deg2rad(evalpoly(t/(100yr), coeffs_zeta)/3600)
 
 @doc raw"""
     zeta!(res, t, auxs)
@@ -446,8 +406,6 @@ function zeta!(res::Taylor1{T}, t::Taylor1{T}, auxs) where {T<:Real}
     end
     return nothing
 end
-
-const coeffs_zeta = [0.0, 2306.2181, 1.09468, 0.018203]
 
 
 # The rotation matrices are defined by
@@ -749,7 +707,7 @@ function earth_pole_rotation(t::Number)
 end
 
 @doc raw"""
-    nutation_iau80(t)
+    nutation_iau80(t::Number)
 
 Return the IAU 1980 nutation matrix (Explanatory Supplement to the Astronomical Almanac 1992)
 ```math
@@ -763,7 +721,7 @@ See equation (5-152) in page 5-60 of https://doi.org/10.1002/0471728470.
 
 See also [`ϵ̄`](@ref), [`Delta_epsilon`](@ref) and [`Delta_psi`](@ref).
 """
-function nutation_iau80(t)
+function nutation_iau80(t::Real)
     ϵ0 = ϵ̄(t)                # Mean obliquity (rad)
     Δϵ = Delta_epsilon(t)    # Nutation in obliquity (rad)
     Δψ = Delta_psi(t)        # Nutation in longitude (rad)
@@ -887,7 +845,7 @@ end
 
 
 @doc raw"""
-    c2t_jpl_de430(t)
+    c2t_jpl_de430(t::Number)
 
 Return the matrix for celestial-to-terrestrial coordinate transformation, according to
 JPL DE 430/431 Earth orientation model
@@ -903,7 +861,7 @@ Also see equation (25) in page 11 and Table 10 in page 50 of https://ui.adsabs.h
 
 See also [`Rx`](@ref), [`Ry`](@ref), [`Rz`](@ref) and [`nutation_iau80`](@ref).
 """
-function c2t_jpl_de430(t)
+function c2t_jpl_de430(t::Real)
     # Precession matrix, see equation (5-147) in page (5-59) of https://doi.org/10.1002/0471728470
     P_iau7680 = Rz(-zeta(t))*Ry(Theta(t))*Rz(-Zeta(t))
     # Linear corrections to precession, see equation (25) in page 11 and Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
@@ -990,7 +948,7 @@ function allocate_c2t_jpl_de430(t::Taylor1{T}) where {T<:Real}
     # Angles zeta(t), Theta(t), Zeta(t), negatives, and allocations
     zt = zero(t) # zt = zeta(t)
     auxhorner = zero(t)
-    angle_A = zero(t)
+    angle_A = Taylor1(zeros(T, 4)) # polynomial coefficients of the angle
     auxs_angles = [t_cy, auxhorner, angle_A] # auxs for angles
     nzt = -zt
     Tt = zero(t) # Tt = Theta(t)
@@ -1035,6 +993,47 @@ function allocate_c2t_jpl_de430(t::Taylor1{T}) where {T<:Real}
         [Array{Taylor1{T}}(undef, 0, 0, 0)],
         [Array{Taylor1{T}}(undef, 0, 0, 0, 0)])
     return rotatBuf
+end
+
+# Allocating Taylor1 methods: fall back to the in-place methods
+
+# Auxiliaries for Ω!, ϵ̄!, Zeta!, Theta! and zeta!
+_allocate_angle_auxs(t::Taylor1{T}) where {T<:Real} = [zero(t), zero(t), Taylor1(zeros(T, 4))]
+
+# Auxiliaries for Delta_psi! and Delta_epsilon!
+_allocate_nutation_auxs(t::Taylor1{T}) where {T<:Real} =
+    [zero(t); _allocate_angle_auxs(t); zero(t); zero(t)]
+
+for (f, f!, auxs) in ((:Ω, :Ω!, :_allocate_angle_auxs), (:ϵ̄, :ϵ̄!, :_allocate_angle_auxs),
+        (:Zeta, :Zeta!, :_allocate_angle_auxs), (:Theta, :Theta!, :_allocate_angle_auxs),
+        (:zeta, :zeta!, :_allocate_angle_auxs), (:Delta_psi, :Delta_psi!, :_allocate_nutation_auxs),
+        (:Delta_epsilon, :Delta_epsilon!, :_allocate_nutation_auxs))
+    @eval function $f(t::Taylor1{T}) where {T<:Real}
+        res = zero(t)
+        $(f!)(res, t, $(auxs)(t))
+        return res
+    end
+end
+
+for (f, f!) in ((:phi_x, :phi_x!), (:phi_y, :phi_y!))
+    @eval function $f(t::Taylor1{T}) where {T<:Real}
+        res = zero(t)
+        $(f!)(res, t)
+        return res
+    end
+end
+
+function nutation_iau80(t::Taylor1{T}) where {T<:Real}
+    rotatBuf = allocate_c2t_jpl_de430(t)
+    N_iau80 = rotatBuf.v2[8]
+    nutation_iau80!(N_iau80, t, rotatBuf.v1[3], rotatBuf.v1[2], view(rotatBuf.v2, 9:13))
+    return N_iau80
+end
+
+function c2t_jpl_de430(t::Taylor1{T}) where {T<:Real}
+    rotatBuf = allocate_c2t_jpl_de430(t)
+    c2t_jpl_de430!(t, rotatBuf)
+    return rotatBuf.v2[12]
 end
 
 @doc raw"""
