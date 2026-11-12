@@ -946,9 +946,11 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     p_E_cross_I_p_E_2 = (p_E_3*I_p_E_1) - (p_E_1*I_p_E_3)
     p_E_cross_I_p_E_3 = (p_E_1*I_p_E_2) - (p_E_2*I_p_E_1)
 
+    # sin(ϕ_{M,E}) = e_r ⋅ p_E, see eq. (44)
+    sinϕEM = ((er_EM_1*p_E_1) + (er_EM_2*p_E_2)) + (er_EM_3*p_E_3)
     # Coefficients of first and second terms inside {} in eq. (44)
-    one_minus_7sin2ϕEM = one_t - (7((sin_ϕ[ea,mo])^2))
-    two_sinϕEM = 2sin_ϕ[ea,mo]
+    one_minus_7sin2ϕEM = one_t - (7(sinϕEM^2))
+    two_sinϕEM = 2sinϕEM
 
     # Overall numerical factor in eq. (44) / r_{EM}^5
     N_MfigM_figE_factor_div_rEMp5 = (N_MfigM_figE_factor/(r_p1d2[mo,ea]^5))
@@ -2132,9 +2134,11 @@ function DE430!(dq, q, params, t)
     p_E_cross_I_p_E_2 = (p_E_3*I_p_E_1) - (p_E_1*I_p_E_3)
     p_E_cross_I_p_E_3 = (p_E_1*I_p_E_2) - (p_E_2*I_p_E_1)
 
+    # sin(ϕ_{M,E}) = e_r ⋅ p_E, see eq. (44)
+    sinϕEM = ((er_EM_1*p_E_1) + (er_EM_2*p_E_2)) + (er_EM_3*p_E_3)
     # Coefficients of first and second terms inside {} in eq. (44)
-    one_minus_7sin2ϕEM = one_t - (7((sin_ϕ[ea,mo])^2))
-    two_sinϕEM = 2sin_ϕ[ea,mo]
+    one_minus_7sin2ϕEM = one_t - (7(sinϕEM^2))
+    two_sinϕEM = 2sinϕEM
 
     # Overall numerical factor in eq. (44) / r_{EM}^5
     N_MfigM_figE_factor_div_rEMp5 = (N_MfigM_figE_factor/(r_p1d2[mo,ea]^5))
