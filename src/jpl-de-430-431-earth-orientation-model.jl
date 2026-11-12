@@ -662,19 +662,19 @@ end
 # myatan2(x, y) = y>=zero(x)?( x>=zero(x)?atan(y/x):(atan(y/x)-pi) ):( x>=zero(x)?(atan(y/x)):(atan(y/x)+pi) )
 
 @doc raw"""
-    pole_ra(t)
+    pole_ra(t::Number)
 
-Return the right ascension (in radians) of the pole unit vector in the inertial frame ``\mathbf{p}_\mathrm{E}(t)``
+Return the right ascension (in radians, in ``(-\pi, \pi]``) of the pole unit vector in the inertial frame ``\mathbf{p}_\mathrm{E}(t)``
 ```math
-\alpha = \arctan\left(\frac{p_\mathrm{Ey}(t)}{p_\mathrm{Ex}(t)}\right) + \pi,
+\alpha = \operatorname{atan2}\left(p_\mathrm{Ey}(t), p_\mathrm{Ex}(t)\right),
 ```
 where ``t`` is the TDB time in Julian days from J2000.0.
 
 See also [`pole_frame`](@ref), [`pole_dec`](@ref) and [`pole_radec`](@ref).
 """
-function pole_ra(t)
+function pole_ra(t::Number)
     pole_frame_t = pole_frame(t)
-    return atan( pole_frame_t[2]/pole_frame_t[1] ) + π
+    return atan(pole_frame_t[2], pole_frame_t[1])
 end
 
 @doc raw"""
@@ -694,12 +694,12 @@ function pole_dec(t)
 end
 
 @doc raw"""
-    pole_radec(t)
+    pole_radec(t::Number)
 
-Return the right ascension and declination (both in radians) of the pole unit vector in the inertial frame ``\mathbf{p}_\mathrm{E}(t)``
+Return the right ascension (in ``(-\pi, \pi]``) and declination (both in radians) of the pole unit vector in the inertial frame ``\mathbf{p}_\mathrm{E}(t)``
 ```math
 \begin{align*}
-    \alpha & = \arctan\left(\frac{p_\mathrm{Ey}(t)}{p_\mathrm{Ex}(t)}\right) + \pi \\
+    \alpha & = \operatorname{atan2}\left(p_\mathrm{Ey}(t), p_\mathrm{Ex}(t)\right) \\
     \delta & = \arctan\left(\frac{p_\mathrm{Ez}(t)}{\sqrt{p_\mathrm{Ex}^2(t) + p_\mathrm{Ey}^2(t)}}\right),
 \end{align*}
 ```
@@ -707,9 +707,9 @@ where ``t`` is the TDB time in Julian days from J2000.0.
 
 See also [`pole_frame`](@ref), [`pole_ra`](@ref) and [`pole_dec`](@ref).
 """
-function pole_radec(t)
+function pole_radec(t::Number)
     pole_frame_t = pole_frame(t)
-    pole_ra = atan( pole_frame_t[2]/pole_frame_t[1] ) + π
+    pole_ra = atan(pole_frame_t[2], pole_frame_t[1])
     pole_dec = atan(  pole_frame_t[3]/sqrt(pole_frame_t[1]^2+pole_frame_t[2]^2)  )
     return pole_ra, pole_dec
 end
@@ -735,13 +735,13 @@ function pole_rotation(α::T, δ::T, W::T=zero(α)) where {T <: Number}
 end
 
 @doc raw"""
-    earth_pole_rotation(t)
+    earth_pole_rotation(t::Number)
 
 Return the rotation matrix from inertial frame to Earth pole at time t (days) since J2000.0.
 
 See also [`pole_radec`](@ref) and [`pole_rotation`](@ref).
 """
-function earth_pole_rotation(t)
+function earth_pole_rotation(t::Number)
     # α_ep = Earth pole at time t (Julian days) since J2000.0
     # δ_ep = Earth pole at time t (Julian days) since J2000.0
     α_ep, δ_ep = pole_radec(t)
