@@ -1,14 +1,14 @@
-# Solar System ( JPL DE430/431) dynamical model
+# Solar System (JPL DE430/431) dynamical model
 # Bodies considered in the model are: the Sun, the eight planets, the Moon and
 # the 343 main-belt asteroids included in the JPL DE430 ephemeris.
 # Effects considered are:
-# - Post-Newtonian point-mass accelerations between all bodies,
-# - Figure-effects (oblateness) of the Earth (J2 and J3)
+# - Post-Newtonian point-mass accelerations between all bodies
+# - Zonal harmonics of the Earth (J2 to J5, with a linear rate in J2)
 # - J2 effect of the Sun
-# - J2 and J3 effect of the Moon
-# - Kinematic model for the precession and nutation of the Earth's orientation (IAU 1976/1980 Earth orientation model)
-# - Kinematic model for the Moons's orientation (Seidelmann et al., 2006)
-# - Tidal secular acceleration of Moon due to rides raised on Earth by both the Moon and the Sun
+# - Zonal and tesseral harmonics of the Moon up to degree 6 (time-varying degree 2)
+# - Kinematic model for the precession and nutation of the Earth's orientation (JPL DE430/431 Earth orientation model)
+# - Lunar mantle and core orientation (Euler angles) and angular velocities
+# - Tidal secular acceleration of Moon due to tides raised on Earth by both the Moon and the Sun
 
 @doc raw"""
 
@@ -77,9 +77,9 @@ east longitude of the point mass in the same body-fixed coordinate system. The p
 with respect to the argument ``\sin\phi``. The accelerations are transformed into the inertial frame by
 application of the appropriate rotation matrix.
 
-- Kinematic model for the precession and nutation of the Earth's orientation (IAU 1976/1980 Earth orientation model): see [`c2t_jpl_de430`](@ref).
+- Kinematic model for the precession and nutation of the Earth's orientation (JPL DE430/431 Earth orientation model): see [`c2t_jpl_de430`](@ref).
 
-- Kinematic model for the Moon's orientation (Seidelmann et al., 2006): see equations (14)-(15) in page 9 and equations (34)-(35) in page 16 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract.
+- Lunar mantle and core orientation: see equations (14)-(15) in page 9 and equations (34)-(35) in page 16 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract.
 
 ``\textbf{Lunar mantle}``
 ```math
@@ -373,7 +373,7 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
 
     # Rotations to and from Earth, Sun and Moon pole-oriented frames
     local αs = deg2rad(α_p_sun*one_t)           # Sun's rotation pole right ascension (radians)
-    local δs = deg2rad(δ_p_sun*one_t)           # Sun's rotation pole right ascension (radians)
+    local δs = deg2rad(δ_p_sun*one_t)           # Sun's rotation pole declination (radians)
     # Space-fixed -> body-fixed coordinate transformations
     RotM = Array{S}(undef, 3, 3, 5)
     local RotM[:,:,ea] = c2t_jpl_de430(dsj2k)   # Earth
@@ -419,8 +419,8 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     local J2S_t = JSEM[su,2]*one_t                     # Sun (static)
     # Vector of second zonal harmonic coefficients
     J2_t = Array{S}(undef, 5)
-    J2_t[su] = J2S_t             # Earth
-    J2_t[ea] = J2E_t             # Sun
+    J2_t[su] = J2S_t             # Sun
+    J2_t[ea] = J2E_t             # Earth
     # Lunar torques: overall numerical factor in equation (44) in page 18 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     local N_MfigM_figE_factor = 7.5*μ[ea]*J2E_t
 
@@ -946,9 +946,11 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     p_E_cross_I_p_E_2 = (p_E_3*I_p_E_1) - (p_E_1*I_p_E_3)
     p_E_cross_I_p_E_3 = (p_E_1*I_p_E_2) - (p_E_2*I_p_E_1)
 
+    # sin(ϕ_{M,E}) = e_r ⋅ p_E, see eq. (44)
+    sinϕEM = ((er_EM_1*p_E_1) + (er_EM_2*p_E_2)) + (er_EM_3*p_E_3)
     # Coefficients of first and second terms inside {} in eq. (44)
-    one_minus_7sin2ϕEM = one_t - (7((sin_ϕ[ea,mo])^2))
-    two_sinϕEM = 2sin_ϕ[ea,mo]
+    one_minus_7sin2ϕEM = one_t - (7(sinϕEM^2))
+    two_sinϕEM = 2sinϕEM
 
     # Overall numerical factor in eq. (44) / r_{EM}^5
     N_MfigM_figE_factor_div_rEMp5 = (N_MfigM_figE_factor/(r_p1d2[mo,ea]^5))
@@ -1032,7 +1034,7 @@ end
 Solar System (JPL DE430/431) dynamical model. This function uses threads and includes all the effects in
 `NBP_pN_A_J23E_J23M_J2S_threads!` plus
 
-- Tidal secular acceleration of Moon due to rides raised on Earth by both the Moon and the Sun: see equation (32) in page 14 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
+- Tidal secular acceleration of Moon due to tides raised on Earth by both the Moon and the Sun: see equation (32) in page 14 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 ```math
 \begin{align*}
     \mathbf{a}_{M,tide} & = \frac{3}{2}\left(\frac{m_E + m_M}{m_E}\right)\frac{Gm_T R_E^5}{r^5}
@@ -1339,7 +1341,7 @@ function DE430!(dq, q, params, t)
 
     # Rotations to and from Earth, Sun and Moon pole-oriented frames
     local αs = deg2rad(α_p_sun*one_t)           # Sun's rotation pole right ascension (radians)
-    local δs = deg2rad(δ_p_sun*one_t)           # Sun's rotation pole right ascension (radians)
+    local δs = deg2rad(δ_p_sun*one_t)           # Sun's rotation pole declination (radians)
     # Space-fixed -> body-fixed coordinate transformations
     RotM = Array{S}(undef, 3, 3, 5)
     local RotM[:,:,ea] = c2t_jpl_de430(dsj2k)   # Earth
@@ -1385,8 +1387,8 @@ function DE430!(dq, q, params, t)
     local J2S_t = JSEM[su,2]*one_t                     # Sun (static)
     # Vector of second zonal harmonic coefficients
     J2_t = Array{S}(undef, 5)
-    J2_t[su] = J2S_t             # Earth
-    J2_t[ea] = J2E_t             # Sun
+    J2_t[su] = J2S_t             # Sun
+    J2_t[ea] = J2E_t             # Earth
     # Lunar torques: overall numerical factor in equation (44) in page 18 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
     local N_MfigM_figE_factor = 7.5*μ[ea]*J2E_t
 
@@ -2132,9 +2134,11 @@ function DE430!(dq, q, params, t)
     p_E_cross_I_p_E_2 = (p_E_3*I_p_E_1) - (p_E_1*I_p_E_3)
     p_E_cross_I_p_E_3 = (p_E_1*I_p_E_2) - (p_E_2*I_p_E_1)
 
+    # sin(ϕ_{M,E}) = e_r ⋅ p_E, see eq. (44)
+    sinϕEM = ((er_EM_1*p_E_1) + (er_EM_2*p_E_2)) + (er_EM_3*p_E_3)
     # Coefficients of first and second terms inside {} in eq. (44)
-    one_minus_7sin2ϕEM = one_t - (7((sin_ϕ[ea,mo])^2))
-    two_sinϕEM = 2sin_ϕ[ea,mo]
+    one_minus_7sin2ϕEM = one_t - (7(sinϕEM^2))
+    two_sinϕEM = 2sinϕEM
 
     # Overall numerical factor in eq. (44) / r_{EM}^5
     N_MfigM_figE_factor_div_rEMp5 = (N_MfigM_figE_factor/(r_p1d2[mo,ea]^5))
