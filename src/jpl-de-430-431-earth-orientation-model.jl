@@ -5,8 +5,8 @@
 # From JPL DE430 documentation (Folkner et al., 2014):
 # Only the long-term change of the Earth's orientation is modeled in the ephemeris
 # integration. The Earth orientation model used for the DE 430 and 431 integration
-# is based on the International Astronomical Union (IAU) 1976 precession model\* with
-# an estimated linear correction and on a modified IAU 1980 nutation model \* including
+# is based on the International Astronomical Union (IAU) 1976 precession model with
+# an estimated linear correction and on a modified IAU 1980 nutation model including
 # only terms with a period of 18.6 years.
 
 const coeffs_Ω_A = [125+2/60+40.280/3600, -(1934+8/60+10.539/3600), 7.455/3600, 0.008/3600]
@@ -678,7 +678,7 @@ end
 Return the rotation matrix from the inertial frame to the frame with pole at right
 ascension ``\alpha``, declination ``\delta`` and prime meridian at ``W``
 ```math
-A = R_z(W + \Delta W)R_x\left(\frac{\pi}{2} - \delta - \Delta\delta\right)R_z\left(\alpha + \Delta\alpha + \frac{\pi}{2}\right).
+A = R_z(W)R_x\left(\frac{\pi}{2} - \delta\right)R_z\left(\alpha + \frac{\pi}{2}\right).
 ```
 
 See equation (6-3) in page 6-5 of https://doi.org/10.1002/0471728470.
@@ -709,7 +709,8 @@ end
 @doc raw"""
     nutation_iau80(t::Number)
 
-Return the IAU 1980 nutation matrix (Explanatory Supplement to the Astronomical Almanac 1992)
+Return the nutation matrix of the JPL DE430/431 Earth orientation model, i.e. the IAU 1980
+nutation model with only the 18.6-year term
 ```math
 N = R_x(-\bar{\epsilon}(t) - \Delta\epsilon(t))R_z(-\Delta\psi(t))R_x(\bar{\epsilon}(t)),
 ```
@@ -758,7 +759,9 @@ end
 @doc raw"""
     t2c_jpl_de430(t)
 
-Return the matrix for terrestrial-to-celestial coordinate transformation, according to JPL DE 430/431 Earth orientation model
+Return the rotation matrix from the Earth's true equator of date frame
+(terrestrial) to the inertial (ICRF) frame (celestial), according to the
+JPL DE430/431 Earth orientation model
 ```math
 \texttt{t2c_jpl_de430}(t) = \texttt{c2t_jpl_de430}^T(t),
 ```
@@ -796,9 +799,11 @@ function t2c_jpl_de430(dsj2k::Taylor1{T}, zero_q::Taylor1{Taylor1{T}}) where {T 
 end
 
 @doc raw"""
-    t2c_jpl_de430!(M, ea, t::RetAlloc{Taylor1{T}}, zero_q, rotatBuf::Union{Nothing,RetAlloc{Taylor1{T}}})
+    t2c_jpl_de430!(M, ea, dsj2k::Taylor1{T}, zero_q, rotatBuf::Union{Nothing,RetAlloc{Taylor1{T}}})
 
-Inplace version of ``t2c_jpl_de430(t)``; see [`t2c_jpl_de430`](@ref) for details.
+Inplace version of ``t2c_jpl_de430(dsj2k)``; see [`t2c_jpl_de430`](@ref) for details. Writes the
+matrix into `M[:, :, ea]`, using the buffers `rotatBuf` (see [`allocate_c2t_jpl_de430`](@ref)).
+If `rotatBuf` is `nothing`, return the allocating `t2c_jpl_de430(dsj2k, zero_q)` instead.
 """
 t2c_jpl_de430!(::Array{Taylor1{S},3}, ::Int, dsj2k::Taylor1{T},
         zero_q::Taylor1{S}, ::Nothing) where {T <: Real, S <: Number} =
@@ -847,14 +852,19 @@ end
 @doc raw"""
     c2t_jpl_de430(t::Number)
 
-Return the matrix for celestial-to-terrestrial coordinate transformation, according to
-JPL DE 430/431 Earth orientation model
+Return the rotation matrix from the inertial (ICRF) frame (celestial) to
+the Earth's true equator of date frame (terrestrial), according to the
+JPL DE430/431 Earth orientation model
 ```math
-\texttt{c2t_jpl_de430}(t) = A\times C\times N,
+\texttt{c2t_jpl_de430}(t) = N\times C\times P,
 ```
-where ``t`` is the TDB time in Julian days from J2000.0, ``A = R_z(-z_A(t))R_y(\theta_A(t))R_z(-\zeta_A(t))``
+where ``t`` is the TDB time in Julian days from J2000.0, ``P = R_z(-z_A(t))R_y(\theta_A(t))R_z(-\zeta_A(t))``
 is the precession matrix, ``C = R_y(\phi_y(t))R_x(\phi_x(t))`` is the linear corrections matrix
-and ``N`` is the nutation matrix.
+and ``N`` is the nutation matrix. The third row is the Earth's pole ``\mathbf{p}_\mathrm{E}``
+in the inertial frame.
+
+``\textbf{Note:}`` the Earth's rotation is not modeled: only the direction of the pole is
+needed for the Earth's zonal harmonics.
 
 See equation (5-147) in page (5-59) and equation (5-152) in page (5-60) of https://doi.org/10.1002/0471728470.
 Also see equation (25) in page 11 and Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract.
@@ -939,8 +949,8 @@ end
 @doc raw"""
     allocate_c2t_jpl_de430(t)
 
-Returns a `RetAlloc{Taylor1{T}}` object with objects that can be used to recicle memory for
-[`c2t_jpl_de430!`](@ref)) and [`t2c_jpl_de430!`](@ref)) methods. Minimum computations
+Return a `RetAlloc{Taylor1{T}}` object with the buffers used by the
+[`c2t_jpl_de430!`](@ref) and [`t2c_jpl_de430!`](@ref) methods. Minimum computations
 are performed here.
 """
 function allocate_c2t_jpl_de430(t::Taylor1{T}) where {T<:Real}
