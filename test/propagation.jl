@@ -8,7 +8,7 @@ using JLD2
 using TaylorSeries
 using Test
 
-using PlanetaryEphemeris: freeparticle!, sun_posvel_pN, loadeph
+using PlanetaryEphemeris: freeparticle!, sun_posvel_pN, accpoteph
 using SPICE: furnsh, spkgeo
 using LinearAlgebra: norm
 
@@ -258,7 +258,7 @@ end
 
         @test sseph == recovered_sol
 
-        acceph, poteph = loadeph(recovered_sol, PE.μ)
+        acceph, poteph = accpoteph(recovered_sol, PE.μ)
 
         @test size(acceph.p, 1) == size(poteph.p, 1) == size(recovered_sol.p, 1)
         @test size(acceph.p, 2) == (size(recovered_sol.p, 2) - 13) ÷ 2
