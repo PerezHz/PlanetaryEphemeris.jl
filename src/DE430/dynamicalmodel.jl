@@ -914,17 +914,17 @@ function NBP_pN_A_J23E_J23M_J2S_threads!(dq, q, params, t)
     p_E_3 = (RotM[3,1,mo]*p_E_I_1) + ((RotM[3,2,mo]*p_E_I_2) + (RotM[3,3,mo]*p_E_I_3))
 
     # Evaluate equation (44) https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    # in lunar mantle frame coords
+    # in lunar mantle frame coords, with the total (mantle + core) lunar moment of inertia
 
     # I*e_r
-    I_er_EM_1 = (I_m_t[1,1]*er_EM_1) + ((I_m_t[1,2]*er_EM_2) + (I_m_t[1,3]*er_EM_3))
-    I_er_EM_2 = (I_m_t[2,1]*er_EM_1) + ((I_m_t[2,2]*er_EM_2) + (I_m_t[2,3]*er_EM_3))
-    I_er_EM_3 = (I_m_t[3,1]*er_EM_1) + ((I_m_t[3,2]*er_EM_2) + (I_m_t[3,3]*er_EM_3))
+    I_er_EM_1 = (I_M_t[1,1]*er_EM_1) + ((I_M_t[1,2]*er_EM_2) + (I_M_t[1,3]*er_EM_3))
+    I_er_EM_2 = (I_M_t[2,1]*er_EM_1) + ((I_M_t[2,2]*er_EM_2) + (I_M_t[2,3]*er_EM_3))
+    I_er_EM_3 = (I_M_t[3,1]*er_EM_1) + ((I_M_t[3,2]*er_EM_2) + (I_M_t[3,3]*er_EM_3))
 
     # I*p_E
-    I_p_E_1 = (I_m_t[1,1]*p_E_1) + ((I_m_t[1,2]*p_E_2) + (I_m_t[1,3]*p_E_3))
-    I_p_E_2 = (I_m_t[2,1]*p_E_1) + ((I_m_t[2,2]*p_E_2) + (I_m_t[2,3]*p_E_3))
-    I_p_E_3 = (I_m_t[3,1]*p_E_1) + ((I_m_t[3,2]*p_E_2) + (I_m_t[3,3]*p_E_3))
+    I_p_E_1 = (I_M_t[1,1]*p_E_1) + ((I_M_t[1,2]*p_E_2) + (I_M_t[1,3]*p_E_3))
+    I_p_E_2 = (I_M_t[2,1]*p_E_1) + ((I_M_t[2,2]*p_E_2) + (I_M_t[2,3]*p_E_3))
+    I_p_E_3 = (I_M_t[3,1]*p_E_1) + ((I_M_t[3,2]*p_E_2) + (I_M_t[3,3]*p_E_3))
 
     # e_r × (I*e_r)
     er_EM_cross_I_er_EM_1 = (er_EM_2*I_er_EM_3) - (er_EM_3*I_er_EM_2)
@@ -2102,17 +2102,17 @@ function DE430!(dq, q, params, t)
     p_E_3 = (RotM[3,1,mo]*p_E_I_1) + ((RotM[3,2,mo]*p_E_I_2) + (RotM[3,3,mo]*p_E_I_3))
 
     # Evaluate equation (44) https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
-    # in lunar mantle frame coords
+    # in lunar mantle frame coords, with the total (mantle + core) lunar moment of inertia
 
     # I*e_r
-    I_er_EM_1 = (I_m_t[1,1]*er_EM_1) + ((I_m_t[1,2]*er_EM_2) + (I_m_t[1,3]*er_EM_3))
-    I_er_EM_2 = (I_m_t[2,1]*er_EM_1) + ((I_m_t[2,2]*er_EM_2) + (I_m_t[2,3]*er_EM_3))
-    I_er_EM_3 = (I_m_t[3,1]*er_EM_1) + ((I_m_t[3,2]*er_EM_2) + (I_m_t[3,3]*er_EM_3))
+    I_er_EM_1 = (I_M_t[1,1]*er_EM_1) + ((I_M_t[1,2]*er_EM_2) + (I_M_t[1,3]*er_EM_3))
+    I_er_EM_2 = (I_M_t[2,1]*er_EM_1) + ((I_M_t[2,2]*er_EM_2) + (I_M_t[2,3]*er_EM_3))
+    I_er_EM_3 = (I_M_t[3,1]*er_EM_1) + ((I_M_t[3,2]*er_EM_2) + (I_M_t[3,3]*er_EM_3))
 
     # I*p_E
-    I_p_E_1 = (I_m_t[1,1]*p_E_1) + ((I_m_t[1,2]*p_E_2) + (I_m_t[1,3]*p_E_3))
-    I_p_E_2 = (I_m_t[2,1]*p_E_1) + ((I_m_t[2,2]*p_E_2) + (I_m_t[2,3]*p_E_3))
-    I_p_E_3 = (I_m_t[3,1]*p_E_1) + ((I_m_t[3,2]*p_E_2) + (I_m_t[3,3]*p_E_3))
+    I_p_E_1 = (I_M_t[1,1]*p_E_1) + ((I_M_t[1,2]*p_E_2) + (I_M_t[1,3]*p_E_3))
+    I_p_E_2 = (I_M_t[2,1]*p_E_1) + ((I_M_t[2,2]*p_E_2) + (I_M_t[2,3]*p_E_3))
+    I_p_E_3 = (I_M_t[3,1]*p_E_1) + ((I_M_t[3,2]*p_E_2) + (I_M_t[3,3]*p_E_3))
 
     # e_r × (I*e_r)
     er_EM_cross_I_er_EM_1 = (er_EM_2*I_er_EM_3) - (er_EM_3*I_er_EM_2)
