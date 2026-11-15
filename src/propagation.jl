@@ -18,7 +18,7 @@ function ordpres_differentiate(a::Taylor1{T}) where {T}
 end
 
 @doc raw"""
-    accpoteph(sseph::TaylorSolution, GM::Vector{<:Real})
+    accpoteph(sseph::TaylorSolution, GM::AbstractVector)
 
 Return the point-mass Newtonian accelerations and the Newtonian ``N``-body potentials of
 all the bodies in the Solar System ephemeris `sseph`, given their gravitational parameters
@@ -26,46 +26,67 @@ all the bodies in the Solar System ephemeris `sseph`, given their gravitational 
 
 # Arguments
 
-- `sseph::TaylorSolution`: Solar System ephemeris.
-- `GM::Vector{<:Real}`: vector of gravitational parameters.
+- `sseph::TaylorSolution`: Solar System ephemeris (with real Taylor coefficients).
+- `GM::AbstractVector`: vector of gravitational parameters.
 """
-function accpoteph(sseph::TaylorSolution, GM::Vector{<:Real})
-
-    # Compute point-mass Newtonian accelerations from ephemeris: accelerations of all
-    # bodies are needed to compute the post-Newtonian acceleration of e.g. Solar System
-    # minor bodies
-    # Number of bodies that contribute to the asteroid's acceleration
+function accpoteph(sseph::TaylorSolution{T, U},
+                   GM::AbstractVector{T}) where {T <: Real, U <: Real}
+    # Number of bodies
     Nm1 = numberofbodies(sseph)
-    # Initialize dense polynomial arrays for the point-mass Newtonian accelerations
-    acceph = Matrix{eltype(sseph.p)}(undef, length(sseph.t)-1, 3Nm1)
-    # Initialize dense polynomial arrays for the newtonian N body potential
-    poteph = Matrix{eltype(sseph.p)}(undef, length(sseph.t)-1, Nm1)
-    fill!(acceph, zero(sseph.p[1]))
-    fill!(poteph, zero(sseph.p[1]))
+    # Number of time steps and order of the Taylor polynomials
+    nsteps = size(sseph.p, 1)
+    order = TS.order(sseph.p[1])
+    # Point-mass Newtonian accelerations (X, Y and Z components of each body) and
+    # Newtonian N body potentials
+    acceph = [Taylor1(zeros(U, order+1)) for _ in 1:nsteps, _ in 1:3Nm1]
+    poteph = [Taylor1(zeros(U, order+1)) for _ in 1:nsteps, _ in 1:Nm1]
+    # Auxiliaries, reused across the whole computation
+    X, Y, Z = Taylor1(zeros(U, order+1)), Taylor1(zeros(U, order+1)),
+        Taylor1(zeros(U, order+1))          # Difference between two positions
+    X2, Y2, Z2 = Taylor1(zeros(U, order+1)), Taylor1(zeros(U, order+1)),
+        Taylor1(zeros(U, order+1))          # Squares of the components
+    X2pY2 = Taylor1(zeros(U, order+1))      # X^2 + Y^2
+    r2 = Taylor1(zeros(U, order+1))         # Distance squared
+    r = Taylor1(zeros(U, order+1))          # Distance
+    GMi_r = Taylor1(zeros(U, order+1))      # GM[i] / r
+    GMj_r = Taylor1(zeros(U, order+1))      # GM[j] / r
+    aux = Taylor1(zeros(U, order+1))        # Auxiliary for sqrt!
+    aux0 = zero(U)                          # Auxiliary for sqr!
 
-    # Iterator over all bodies except asteroid
-    for j in 1:Nm1
-        for i in 1:Nm1
-            if i == j
-                #
-            else
-                # Difference between two positions (\mathbf{r}_i - \mathbf{r}_j)
-                X_ij = sseph.p[:, 3i-2] .- sseph.p[:, 3j-2]  # X-axis component
-                Y_ij = sseph.p[:, 3i-1] .- sseph.p[:, 3j-1]  # Y-axis component
-                Z_ij = sseph.p[:, 3i  ] .- sseph.p[:, 3j  ]  # Z-axis component
-                # Distance between two bodies squared ||\mathbf{r}_i - \mathbf{r}_j||^2
-                r_p2_ij = ( (X_ij.^2) .+ (Y_ij.^2) ) .+ (Z_ij.^2)
-                # Distance between two bodies ||\mathbf{r}_i - \mathbf{r}_j||
-                r_ij = sqrt.(r_p2_ij)
-                # Newtonian potential
-                poteph[:, j] .+= (GM[i]./r_ij)
+    for k in 1:nsteps
+        for j in 1:Nm1
+            # Accelerations: derivatives of the velocities (the last coefficient stays 0)
+            for c in 1:3
+                vj = sseph.p[k, 3(Nm1+j)-3+c]
+                for ord in 0:order-1
+                    TS.differentiate!(acceph[k, 3j-3+c], vj, ord)
+                end
+            end
+            # Newtonian potentials: each pair (i, j) with i > j contributes GM[i] / r to
+            # the potential of j and GM[j] / r to the potential of i. Terms are added in
+            # increasing order of the other body's index
+            for i in j+1:Nm1
+                for ord in 0:order
+                    # Difference between two positions (\mathbf{r}_i - \mathbf{r}_j)
+                    TS.subst!(X, sseph.p[k, 3i-2], sseph.p[k, 3j-2], ord)
+                    TS.subst!(Y, sseph.p[k, 3i-1], sseph.p[k, 3j-1], ord)
+                    TS.subst!(Z, sseph.p[k, 3i  ], sseph.p[k, 3j  ], ord)
+                    # Distance between two bodies squared ||\mathbf{r}_i - \mathbf{r}_j||^2
+                    TS.sqr!(X2, X, aux0, ord)
+                    TS.sqr!(Y2, Y, aux0, ord)
+                    TS.sqr!(Z2, Z, aux0, ord)
+                    TS.add!(X2pY2, X2, Y2, ord)
+                    TS.add!(r2, X2pY2, Z2, ord)
+                    # Distance between two bodies ||\mathbf{r}_i - \mathbf{r}_j||
+                    TS.sqrt!(r, r2, aux, ord)
+                    # Newtonian potentials
+                    TS.div!(GMi_r, GM[i], r, ord)
+                    TS.add!(poteph[k, j], poteph[k, j], GMi_r, ord)
+                    TS.div!(GMj_r, GM[j], r, ord)
+                    TS.add!(poteph[k, i], poteph[k, i], GMj_r, ord)
+                end
             end
         end
-
-        # Fill accelerations by differentiating velocities (X, Y and Z components)
-        acceph[:, 3j-2] .= ordpres_differentiate.(sseph.p[:, 3(Nm1+j)-2])
-        acceph[:, 3j-1] .= ordpres_differentiate.(sseph.p[:, 3(Nm1+j)-1])
-        acceph[:, 3j  ] .= ordpres_differentiate.(sseph.p[:, 3(Nm1+j)  ])
     end
 
     return TaylorSolution(sseph.t, acceph), TaylorSolution(sseph.t, poteph)
