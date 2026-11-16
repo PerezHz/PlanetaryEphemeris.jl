@@ -8,7 +8,7 @@ using JLD2
 using TaylorSeries
 using Test
 
-using PlanetaryEphemeris: freeparticle!, sun_posvel_pN, loadeph
+using PlanetaryEphemeris: freeparticle!, sun_posvel_pN, accpoteph
 using SPICE: furnsh, spkgeo
 using LinearAlgebra: norm
 
@@ -258,11 +258,30 @@ end
 
         @test sseph == recovered_sol
 
-        acceph, poteph = loadeph(recovered_sol, PE.μ)
+        acceph, poteph = accpoteph(recovered_sol, PE.μ)
 
         @test size(acceph.p, 1) == size(poteph.p, 1) == size(recovered_sol.p, 1)
         @test size(acceph.p, 2) == (size(recovered_sol.p, 2) - 13) ÷ 2
         @test size(poteph.p, 2) == (size(recovered_sol.p, 2) - 13) ÷ 6
+        # Compare with a direct (allocating) computation
+        Nm1 = numberofbodies(recovered_sol)
+        for k in (1, size(recovered_sol.p, 1))
+            for j in 1:Nm1
+                pot = zero(recovered_sol.p[k, 1])
+                for i in 1:Nm1
+                    i == j && continue
+                    X = recovered_sol.p[k, 3i-2] - recovered_sol.p[k, 3j-2]
+                    Y = recovered_sol.p[k, 3i-1] - recovered_sol.p[k, 3j-1]
+                    Z = recovered_sol.p[k, 3i] - recovered_sol.p[k, 3j]
+                    pot += PE.μ[i] / sqrt(X^2 + Y^2 + Z^2)
+                end
+                @test poteph.p[k, j] ≈ pot
+                for c in 1:3
+                    v = recovered_sol.p[k, 3(Nm1+j)-3+c]
+                    @test acceph.p[k, 3j-3+c] == PE.ordpres_differentiate(v)
+                end
+            end
+        end
 
         jldsave(filename; sseph, acceph, poteph)
         @test JLD2.load(filename, "sseph") == sseph
