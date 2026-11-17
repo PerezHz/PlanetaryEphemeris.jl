@@ -30,16 +30,18 @@ const TS = TaylorSeries
 
 include("abstractproblem.jl")
 include("constants.jl")
-include("jpl-de-430-431-earth-orientation-model.jl")
+include("orientation.jl")
 include("initcond.jl")
 include("interpolation/TaylorSolution.jl")
 include("propagation.jl")
 include("osculating.jl")
 include("barycenter.jl")
-#include("precompile.jl")
+# include("precompile.jl")
 
 include("trivial.jl")
 include("DE430/params.jl")
+include("DE430/earthorientation.jl")
+include("DE430/moonorientation.jl")
 include("DE430/dynamicalmodel.jl")
 include("DE430/jetcoeffs.jl")
 
