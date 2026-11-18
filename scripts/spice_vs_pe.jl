@@ -4,7 +4,8 @@ ENV["GKSwstype"] = "100"
 using ArgParse, Dates, JLD2, LinearAlgebra, Plots, Printf, SPICE, TaylorIntegration,
       TaylorSeries
 using PlanetaryEphemeris
-using PlanetaryEphemeris: J2000, auday2kmsec, daysec, nbodyind, numberofbodies, yr
+using PlanetaryEphemeris: J2000, au, auday2kmsec, c_au_per_day, daysec, nbodyind,
+      numberofbodies, semimajoraxis, ssb_posvel_pN, yr
 
 # NAIF ids of the Solar System barycenter, the Sun, the Earth, the Moon and TT-TDB
 const SSB_ID = 0
@@ -64,6 +65,11 @@ function parse_commandline()
                 reduced to their min/max envelope (0 to plot every point)"
             arg_type = Int
             default = 5_000
+        "--window"
+            help = "moving average window used to extract the long-term (tidal) drift \
+                of the difference in the lunar semimajor axis [day]"
+            arg_type = Float64
+            default = 365.25
         "--label", "-l"
             help = "label of the SPICE ephemeris in the plots (e.g. \"JPL DE440\"); \
                 default: names of the kernels"
@@ -89,10 +95,12 @@ printitle(s::AbstractString, d::AbstractString) = println(d ^ length(s),
 datetime2days(d::DateTime) = datetime2julian(d) - J2000
 days2datetime(t::Real) = julian2datetime(J2000 + t)
 
-# Load the ephemeris and the NAIF ids of its bodies from a .jld2 file. The ephemeris is
-# read from the key `sseph` (scripts/de430.jl and scripts/spice_to_pe.jl) or
-# `ss16ast_eph` (older files), and the ids from the key `ids` or `spkids`. The ids can
-# also be given explicitly (`idsarg`)
+# Load the ephemeris, the NAIF ids and the mass parameters of its bodies from a .jld2
+# file. The ephemeris is read from the key `sseph` (scripts/de430.jl and
+# scripts/spice_to_pe.jl) or `ss16ast_eph` (older files), the ids from the key `ids` or
+# `spkids`, and the mass parameters [au³/day²] from the key `μ`. The ids can also be
+# given explicitly (`idsarg`). Files without mass parameters use
+# PlanetaryEphemeris.μ if their bodies are those of DE430; otherwise `GM = nothing`
 function loadpe(filename::AbstractString, idsarg::Union{Nothing, AbstractString})
     file = JLD2.load(filename)
     key = findfirst(k -> haskey(file, k), ["sseph", "ss16ast_eph"])
@@ -117,7 +125,21 @@ function loadpe(filename::AbstractString, idsarg::Union{Nothing, AbstractString}
     ids = [id isa Integer ? Int(id) : parse(Int, strip(id)) for id in ids]
     @assert length(ids) == N "Number of bodies in $filename ($N) does not match its \
         number of NAIF ids ($(length(ids)))"
-    return sseph, ids
+    isde430 = isdefined(PlanetaryEphemeris, :de430_343ast_ids) &&
+        ids == vcat(PLANETS_IDS,
+            2_000_000 .+ PlanetaryEphemeris.de430_343ast_ids)[1:min(N, end)]
+    GM = if haskey(file, "μ")
+        Vector{Float64}(file["μ"])
+    elseif isde430
+        @warn "$filename does not store the mass parameters of its bodies; using \
+            PlanetaryEphemeris.μ (DE430)"
+        PlanetaryEphemeris.μ[1:N]
+    else
+        nothing
+    end
+    @assert isnothing(GM) || length(GM) == N "Number of bodies in $filename ($N) \
+        does not match its number of mass parameters ($(length(GM)))"
+    return sseph, ids, GM
 end
 
 # Whether all the polynomials in columns `cols` of `sseph` are identically zero
@@ -156,6 +178,48 @@ function eulerrates(ϕ, θ, ψ, ω)
     dθ = ω[1] * cos(ψ) - ω[2] * sin(ψ)
     dψ = ω[3] - dϕ * cos(θ)
     return dϕ, dθ, dψ
+end
+
+# Position [au] of the center of mass/energy (N-body metric) of the bodies with
+# barycentric positions [au] and velocities [au/day] in the columns of `r` and `v`
+# (3×N), and mass parameters `GM` [au³/day²]. Same as `ssb_posvel_pN`, but O(N²/2)
+# and without allocations in the inner loop
+# See equations (2) and (5) of https://doi.org/10.1051/0004-6361:20066607
+function centerofmass(GM::AbstractVector, r::AbstractMatrix, v::AbstractMatrix)
+    N = length(GM)
+    # Newtonian potential at each body due to the others
+    U = zeros(N)
+    for i in 1:N, j in i+1:N
+        rij = sqrt((r[1, i] - r[1, j])^2 + (r[2, i] - r[2, j])^2 + (r[3, i] - r[3, j])^2)
+        U[i] += GM[j] / rij
+        U[j] += GM[i] / rij
+    end
+    # Mass parameters with relativistic corrections up to order 1/c²
+    c2 = 2 * c_au_per_day^2
+    rcm, GMcm = zeros(3), 0.0
+    for i in 1:N
+        GMi = GM[i] * (1 + ((v[1, i]^2 + v[2, i]^2 + v[3, i]^2) - U[i]) / c2)
+        for k in 1:3
+            rcm[k] += GMi * r[k, i]
+        end
+        GMcm += GMi
+    end
+    return rcm ./ GMcm
+end
+
+# Moving average of `y` (sampled at `x`) over windows of `w` consecutive points; returns
+# the mean `x` and the mean `y` of each window
+function movingaverage(x::AbstractVector, y::AbstractVector, w::Int)
+    n = length(y) - w + 1
+    cx, cy = cumsum(vcat(0.0, x)), cumsum(vcat(0.0, y))
+    return (cx[w+1:end] .- cx[1:n]) ./ w, (cy[w+1:end] .- cy[1:n]) ./ w
+end
+
+# Least-squares line `y ≈ a + b x`; returns `(a, b)`
+function linearfit(x::AbstractVector, y::AbstractVector)
+    x̄, ȳ = sum(x) / length(x), sum(y) / length(y)
+    b = sum((x .- x̄) .* (y .- ȳ)) / sum(abs2, x .- x̄)
+    return ȳ - b * x̄, b
 end
 
 # Min/max envelope of the columns of `y` (sampled at `x`) for plotting: if there are more
@@ -197,7 +261,7 @@ function compare(ephfile::String, kernels::Vector{String}, pck::Union{Nothing, S
                  d0::Union{Nothing, DateTime}, df::Union{Nothing, DateTime})
 
     # PlanetaryEphemeris.jl ephemeris
-    sseph, ids = loadpe(ephfile, idsarg)
+    sseph, ids, GM = loadpe(ephfile, idsarg)
     N = length(ids)
     println("• Number of bodies: ", N)
     println("• NAIF ids: ", join(ids, ", "))
@@ -247,6 +311,16 @@ function compare(ephfile::String, kernels::Vector{String}, pck::Union{Nothing, S
     else
         println("• Lunar mantle Euler angles: compared")
         true
+    end
+
+    # The center of mass/energy and the lunar semimajor axis are compared only if the
+    # mass parameters of the bodies are known
+    compare_gm = !isnothing(GM)
+    if compare_gm
+        println("• Center of mass/energy and lunar semimajor axis: compared")
+    else
+        println("• Center of mass/energy and lunar semimajor axis: not compared (no mass \
+            parameters in the ephemeris file, key `μ`)")
     end
 
     # Lunar orientation binary PCK: define a PCK-based frame (centered at the Moon) for
@@ -318,6 +392,33 @@ function compare(ephfile::String, kernels::Vector{String}, pck::Union{Nothing, S
         return [ϕ, θ, ψ, eulerrates(ϕ, θ, ψ, ω)...]
     end
 
+    # Osculating semimajor axis [km] of the geocentric lunar orbit from the geocentric
+    # state `xm` [km, km/s] of the Moon
+    GMEM = compare_gm ? (GM[iea] + GM[imo]) * au^3 / daysec^2 : 0.0
+    moonsma(xm) = semimajoraxis(xm..., GMEM, 0.0)
+    # Barycentric positions [au] and velocities [au/day] of the bodies in the SPICE
+    # kernels at time `t` [days since J2000 TDB]. Do not name the buffers `R` or `V`:
+    # closures share the variables of `compare`, and `jpl_eulang` assigns to `R`
+    r_jpl, v_jpl = Matrix{Float64}(undef, 3, N), Matrix{Float64}(undef, 3, N)
+    function jpl_posvel!(r, v, t)
+        for i in 1:N
+            xi = jpl_ephemeris(ids[i], SSB_ID, t)
+            r[:, i] .= view(xi, 1:3) ./ au
+            v[:, i] .= view(xi, 4:6) .* (daysec / au)
+        end
+        return r, v
+    end
+    # Barycentric positions [au] and velocities [au/day] in the full
+    # PlanetaryEphemeris.jl state `x`
+    pe_posvel(x) = reshape(view(x, 1:3N), 3, N), reshape(view(x, 3N+1:6N), 3, N)
+    # Check `centerofmass` against PlanetaryEphemeris.ssb_posvel_pN
+    if compare_gm
+        x0 = sseph(tmin)
+        rcm, _, GMcm = ssb_posvel_pN(GM, x0)
+        @assert isapprox(rcm ./ GMcm, centerofmass(GM, pe_posvel(x0)...);
+            atol = 1E-16) "centerofmass does not match ssb_posvel_pN"
+    end
+
     # Differences PlanetaryEphemeris.jl - SPICE
     printitle("Differences PlanetaryEphemeris.jl - SPICE", "-")
     ts = collect(tmin:step:tmax)
@@ -330,28 +431,42 @@ function compare(ephfile::String, kernels::Vector{String}, pck::Union{Nothing, S
     Δttmtdb = Vector{Float64}(undef, compare_ttmtdb ? length(ts) : 0)
     # Lunar mantle Euler angles [rad] and their rates [rad/day]
     Δeulang = Array{Float64}(undef, compare_eulang ? length(ts) : 0, 6)
+    # Osculating semimajor axis of the geocentric lunar orbit [km]
+    Δa = Vector{Float64}(undef, compare_gm ? length(ts) : 0)
+    # Center of mass/energy in PlanetaryEphemeris.jl and SPICE [au]
+    cm_pe = Matrix{Float64}(undef, compare_gm ? length(ts) : 0, 3)
+    cm_jpl = Matrix{Float64}(undef, compare_gm ? length(ts) : 0, 3)
     @time for (j, t) in enumerate(ts)
         x = sseph(t)
         for i in 1:N
             Δ[j, i, :] .= pe_ephemeris(i, centers[i], x) .-
                 jpl_ephemeris(ids[i], center_ids[i], t)
         end
-        Δρ[j] = norm(pe_ephemeris(imo, iea, x)[1:3]) -
-            norm(jpl_ephemeris(MOON_ID, EARTH_ID, t)[1:3])
+        xm_pe, xm_jpl = pe_ephemeris(imo, iea, x), jpl_ephemeris(MOON_ID, EARTH_ID, t)
+        Δρ[j] = norm(xm_pe[1:3]) - norm(xm_jpl[1:3])
+        if compare_gm
+            Δa[j] = moonsma(xm_pe) - moonsma(xm_jpl)
+            cm_pe[j, :] .= centerofmass(GM, pe_posvel(x)...)
+            cm_jpl[j, :] .= centerofmass(GM, jpl_posvel!(r_jpl, v_jpl, t)...)
+        end
         compare_ttmtdb && (Δttmtdb[j] = x[6N+13] - jpl_ttmtdb(t))
         compare_eulang && (Δeulang[j, :] .= pe_eulang(x) .- jpl_eulang(t))
     end
     # Euler angles are only defined modulo 2π
     Δeulang[:, 1:3] .= rem2pi.(Δeulang[:, 1:3], RoundNearest)
-    # Positions and ranges in m, velocities in mm/s, TT-TDB in ns and Euler angles and
-    # their rates in mas and mas/day
+    # Positions, ranges and semimajor axes in m, velocities in mm/s, TT-TDB in ns, Euler
+    # angles and their rates in mas and mas/day, and centers of mass/energy in mm
     Δ[:, :, 1:3] .*= 1E3
     Δ[:, :, 4:6] .*= 1E6
     Δρ .*= 1E3
     Δttmtdb .*= 1E9
     Δeulang .*= rad2deg(1) * 3600 * 1E3
+    Δa .*= 1E3
+    cm_pe .*= au * 1E6
+    cm_jpl .*= au * 1E6
 
-    return (; ids, frames, ts, Δ, Δρ, Δttmtdb, Δeulang, compare_ttmtdb, compare_eulang)
+    return (; ids, frames, ts, Δ, Δρ, Δttmtdb, Δeulang, Δa, cm_pe, cm_jpl,
+        compare_ttmtdb, compare_eulang, compare_gm)
 end
 
 function main()
@@ -384,17 +499,36 @@ function main()
     # Maximum number of points per curve in the plots
     maxpoints::Int = parsed_args["maxpoints"]
 
+    # Moving average window for the drift of the lunar semimajor axis
+    window::Float64 = parsed_args["window"]
+    println("• Moving average window for the lunar semimajor axis drift [day]: ", window)
+
     # Label of the SPICE ephemeris
     label::String = something(parsed_args["label"], join(basename.(kernels), " + "))
     println("• Label of the SPICE ephemeris: ", label)
 
     # Differences PlanetaryEphemeris.jl - SPICE
-    (; ids, frames, ts, Δ, Δρ, Δttmtdb, Δeulang, compare_ttmtdb, compare_eulang) =
-        compare(ephfile, kernels, pck, parsed_args["ids"], step, parsed_args["start"],
-            parsed_args["end"])
+    (; ids, frames, ts, Δ, Δρ, Δttmtdb, Δeulang, Δa, cm_pe, cm_jpl, compare_ttmtdb,
+        compare_eulang, compare_gm) = compare(ephfile, kernels, pck, parsed_args["ids"],
+        step, parsed_args["start"], parsed_args["end"])
     N = length(ids)
+    years = 2000 .+ ts ./ yr
     # Free the memory used by the ephemeris
     GC.gc()
+
+    # Long-term (tidal) drift of the difference in the lunar semimajor axis [mm]: moving
+    # average of Δa relative to its first value, and its linear rate [mm/yr]
+    w = round(Int, window / step)
+    compare_drift = compare_gm && 1 ≤ w < length(ts)
+    if compare_gm && !compare_drift
+        @warn "The moving average window ($window days) does not fit in the comparison \
+            time span; the lunar semimajor axis drift is not computed"
+    end
+    if compare_drift
+        years_ma, Δa_ma = movingaverage(years, Δa, w)
+        Δa_drift = (Δa_ma .- first(Δa_ma)) .* 1E3
+        Δa_fit, Δa_rate = linearfit(years_ma, Δa_drift)
+    end
 
     # Table of maximum absolute differences
     printitle("Maximum absolute differences PlanetaryEphemeris.jl - SPICE", "-")
@@ -412,6 +546,26 @@ function main()
     @printf("Moon geocentric range [m]: %12.4e\n", maximum(abs, Δρ))
     compare_ttmtdb && @printf("TT-TDB [ns]:               %12.4e\n",
         maximum(abs, Δttmtdb))
+    if compare_gm
+        @printf("Moon semimajor axis [m]:   %12.4e\n", maximum(abs, Δa))
+    end
+    if compare_drift
+        @printf("Moon semimajor axis drift [mm]: %12.4e (linear rate %.4e mm/yr)\n",
+            maximum(abs, Δa_drift), Δa_rate)
+    end
+    if compare_gm
+        println()
+        @printf("%-31s %12s %12s %12s %12s\n", "Center of mass/energy", "x [mm]",
+            "y [mm]", "z [mm]", "|r| [mm]")
+        for (name, cm) in (("PlanetaryEphemeris.jl", cm_pe), ("SPICE", cm_jpl),
+                ("PlanetaryEphemeris.jl - SPICE", cm_pe .- cm_jpl))
+            @printf("%-31s", name)
+            for k in 1:3
+                @printf(" %12.4e", maximum(abs, view(cm, :, k)))
+            end
+            @printf(" %12.4e\n", maximum(norm, eachrow(cm)))
+        end
+    end
     if compare_eulang
         println()
         @printf("%-20s %12s %12s %12s %12s %12s %12s\n", "Lunar mantle", "ϕ [mas]",
@@ -426,7 +580,6 @@ function main()
     # Plots
     printitle("Plots", "-")
     mkpath(outdir)
-    years = 2000 .+ ts ./ yr
     title_suffix = "PlanetaryEphemeris.jl - $label"
     # Common plot attributes
     single = (size = (900, 400), left_margin = 5Plots.mm, bottom_margin = 5Plots.mm,
@@ -462,6 +615,34 @@ function main()
             xlabel = "Year (TDB)")
         fig = plot(p1, p2; double...)
         savefigure(fig, outdir, "moon_eulang.png")
+    end
+    # Osculating semimajor axis of the geocentric lunar orbit and its long-term drift
+    if compare_gm
+        p1 = plot(envelope(years, Δa, maxpoints)...; label = false, ylabel = "Δ a [m]",
+            title = "Moon geocentric osculating semimajor axis: $title_suffix")
+        fig = if compare_drift
+            p2 = plot(envelope(years_ma, Δa_drift, maxpoints)...;
+                label = @sprintf("moving average (%g days)", window),
+                ylabel = "Δ a drift [mm]", xlabel = "Year (TDB)", legend = :best)
+            plot!(p2, years_ma, Δa_fit .+ Δa_rate .* years_ma;
+                label = @sprintf("linear fit (%.3g mm/yr)", Δa_rate), linestyle = :dash)
+            plot(p1, p2; double...)
+        else
+            plot(p1; single...)
+        end
+        savefigure(fig, outdir, "moon_sma.png")
+    end
+    # Center of mass/energy (N-body metric)
+    if compare_gm
+        p1 = plot(envelope(years, cm_pe .- cm_jpl, maxpoints)...;
+            label = ["x" "y" "z"], ylabel = "Δ position [mm]",
+            title = "Center of mass/energy (N-body metric): $title_suffix")
+        cm_norms = hcat(norm.(eachrow(cm_pe)), norm.(eachrow(cm_jpl)))
+        p2 = plot(envelope(years, cm_norms, maxpoints)...;
+            label = ["PlanetaryEphemeris.jl" label], ylabel = "|position| [mm]",
+            xlabel = "Year (TDB)")
+        fig = plot(p1, p2; double...)
+        savefigure(fig, outdir, "center_of_mass.png")
     end
 
     return nothing
