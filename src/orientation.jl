@@ -234,6 +234,8 @@ end
 # ecliptic. Both are used by the DE430/431 and DE440/441 Earth orientation models; see
 # equations (21)-(24) of Folkner et al. (2014) and (20)-(24) of Park et al. (2021).
 
+# Folkner et al. (2014), eq. (21), prints the rate as 1934°08'10''.549: a typo confirmed by
+# JPL (see the README)
 const coeffs_Ω_A = [125+2/60+40.280/3600, -(1934+8/60+10.539/3600), 7.455/3600, 0.008/3600]
 
 @doc raw"""
@@ -274,6 +276,8 @@ function Ω!(res::Taylor1{T}, t::Taylor1{T}, auxs) where {T<:Real}
     return nothing
 end
 
+# Folkner et al. (2014), eq. (22), prints -17''.206262: a typo confirmed by JPL (see the
+# README)
 const coeff_Δψ = -17.1996 # arcseconds
 
 @doc raw"""
@@ -310,6 +314,8 @@ function Delta_psi!(deltapsi::Taylor1{T}, t::Taylor1{T}, auxs) where {T<:Real}
     return nothing
 end
 
+# Folkner et al. (2014), eq. (22), prints 9''.205348: a typo confirmed by JPL (see the
+# README)
 const coeff_Δϵ = 9.2025 # arcseconds
 
 @doc raw"""

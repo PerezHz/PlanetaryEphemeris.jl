@@ -467,6 +467,7 @@ const J2000 = 2451545.0                        # 2000 epoch julian date
 # See Table 9 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
 const R_sun = 696000.0/au                      # Solar radius in au
 
+# Table 9 prints α_p_sun = 268.13 (typo, confirmed by JPL); see the README
 const α_p_sun = 286.13                         # Sun's rotation pole right ascension (degrees)
 const δ_p_sun = 63.87                          # Sun's rotation pole declination (degrees)
 
@@ -477,6 +478,9 @@ const JS = [J2SUN*(RSUN/au)^2]
 
 # Extended body parameters for the Earth
 # See Table 10 in page 50 of https://ui.adsabs.harvard.edu/abs/2014IPNPR.196C...1F%2F/abstract
+# Table 10 prints J4E = -1.616E-06 and omits J5E, and Section III.B says the Earth's zonal
+# harmonics go through fourth degree; both are typos (confirmed by JPL): DE430 uses the
+# values below, up to fifth degree. See the README
 const RE     =  6.378136300E+03                # Earth's radius in km
 # TODO: solve differences between parsed and non-parsed
 const RE_au = (RE/au)                          # Earth's radius in au
@@ -519,6 +523,7 @@ JSEM[ea,2:5] = JE     # Earth
 JSEM[mo,2:6] = JM     # Moon
 
 # Degree of zonal harmonics expansion for each body with extended body accelerations
+# Earth: fifth degree, not fourth as printed in Section III.B of Folkner et al. (2014)
 const n1SEM = [2, 0, 0, 5, 6]   # Sun, Mercury, Venus, Earth, Moon
 # Degree of zonal harmonics expansion for the Moon
 const n2M = 6
