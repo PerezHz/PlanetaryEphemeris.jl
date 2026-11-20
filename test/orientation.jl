@@ -368,6 +368,29 @@ end
         @test PE.ltp_precession(0.0) ≈ I atol = 1e-11
     end
 
+    @testset "Taylor1 methods" begin
+        # In-place (allocating Taylor1 methods) vs generic methods, all coefficients
+        # (time scaled by 1000 days); orders 1-2 used to raise a BoundsError in DE430
+        for t0 in epochs, order in (1, 2, 25)
+            t = t0 + 1000*Taylor1(order)
+            @test _ori_allclose(PE.ltp_ecliptic_pole(t), PE._ltp_ecliptic_pole(t);
+                atol = 1e-14)
+            @test _ori_allclose(PE.ltp_equator_pole(t), PE._ltp_equator_pole(t);
+                atol = 1e-14)
+            P = PE.ltp_precession(t)
+            @test _ori_allclose(P, PE._ltp_precession(t); atol = 1e-14)
+            @test _ori_allclose(constant_term.(P), PE.ltp_precession(t0); atol = 1e-15)
+        end
+        # Taylor expansion vs scalar epochs
+        for t0 in epochs
+            P = PE.ltp_precession(t0 + Taylor1(25))
+            for h in (-10.0, 5.0)
+                @test _ori_allclose(evaluate.(P, h), PE.ltp_precession(t0 + h);
+                    atol = 1e-14)
+            end
+        end
+    end
+
 end
 
 @testset "Earth orientation model (DE440/441)" begin

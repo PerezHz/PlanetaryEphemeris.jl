@@ -84,7 +84,10 @@ See equation (8), Table 1 and Appendix A.1 of https://doi.org/10.1051/0004-6361/
 
 See also [`ltp_equator_pole`](@ref) and [`ltp_precession`](@ref).
 """
-function ltp_ecliptic_pole(t::Real)
+ltp_ecliptic_pole(t::Real) = _ltp_ecliptic_pole(t)
+
+# Generic methods, also used to test the in-place Taylor1 methods below
+function _ltp_ecliptic_pole(t)
     p, q = _ltp_terms(t/36525, ltp_pqpol, ltp_pqper)
     p, q = deg2rad(p/3600), deg2rad(q/3600)
     z = sqrt(1 - p^2 - q^2)
@@ -104,7 +107,9 @@ See equation (9), Table 2 and Appendix A.2 of https://doi.org/10.1051/0004-6361/
 
 See also [`ltp_ecliptic_pole`](@ref) and [`ltp_precession`](@ref).
 """
-function ltp_equator_pole(t::Real)
+ltp_equator_pole(t::Real) = _ltp_equator_pole(t)
+
+function _ltp_equator_pole(t)
     x, y = _ltp_terms(t/36525, ltp_xypol, ltp_xyper)
     x, y = deg2rad(x/3600), deg2rad(y/3600)
     return [x, y, sqrt(1 - x^2 - y^2)]
@@ -137,13 +142,195 @@ equations (25)-(26) of https://doi.org/10.3847/1538-3881/abd414.
 
 See also [`ltp_ecliptic_pole`](@ref) and [`ltp_equator_pole`](@ref).
 """
-function ltp_precession(t::Real)
-    n = ltp_equator_pole(t)
-    k = ltp_ecliptic_pole(t)
+ltp_precession(t::Real) = _ltp_precession(t)
+
+function _ltp_precession(t)
+    n = _ltp_equator_pole(t)
+    k = _ltp_ecliptic_pole(t)
     # Equinox of date
     e = cross(n, k)
-    e = e/norm(e)
+    e = e/sqrt(e[1]^2 + e[2]^2 + e[3]^2)
     return permutedims(hcat(e, cross(n, e), n))
+end
+
+# In-place Taylor1 methods
+
+# Auxiliaries for _ltp_terms!: T, 2πT/period, sin, cos, polynomial (4 coefficients),
+# its value and an auxiliary for _horner!
+_allocate_ltp_terms_auxs(t::Taylor1{T}) where {T<:Real} =
+    [zero(t), zero(t), zero(t), zero(t), Taylor1(zeros(T, 4)), zero(t), zero(t)]
+
+# In-place version of _ltp_terms, with `t` the TDB time in Julian days from J2000.0
+function _ltp_terms!(a::Taylor1{T}, b::Taylor1{T}, t::Taylor1{T}, pol::AbstractMatrix,
+        per::AbstractMatrix, auxs) where {T<:Real}
+    t_cy, arg, s, c, poly, pval, aux = auxs
+    for ord in eachindex(t)
+        t_cy[ord] = t[ord]/36525
+        a[ord] = zero(t[ord])
+        b[ord] = zero(t[ord])
+    end
+    # Periodic terms
+    for i in axes(per, 1)
+        for ord in eachindex(t)
+            arg[ord] = (2π*t_cy[ord])/per[i, 1]
+        end
+        for ord in eachindex(t)
+            TaylorSeries.sincos!(s, c, arg, ord)
+            a[ord] += c[ord]*per[i, 2] + s[ord]*per[i, 4]
+            b[ord] += c[ord]*per[i, 3] + s[ord]*per[i, 5]
+        end
+    end
+    # Polynomial terms
+    for (res, row) in ((a, 1), (b, 2))
+        for j in axes(pol, 2)
+            poly.coeffs[j] = pol[row, j]
+        end
+        for ord in eachindex(t)
+            pval[ord] = zero(t[ord])
+        end
+        TaylorSeries._horner!(pval, poly, t_cy, aux)
+        for ord in eachindex(t)
+            res[ord] += pval[ord]
+        end
+    end
+    return nothing
+end
+
+# Auxiliaries for ltp_ecliptic_pole! and ltp_equator_pole!: two direction cosines, their
+# squares, 1 minus the sum of the squares, its square root, an auxiliary for sqrt! and
+# the auxiliaries for _ltp_terms!
+_allocate_ltp_pole_auxs(t::Taylor1{T}) where {T<:Real} =
+    [[zero(t) for _ in 1:7]; _allocate_ltp_terms_auxs(t)]
+
+# w ← 1 - u^2 - v^2 and z ← sqrt(w)
+function _ltp_unit_z!(z, u, v, auxs)
+    u2, v2, w, aux = auxs[3], auxs[4], auxs[5], auxs[7]
+    TaylorSeries.mul!(u2, u, u)
+    TaylorSeries.mul!(v2, v, v)
+    for ord in eachindex(w)
+        w[ord] = ((ord == 0 ? one(w[ord]) : zero(w[ord])) - u2[ord]) - v2[ord]
+    end
+    for ord in eachindex(w)
+        TaylorSeries.sqrt!(z, w, aux, ord)
+    end
+    return nothing
+end
+
+@doc raw"""
+    ltp_ecliptic_pole!(k, t, auxs)
+
+In-place version of ``ltp_ecliptic_pole(t)``; see [`ltp_ecliptic_pole`](@ref) for details.
+"""
+function ltp_ecliptic_pole!(k::AbstractVector{Taylor1{T}}, t::Taylor1{T},
+        auxs) where {T<:Real}
+    p, q, z = auxs[1], auxs[2], auxs[6]
+    _ltp_terms!(p, q, t, ltp_pqpol, ltp_pqper, view(auxs, 8:14))
+    for ord in eachindex(t)
+        p[ord] = deg2rad(p[ord]/3600)
+        q[ord] = deg2rad(q[ord]/3600)
+    end
+    _ltp_unit_z!(z, p, q, auxs)
+    s, c = sincos(deg2rad(ltp_eps0/3600))
+    for ord in eachindex(t)
+        k[1][ord] = p[ord]
+        k[2][ord] = -q[ord]*c - z[ord]*s
+        k[3][ord] = -q[ord]*s + z[ord]*c
+    end
+    return nothing
+end
+
+@doc raw"""
+    ltp_equator_pole!(n, t, auxs)
+
+In-place version of ``ltp_equator_pole(t)``; see [`ltp_equator_pole`](@ref) for details.
+"""
+function ltp_equator_pole!(n::AbstractVector{Taylor1{T}}, t::Taylor1{T},
+        auxs) where {T<:Real}
+    x, y = auxs[1], auxs[2]
+    _ltp_terms!(x, y, t, ltp_xypol, ltp_xyper, view(auxs, 8:14))
+    for ord in eachindex(t)
+        x[ord] = deg2rad(x[ord]/3600)
+        y[ord] = deg2rad(y[ord]/3600)
+        n[1][ord] = x[ord]
+        n[2][ord] = y[ord]
+    end
+    _ltp_unit_z!(n[3], x, y, auxs)
+    return nothing
+end
+
+# Auxiliaries for ltp_precession!: equator pole (3), ecliptic pole (3), n × k (3), two
+# products, |n × k|^2, |n × k|, an auxiliary for sqrt! and the auxiliaries for
+# ltp_ecliptic_pole! and ltp_equator_pole!
+_allocate_ltp_precession_auxs(t::Taylor1{T}) where {T<:Real} =
+    [[zero(t) for _ in 1:14]; _allocate_ltp_pole_auxs(t)]
+
+# c ← a1*b2 - a2*b1, with auxiliaries m1 and m2
+function _ltp_cross!(c, a1, b2, a2, b1, m1, m2)
+    TaylorSeries.mul!(m1, a1, b2)
+    TaylorSeries.mul!(m2, a2, b1)
+    for ord in eachindex(c)
+        c[ord] = m1[ord] - m2[ord]
+    end
+    return nothing
+end
+
+@doc raw"""
+    ltp_precession!(P, t, auxs)
+
+In-place version of ``ltp_precession(t)``; see [`ltp_precession`](@ref) for details.
+"""
+function ltp_precession!(P::AbstractMatrix{Taylor1{T}}, t::Taylor1{T},
+        auxs) where {T<:Real}
+    n, k, e = view(auxs, 1:3), view(auxs, 4:6), view(auxs, 7:9)
+    m1, m2, r2, r, aux = auxs[10], auxs[11], auxs[12], auxs[13], auxs[14]
+    pole_auxs = view(auxs, 15:28)
+    ltp_equator_pole!(n, t, pole_auxs)
+    ltp_ecliptic_pole!(k, t, pole_auxs)
+    # Equinox of date: e = n × k / |n × k|
+    _ltp_cross!(e[1], n[2], k[3], n[3], k[2], m1, m2)
+    _ltp_cross!(e[2], n[3], k[1], n[1], k[3], m1, m2)
+    _ltp_cross!(e[3], n[1], k[2], n[2], k[1], m1, m2)
+    TaylorSeries.mul!(m1, e[1], e[1])
+    TaylorSeries.mul!(m2, e[2], e[2])
+    for ord in eachindex(t)
+        r2[ord] = m1[ord] + m2[ord]
+    end
+    TaylorSeries.mul!(m1, e[3], e[3])
+    for ord in eachindex(t)
+        r2[ord] += m1[ord]
+    end
+    for ord in eachindex(t)
+        TaylorSeries.sqrt!(r, r2, aux, ord)
+    end
+    for j in 1:3, ord in eachindex(t)
+        TaylorSeries.div!(P[1, j], e[j], r, ord)
+    end
+    # Second row: n × e
+    _ltp_cross!(P[2, 1], n[2], P[1, 3], n[3], P[1, 2], m1, m2)
+    _ltp_cross!(P[2, 2], n[3], P[1, 1], n[1], P[1, 3], m1, m2)
+    _ltp_cross!(P[2, 3], n[1], P[1, 2], n[2], P[1, 1], m1, m2)
+    # Third row: n
+    for j in 1:3, ord in eachindex(t)
+        P[3, j][ord] = n[j][ord]
+    end
+    return nothing
+end
+
+# Allocating Taylor1 methods: fall back to the in-place methods
+
+for (f, f!) in ((:ltp_ecliptic_pole, :ltp_ecliptic_pole!),
+        (:ltp_equator_pole, :ltp_equator_pole!))
+    @eval function $f(t::Taylor1{T}) where {T<:Real}
+        res = [zero(t) for _ in 1:3]
+        $(f!)(res, t, _allocate_ltp_pole_auxs(t))
+        return res
+    end
+end
+
+function ltp_precession(t::Taylor1{T}) where {T<:Real}
+    P = [zero(t) for _ in 1:3, _ in 1:3]
+    ltp_precession!(P, t, _allocate_ltp_precession_auxs(t))
+    return P
 end
 
 # Offsets of the EME2000 pole from the ICRF pole (ROTEX and ROTEY in the DE440 technical
