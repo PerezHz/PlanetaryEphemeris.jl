@@ -369,3 +369,51 @@ end
     end
 
 end
+
+@testset "Earth orientation model (DE440/441)" begin
+
+    # Pole offsets ROTEX and ROTEY of the DE440 technical comments (arcseconds)
+    Φx, Φy = 5.3439916044148049E-03, -1.7128824840317532E-02
+
+    @testset "Constants" begin
+        @test PE.phi_x_de440*3600 ≈ Φx rtol = 1e-14
+        @test PE.phi_y_de440*3600 ≈ Φy rtol = 1e-14
+    end
+
+    @testset "Reference implementation of eqs. (20)-(26) of Park et al. (2021)" begin
+        # The nutation and mean obliquity are those of DE430
+        as2rad = big(π)/648_000
+        for t in _ORI_EPOCHS
+            a = _ori_ref_angles(big(t), as2rad)
+            P = PE.ltp_precession(big(t))
+            N = _ori_Rx(-(a.ϵ̄ + a.Δϵ))*_ori_Rz(-a.Δψ)*_ori_Rx(a.ϵ̄)
+            M_ref = N*_ori_Ry(Φy*as2rad)*_ori_Rx(Φx*as2rad)*P
+            # Earth pole, eq. (25), with V = P^T (see ltp_precession)
+            pE_ref = transpose(P)*_ori_Rx(-Φx*as2rad)*_ori_Ry(-Φy*as2rad)*_ori_ref_pd(a)
+            @test _ori_allclose(M_ref[3, :], pE_ref; atol = 1e-60)
+            # Package (Float64) vs reference (BigFloat)
+            @test _ori_allclose(c2t_jpl_de440(t), M_ref; atol = 1e-14)
+        end
+    end
+
+    @testset "Matrix properties" begin
+        for t in _ORI_EPOCHS
+            M = c2t_jpl_de440(t)
+            @test M*M' ≈ I atol = 1e-14
+            @test det(M) ≈ 1 atol = 1e-14
+            @test t2c_jpl_de440(t) == transpose(M)
+        end
+    end
+
+    @testset "DE430 vs DE440 Earth pole" begin
+        # Angle between the poles of both models (mas): ~0.35 at J2000.0 (the offsets
+        # differ) and ~5 by 1900 (the precession models differ)
+        mas(p, q) = rad2deg(norm(cross(p, q)))*3_600_000
+        @test mas(c2t_jpl_de430(0.0)[3, :], c2t_jpl_de440(0.0)[3, :]) < 0.5
+        for year in 1900:20:2100
+            t = (year - 2000)*365.25
+            @test mas(c2t_jpl_de430(t)[3, :], c2t_jpl_de440(t)[3, :]) < 6
+        end
+    end
+
+end

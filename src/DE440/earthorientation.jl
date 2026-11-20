@@ -145,3 +145,54 @@ function ltp_precession(t::Real)
     e = e/norm(e)
     return permutedims(hcat(e, cross(n, e), n))
 end
+
+# Offsets of the EME2000 pole from the ICRF pole (ROTEX and ROTEY in the DE440 technical
+# comments, converted from arcseconds to degrees); see equation (25) of Park et al. (2021)
+const phi_x_de440 = 5.3439916044148049E-03/3600   # x-axis rotation (degrees)
+const phi_y_de440 = -1.7128824840317532E-02/3600  # y-axis rotation (degrees)
+
+@doc raw"""
+    c2t_jpl_de440(t::Real)
+
+Return the rotation matrix from the inertial (ICRF) frame (celestial) to the Earth's true
+equator of date frame (terrestrial), according to the JPL DE440/441 Earth orientation
+model
+```math
+\texttt{c2t_jpl_de440}(t) = N\times C\times P,
+```
+where ``t`` is the TDB time in Julian days from J2000.0, ``P`` is the long-term
+precession matrix, ``C = R_y(\Phi_y)R_x(\Phi_x)`` contains the constant offsets of the
+EME2000 pole from the ICRF pole and ``N`` is the nutation matrix. The third row is the
+Earth's pole ``\mathbf{p}_\mathrm{E}`` in the inertial frame.
+
+``\textbf{Note:}`` the Earth's rotation is not modeled: only the direction of the pole is
+needed for the Earth's zonal harmonics.
+
+See equations (20)-(26) in page 5 of https://doi.org/10.3847/1538-3881/abd414.
+
+See also [`ltp_precession`](@ref), [`nutation_iau80`](@ref) and [`t2c_jpl_de440`](@ref).
+"""
+function c2t_jpl_de440(t::Real)
+    # Long-term precession matrix
+    P_ltp = ltp_precession(t)
+    # Offsets of the EME2000 pole from the ICRF pole
+    offsets = Ry(deg2rad(phi_y_de440))*Rx(deg2rad(phi_x_de440))
+    # Nutation matrix
+    N_iau80 = nutation_iau80(t)
+    return N_iau80*offsets*P_ltp
+end
+
+@doc raw"""
+    t2c_jpl_de440(t)
+
+Return the rotation matrix from the Earth's true equator of date frame (terrestrial) to
+the inertial (ICRF) frame (celestial), according to the JPL DE440/441 Earth orientation
+model
+```math
+\texttt{t2c_jpl_de440}(t) = \texttt{c2t_jpl_de440}^T(t),
+```
+where ``t`` is the TDB time in Julian days from J2000.0.
+
+See also [`c2t_jpl_de440`](@ref).
+"""
+t2c_jpl_de440(t) = transpose(c2t_jpl_de440(t))
