@@ -439,4 +439,58 @@ end
         end
     end
 
+    @testset "Taylor1 methods" begin
+        offsets = Ry(deg2rad(PE.phi_y_de440))*Rx(deg2rad(PE.phi_x_de440))
+        # In-place (allocating Taylor1 method) vs generic composition, all coefficients
+        # (time scaled by 1000 days)
+        for t0 in _ORI_EPOCHS, order in (1, 2, 8)
+            t = t0 + 1000*Taylor1(order)
+            M = c2t_jpl_de440(t)
+            M_ref = PE.nutation_iau80(t)*offsets*PE._ltp_precession(t)
+            @test _ori_allclose(M, M_ref; atol = 1e-14)
+            @test _ori_allclose(constant_term.(M), c2t_jpl_de440(t0); atol = 1e-15)
+            @test t2c_jpl_de440(t) == transpose(M)
+        end
+        # Taylor expansion vs scalar epochs
+        for t0 in _ORI_EPOCHS
+            M = c2t_jpl_de440(t0 + Taylor1(25))
+            for h in (-10.0, 5.0)
+                @test _ori_allclose(evaluate.(M, h), c2t_jpl_de440(t0 + h); atol = 1e-14)
+            end
+        end
+    end
+
+    @testset "In-place methods" begin
+        t1 = -54_787.5 + 1000*Taylor1(8)
+        t2 = 7_300.0 + 1000*Taylor1(8)
+        rotatBuf = PE.allocate_c2t_jpl_de440(t1)
+        M = Array{Taylor1{Float64}}(undef, 3, 3, 5)
+        for j in 1:3, i in 1:3
+            M[i, j, ea] = zero(t1)
+        end
+        # Reuse the same buffers for two different epochs (no state leaks)
+        for t in (t1, t2)
+            PE.t2c_jpl_de440!(M, ea, t, zero(t), rotatBuf)
+            @test _ori_allclose(M[:, :, ea], permutedims(c2t_jpl_de440(t)); atol = 1e-15)
+            @test _ori_allclose(M[:, :, ea], t2c_jpl_de440(t, zero(t)); atol = 1e-15)
+        end
+        # Without buffers, the allocating method is used
+        @test PE.t2c_jpl_de440!(M, ea, t2, zero(t2), nothing) == t2c_jpl_de440(t2, zero(t2))
+        # Taylor1{TaylorN} and Taylor1{Taylor1} elements (jet transport in NEOs.jl)
+        M_ref = t2c_jpl_de440(t2)
+        for zq in (Taylor1([zero(TaylorN(1)) for _ in 0:8]),
+                   Taylor1([zero(Taylor1(2)) for _ in 0:8]))
+            MM = Array{typeof(zq)}(undef, 3, 3, 5)
+            for j in 1:3, i in 1:3
+                MM[i, j, ea] = zero(zq)
+            end
+            PE.t2c_jpl_de440!(MM, ea, t2, zq, rotatBuf)
+            M_alloc = t2c_jpl_de440(t2, zq)
+            @test all(abs(constant_term(MM[i, j, ea][k]) - M_ref[i, j][k]) ≤ 1e-15
+                for i in 1:3, j in 1:3, k in 0:8)
+            @test all(abs(constant_term(M_alloc[i, j][k]) - M_ref[i, j][k]) ≤ 1e-15
+                for i in 1:3, j in 1:3, k in 0:8)
+        end
+    end
+
 end

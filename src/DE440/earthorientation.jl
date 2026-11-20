@@ -339,7 +339,7 @@ const phi_x_de440 = 5.3439916044148049E-03/3600   # x-axis rotation (degrees)
 const phi_y_de440 = -1.7128824840317532E-02/3600  # y-axis rotation (degrees)
 
 @doc raw"""
-    c2t_jpl_de440(t::Real)
+    c2t_jpl_de440(t::Number)
 
 Return the rotation matrix from the inertial (ICRF) frame (celestial) to the Earth's true
 equator of date frame (terrestrial), according to the JPL DE440/441 Earth orientation
@@ -383,3 +383,122 @@ where ``t`` is the TDB time in Julian days from J2000.0.
 See also [`c2t_jpl_de440`](@ref).
 """
 t2c_jpl_de440(t) = transpose(c2t_jpl_de440(t))
+
+# The following methods are used by NEOs.jl for propagations involving
+# extended body interactions
+function t2c_jpl_de440(dsj2k::Taylor1{T}, zero_q::Taylor1{T}) where {T <: Real}
+    M = t2c_jpl_de440(dsj2k)
+    return M .+ zero_q
+end
+
+function t2c_jpl_de440(dsj2k::Taylor1{T}, zero_q::Taylor1{TaylorN{T}}) where {T <: Real}
+    M = t2c_jpl_de440(dsj2k)
+    return M .+ zero_q
+end
+
+function t2c_jpl_de440(dsj2k::Taylor1{T}, zero_q::Taylor1{Taylor1{T}}) where {T <: Real}
+    M = t2c_jpl_de440(dsj2k)
+    one_q = one(zero_q.coeffs[1])
+    _M_ = @. Taylor1(getfield(M, :coeffs) * one_q)
+    return _M_
+end
+
+@doc raw"""
+    t2c_jpl_de440!(M, ea, dsj2k::Taylor1{T}, zero_q, rotatBuf::Union{Nothing,RetAlloc{Taylor1{T}}})
+
+Inplace version of ``t2c_jpl_de440(dsj2k)``; see [`t2c_jpl_de440`](@ref) for details. Writes
+the matrix into `M[:, :, ea]`, using the buffers `rotatBuf` (see
+[`allocate_c2t_jpl_de440`](@ref)). If `rotatBuf` is `nothing`, return the allocating
+`t2c_jpl_de440(dsj2k, zero_q)` instead.
+"""
+t2c_jpl_de440!(::Array{Taylor1{S},3}, ::Int, dsj2k::Taylor1{T},
+        zero_q::Taylor1{S}, ::Nothing) where {T <: Real, S <: Number} =
+    t2c_jpl_de440(dsj2k, zero_q)
+
+function t2c_jpl_de440!(M::Array{Taylor1{T},3}, ea::Int, dsj2k::Taylor1{T},
+        ::Taylor1{T}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
+    c2t_jpl_de440!(dsj2k, rotatBuf)
+    for j in axes(M, 2)
+        for i in axes(M, 1)
+            for k in eachindex(M[i, j, ea])
+                M[i, j, ea][k] = rotatBuf.v2[5][j, i][k]
+            end
+        end
+    end
+    return M
+end
+
+function t2c_jpl_de440!(M::Array{Taylor1{TaylorN{T}},3}, ea::Int, dsj2k::Taylor1{T},
+        ::Taylor1{TaylorN{T}}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
+    c2t_jpl_de440!(dsj2k, rotatBuf)
+    for j in axes(M, 2)
+        for i in axes(M, 1)
+            for ord in eachindex(M[i, j, ea])
+                M[i, j, ea][ord][0][1] = rotatBuf.v2[5][j, i][ord]
+            end
+        end
+    end
+    return M
+end
+
+function t2c_jpl_de440!(M::Array{Taylor1{Taylor1{T}},3}, ea::Int, dsj2k::Taylor1{T},
+        ::Taylor1{Taylor1{T}}, rotatBuf::RetAlloc{Taylor1{T}}) where {T <: Real}
+    c2t_jpl_de440!(dsj2k, rotatBuf)
+    for j in axes(M, 2)
+        for i in axes(M, 1)
+            for ord in eachindex(M[i, j, ea])
+                M[i, j, ea][ord][0] = rotatBuf.v2[5][j, i][ord]
+            end
+        end
+    end
+    return M
+end
+
+@doc raw"""
+    c2t_jpl_de440!(t, rotatBuf)
+
+Inplace version of ``c2t_jpl_de440(t)``; see [`c2t_jpl_de440`](@ref) for details. The
+matrix is written into `rotatBuf.v2[5]` (see [`allocate_c2t_jpl_de440`](@ref)).
+"""
+function c2t_jpl_de440!(t::Taylor1{T}, rotatBuf::RetAlloc{Taylor1{T}}) where {T<:Real}
+    P_ltp, offsets, N_iau80, Raux, res = rotatBuf.v2[1], rotatBuf.v2[2],
+        rotatBuf.v2[3], rotatBuf.v2[4], rotatBuf.v2[5]
+    # Long-term precession matrix
+    ltp_precession!(P_ltp, t, rotatBuf.v0)
+    # Nutation matrix
+    nutation_iau80!(N_iau80, t, rotatBuf.v1[1], rotatBuf.v1[2], view(rotatBuf.v2, 6:10))
+    # res = N_iau80*offsets*P_ltp
+    matmul!(Raux, N_iau80, offsets)
+    matmul!(res, Raux, P_ltp)
+    return nothing
+end
+
+@doc raw"""
+    allocate_c2t_jpl_de440(t)
+
+Return a `RetAlloc{Taylor1{T}}` object with the buffers used by the
+[`c2t_jpl_de440!`](@ref) and [`t2c_jpl_de440!`](@ref) methods:
+- `v0`: auxiliaries of [`ltp_precession!`](@ref);
+- `v1`: auxiliaries of [`nutation_iau80!`](@ref);
+- `v2`: precession matrix, offsets matrix (constant), nutation matrix, an auxiliary
+  matrix, `c2t_jpl_de440(t)` and the auxiliary matrices of [`nutation_iau80!`](@ref).
+"""
+function allocate_c2t_jpl_de440(t::Taylor1{T}) where {T<:Real}
+    auxNut, auxsR, auxMat = _allocate_nutation_iau80(t)
+    offsets = Ry(deg2rad(phi_y_de440))*Rx(deg2rad(phi_x_de440))
+    C = [convert(T, offsets[i, j])*one(t) for i in 1:3, j in 1:3]
+    P_ltp, N_iau80, Raux, res = ([zero(t) for _ in 1:3, _ in 1:3] for _ in 1:4)
+    rotatBuf = RetAlloc{Taylor1{T}}(
+        _allocate_ltp_precession_auxs(t),
+        [auxNut, auxsR],
+        [P_ltp, C, N_iau80, Raux, res, auxMat...],
+        [Array{Taylor1{T}}(undef, 0, 0, 0)],
+        [Array{Taylor1{T}}(undef, 0, 0, 0, 0)])
+    return rotatBuf
+end
+
+function c2t_jpl_de440(t::Taylor1{T}) where {T<:Real}
+    rotatBuf = allocate_c2t_jpl_de440(t)
+    c2t_jpl_de440!(t, rotatBuf)
+    return rotatBuf.v2[5]
+end
