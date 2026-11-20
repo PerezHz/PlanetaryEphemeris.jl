@@ -1,12 +1,14 @@
 # This file is part of the PlanetaryEphemeris.jl package; MIT licensed
 
-# Tests of the JPL DE430/431 Earth and Moon orientation models
-# Equation and table numbers refer to Folkner et al. (2014), IPN Progress Report 42-196
+# Tests of the JPL DE430/431 Earth and Moon orientation models and of the JPL DE440/441
+# Earth orientation model. Equation and table numbers refer to Folkner et al. (2014),
+# IPN Progress Report 42-196, unless stated otherwise
 
 using PlanetaryEphemeris
 using TaylorSeries
 using LinearAlgebra
 using Test
+import SOFA
 
 # Helpers
 
@@ -316,6 +318,54 @@ end
                 -0.00661836772247824400, -0.00107295445159005100, 0.22964879652299730000]
         @test q0[6N+1:6N+6] ≈ mantle rtol = 1e-14
         @test q0[6N+7:6N+12] ≈ core rtol = 1e-14
+    end
+
+end
+
+@testset "Long-term precession (DE440/441)" begin
+
+    @testset "Test case of Vondrák et al. (2011)" begin
+        # Appendix A.5: JD 1219339.078 TT, values computed in quadruple precision with
+        # 198.296071 instead of 198.296701 (see src/DE440/earthorientation.jl), which
+        # changes the ecliptic pole by ~3e-9 but not the equator pole
+        t = 1219339.078 - J2000
+        pecl = [+0.00041724785764001342, -0.40495491104576162693, +0.91433656053126552350]
+        pequ = [-0.29437643797369031532, -0.11719098023370257855, +0.94847708824082091796]
+        Rp = [+0.68473390570729557360 +0.66647794042757610444 +0.29486714516583357655;
+              -0.66669482609418419936 +0.73625636097440967969 -0.11595076448202158534;
+              -0.29437643797369031532 -0.11719098023370257855 +0.94847708824082091796]
+        @test PE.ltp_equator_pole(t) ≈ pequ atol = 1e-14
+        @test PE.ltp_ecliptic_pole(t) ≈ pecl atol = 1e-8
+        P = PE.ltp_precession(t)
+        @test P[3, :] ≈ Rp[3, :] atol = 1e-14
+        @test P ≈ Rp atol = 1e-8
+    end
+
+    # Epochs (TDB days since J2000.0) over the DE440 (1550-2650) and DE441
+    # (-13200 to 17191) time spans
+    epochs = [-5_500_000.0, -160_000.0, -54_787.5, 0.0, 7_300.0, 230_000.0, 5_500_000.0]
+
+    @testset "SOFA.jl" begin
+        for t in epochs
+            # Julian epoch (TT ≈ TDB)
+            epj = 2000 + t/365.25
+            @test PE.ltp_ecliptic_pole(t) ≈ SOFA.ltpecl(epj) atol = 1e-14
+            @test PE.ltp_equator_pole(t) ≈ SOFA.ltpequ(epj) atol = 1e-14
+            @test PE.ltp_precession(t) ≈ SOFA.ltp(epj) atol = 1e-14
+        end
+    end
+
+    @testset "Matrix properties" begin
+        for t in epochs
+            P = PE.ltp_precession(t)
+            @test P*transpose(P) ≈ I atol = 1e-14
+            @test det(P) ≈ 1 atol = 1e-14
+            @test P[3, :] == PE.ltp_equator_pole(t)
+            # The equinox is on the ecliptic of date
+            @test dot(P[1, :], PE.ltp_ecliptic_pole(t)) ≈ 0 atol = 1e-15
+        end
+        # Agrees with the IAU 2006 precession at J2000.0
+        @test PE.ltp_precession(0.0) ≈ I atol = 1e-11
     end
 
 end

@@ -42,6 +42,7 @@ include("trivial.jl")
 include("DE430/params.jl")
 include("DE430/earthorientation.jl")
 include("DE430/moonorientation.jl")
+include("DE440/earthorientation.jl")
 include("DE430/dynamicalmodel.jl")
 include("DE430/jetcoeffs.jl")
 
