@@ -8,7 +8,8 @@ export semimajoraxis, eccentricity, inclination, longascnode, argperi, longperi,
        trueanomaly,  meananomaly, timeperipass, lrlvec, eccentricanomaly, meanan2truean,
        meanmotion, time2truean, Rx, Ry, Rz, selecteph,
        numberofbodies,  kmsec2auday, auday2kmsec, ssb_posvel_pN, nbodyind, t2c_jpl_de430,
-       propagate,  c2t_jpl_de430, pole_rotation, read_initial_conditions
+       propagate,  c2t_jpl_de430, pole_rotation, read_initial_conditions,
+       c2t_jpl_de440, t2c_jpl_de440
 export PE, au, yr, sundofs, earthdofs, c_au_per_day, μ, su, ea, mo, au, yr, daysec,
        clightkms, c_au_per_day, c_au_per_sec, c_cm_per_sec, J2000, R_sun, α_p_sun,
        δ_p_sun, au, UJ_interaction, de430_343ast_ids, ITM_und, ITM1, ITM2, R_moon,
@@ -42,6 +43,7 @@ include("trivial.jl")
 include("DE430/params.jl")
 include("DE430/earthorientation.jl")
 include("DE430/moonorientation.jl")
+include("DE440/earthorientation.jl")
 include("DE430/dynamicalmodel.jl")
 include("DE430/jetcoeffs.jl")
 

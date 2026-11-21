@@ -37,6 +37,16 @@ contains an example script. This script may be called as:
 
 `julia -t <number-of-threads> --project de430.jl --help`
 
+## Earth orientation models
+
+`c2t_jpl_de430`/`t2c_jpl_de430` and `c2t_jpl_de440`/`t2c_jpl_de440` implement the Earth
+orientation models of the JPL DE430/DE431 (Folkner et al., 2014) and DE440/DE441 (Park et
+al., 2021) ephemerides. Only the direction of the Earth's pole is modeled (precession,
+18.6-year nutation and the offsets of the EME2000 pole from the ICRF pole), not the
+Earth's rotation. The DE440/DE441 model uses the long-term precession of Vondrák et al.
+(2011); the cosine coefficient of Q_A with period 882 cy is 198.296701, as in SOFA,
+instead of the 198.296071 printed in the paper's code (the pole is not affected).
+
 ## Known typos in Folkner et al. (2014)
 
 The following values in Folkner et al. (2014) are typos, confirmed by the JPL team.
@@ -70,3 +80,6 @@ computing resources provided by LANCAD-UNAM-DGTIC-284.
 - Park, R. S., Folkner, W. M., Williams, J. G., & Boggs, D. H. (2021). The JPL
   planetary and lunar ephemerides DE440 and DE441. The Astronomical Journal,
   161(3), 105. https://doi.org/10.3847/1538-3881/abd414
+- Vondrák, J., Capitaine, N., & Wallace, P. (2011). New precession expressions,
+  valid for long time intervals. Astronomy & Astrophysics, 534, A22.
+  https://doi.org/10.1051/0004-6361/201117274

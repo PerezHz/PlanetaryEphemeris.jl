@@ -1,12 +1,14 @@
 # This file is part of the PlanetaryEphemeris.jl package; MIT licensed
 
-# Tests of the JPL DE430/431 Earth and Moon orientation models
-# Equation and table numbers refer to Folkner et al. (2014), IPN Progress Report 42-196
+# Tests of the JPL DE430/431 Earth and Moon orientation models and of the JPL DE440/441
+# Earth orientation model. Equation and table numbers refer to Folkner et al. (2014),
+# IPN Progress Report 42-196, unless stated otherwise
 
 using PlanetaryEphemeris
 using TaylorSeries
 using LinearAlgebra
 using Test
+import SOFA
 
 # Helpers
 
@@ -316,6 +318,179 @@ end
                 -0.00661836772247824400, -0.00107295445159005100, 0.22964879652299730000]
         @test q0[6N+1:6N+6] ≈ mantle rtol = 1e-14
         @test q0[6N+7:6N+12] ≈ core rtol = 1e-14
+    end
+
+end
+
+@testset "Long-term precession (DE440/441)" begin
+
+    @testset "Test case of Vondrák et al. (2011)" begin
+        # Appendix A.5: JD 1219339.078 TT, values computed in quadruple precision with
+        # 198.296071 instead of 198.296701 (see src/DE440/earthorientation.jl), which
+        # changes the ecliptic pole by ~3e-9 but not the equator pole
+        t = 1219339.078 - J2000
+        pecl = [+0.00041724785764001342, -0.40495491104576162693, +0.91433656053126552350]
+        pequ = [-0.29437643797369031532, -0.11719098023370257855, +0.94847708824082091796]
+        Rp = [+0.68473390570729557360 +0.66647794042757610444 +0.29486714516583357655;
+              -0.66669482609418419936 +0.73625636097440967969 -0.11595076448202158534;
+              -0.29437643797369031532 -0.11719098023370257855 +0.94847708824082091796]
+        @test PE.ltp_equator_pole(t) ≈ pequ atol = 1e-14
+        @test PE.ltp_ecliptic_pole(t) ≈ pecl atol = 1e-8
+        P = PE.ltp_precession(t)
+        @test P[3, :] ≈ Rp[3, :] atol = 1e-14
+        @test P ≈ Rp atol = 1e-8
+    end
+
+    # Epochs (TDB days since J2000.0) over the DE440 (1550-2650) and DE441
+    # (-13200 to 17191) time spans
+    epochs = [-5_500_000.0, -160_000.0, -54_787.5, 0.0, 7_300.0, 230_000.0, 5_500_000.0]
+
+    @testset "SOFA.jl" begin
+        for t in epochs
+            # Julian epoch (TT ≈ TDB)
+            epj = 2000 + t/365.25
+            @test PE.ltp_ecliptic_pole(t) ≈ SOFA.ltpecl(epj) atol = 1e-14
+            @test PE.ltp_equator_pole(t) ≈ SOFA.ltpequ(epj) atol = 1e-14
+            @test PE.ltp_precession(t) ≈ SOFA.ltp(epj) atol = 1e-14
+        end
+    end
+
+    @testset "Matrix properties" begin
+        for t in epochs
+            P = PE.ltp_precession(t)
+            @test P*transpose(P) ≈ I atol = 1e-14
+            @test det(P) ≈ 1 atol = 1e-14
+            @test P[3, :] == PE.ltp_equator_pole(t)
+            # The equinox is on the ecliptic of date
+            @test dot(P[1, :], PE.ltp_ecliptic_pole(t)) ≈ 0 atol = 1e-15
+        end
+        # Agrees with the IAU 2006 precession at J2000.0
+        @test PE.ltp_precession(0.0) ≈ I atol = 1e-11
+    end
+
+    @testset "Taylor1 methods" begin
+        # In-place (allocating Taylor1 methods) vs generic methods, all coefficients
+        # (time scaled by 1000 days); orders 1-2 used to raise a BoundsError in DE430
+        for t0 in epochs, order in (1, 2, 25)
+            t = t0 + 1000*Taylor1(order)
+            @test _ori_allclose(PE.ltp_ecliptic_pole(t), PE._ltp_ecliptic_pole(t);
+                atol = 1e-14)
+            @test _ori_allclose(PE.ltp_equator_pole(t), PE._ltp_equator_pole(t);
+                atol = 1e-14)
+            P = PE.ltp_precession(t)
+            @test _ori_allclose(P, PE._ltp_precession(t); atol = 1e-14)
+            @test _ori_allclose(constant_term.(P), PE.ltp_precession(t0); atol = 1e-15)
+        end
+        # Taylor expansion vs scalar epochs
+        for t0 in epochs
+            P = PE.ltp_precession(t0 + Taylor1(25))
+            for h in (-10.0, 5.0)
+                @test _ori_allclose(evaluate.(P, h), PE.ltp_precession(t0 + h);
+                    atol = 1e-14)
+            end
+        end
+    end
+
+end
+
+@testset "Earth orientation model (DE440/441)" begin
+
+    # Pole offsets ROTEX and ROTEY of the DE440 technical comments (arcseconds)
+    Φx, Φy = 5.3439916044148049E-03, -1.7128824840317532E-02
+
+    @testset "Constants" begin
+        @test PE.phi_x_de440*3600 ≈ Φx rtol = 1e-14
+        @test PE.phi_y_de440*3600 ≈ Φy rtol = 1e-14
+    end
+
+    @testset "Reference implementation of eqs. (20)-(26) of Park et al. (2021)" begin
+        # The nutation and mean obliquity are those of DE430
+        as2rad = big(π)/648_000
+        for t in _ORI_EPOCHS
+            a = _ori_ref_angles(big(t), as2rad)
+            P = PE.ltp_precession(big(t))
+            N = _ori_Rx(-(a.ϵ̄ + a.Δϵ))*_ori_Rz(-a.Δψ)*_ori_Rx(a.ϵ̄)
+            M_ref = N*_ori_Ry(Φy*as2rad)*_ori_Rx(Φx*as2rad)*P
+            # Earth pole, eq. (25), with V = P^T (see ltp_precession)
+            pE_ref = transpose(P)*_ori_Rx(-Φx*as2rad)*_ori_Ry(-Φy*as2rad)*_ori_ref_pd(a)
+            @test _ori_allclose(M_ref[3, :], pE_ref; atol = 1e-60)
+            # Package (Float64) vs reference (BigFloat)
+            @test _ori_allclose(c2t_jpl_de440(t), M_ref; atol = 1e-14)
+        end
+    end
+
+    @testset "Matrix properties" begin
+        for t in _ORI_EPOCHS
+            M = c2t_jpl_de440(t)
+            @test M*M' ≈ I atol = 1e-14
+            @test det(M) ≈ 1 atol = 1e-14
+            @test t2c_jpl_de440(t) == transpose(M)
+        end
+    end
+
+    @testset "DE430 vs DE440 Earth pole" begin
+        # Angle between the poles of both models (mas): ~0.35 at J2000.0 (the offsets
+        # differ) and ~5 by 1900 (the precession models differ)
+        mas(p, q) = rad2deg(norm(cross(p, q)))*3_600_000
+        @test mas(c2t_jpl_de430(0.0)[3, :], c2t_jpl_de440(0.0)[3, :]) < 0.5
+        for year in 1900:20:2100
+            t = (year - 2000)*365.25
+            @test mas(c2t_jpl_de430(t)[3, :], c2t_jpl_de440(t)[3, :]) < 6
+        end
+    end
+
+    @testset "Taylor1 methods" begin
+        offsets = Ry(deg2rad(PE.phi_y_de440))*Rx(deg2rad(PE.phi_x_de440))
+        # In-place (allocating Taylor1 method) vs generic composition, all coefficients
+        # (time scaled by 1000 days)
+        for t0 in _ORI_EPOCHS, order in (1, 2, 8)
+            t = t0 + 1000*Taylor1(order)
+            M = c2t_jpl_de440(t)
+            M_ref = PE.nutation_iau80(t)*offsets*PE._ltp_precession(t)
+            @test _ori_allclose(M, M_ref; atol = 1e-14)
+            @test _ori_allclose(constant_term.(M), c2t_jpl_de440(t0); atol = 1e-15)
+            @test t2c_jpl_de440(t) == transpose(M)
+        end
+        # Taylor expansion vs scalar epochs
+        for t0 in _ORI_EPOCHS
+            M = c2t_jpl_de440(t0 + Taylor1(25))
+            for h in (-10.0, 5.0)
+                @test _ori_allclose(evaluate.(M, h), c2t_jpl_de440(t0 + h); atol = 1e-14)
+            end
+        end
+    end
+
+    @testset "In-place methods" begin
+        t1 = -54_787.5 + 1000*Taylor1(8)
+        t2 = 7_300.0 + 1000*Taylor1(8)
+        rotatBuf = PE.allocate_c2t_jpl_de440(t1)
+        M = Array{Taylor1{Float64}}(undef, 3, 3, 5)
+        for j in 1:3, i in 1:3
+            M[i, j, ea] = zero(t1)
+        end
+        # Reuse the same buffers for two different epochs (no state leaks)
+        for t in (t1, t2)
+            PE.t2c_jpl_de440!(M, ea, t, zero(t), rotatBuf)
+            @test _ori_allclose(M[:, :, ea], permutedims(c2t_jpl_de440(t)); atol = 1e-15)
+            @test _ori_allclose(M[:, :, ea], t2c_jpl_de440(t, zero(t)); atol = 1e-15)
+        end
+        # Without buffers, the allocating method is used
+        @test PE.t2c_jpl_de440!(M, ea, t2, zero(t2), nothing) == t2c_jpl_de440(t2, zero(t2))
+        # Taylor1{TaylorN} and Taylor1{Taylor1} elements (jet transport in NEOs.jl)
+        M_ref = t2c_jpl_de440(t2)
+        for zq in (Taylor1([zero(TaylorN(1)) for _ in 0:8]),
+                   Taylor1([zero(Taylor1(2)) for _ in 0:8]))
+            MM = Array{typeof(zq)}(undef, 3, 3, 5)
+            for j in 1:3, i in 1:3
+                MM[i, j, ea] = zero(zq)
+            end
+            PE.t2c_jpl_de440!(MM, ea, t2, zq, rotatBuf)
+            M_alloc = t2c_jpl_de440(t2, zq)
+            @test all(abs(constant_term(MM[i, j, ea][k]) - M_ref[i, j][k]) ≤ 1e-15
+                for i in 1:3, j in 1:3, k in 0:8)
+            @test all(abs(constant_term(M_alloc[i, j][k]) - M_ref[i, j][k]) ≤ 1e-15
+                for i in 1:3, j in 1:3, k in 0:8)
+        end
     end
 
 end
